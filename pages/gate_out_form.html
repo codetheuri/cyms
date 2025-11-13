@@ -1,0 +1,48 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-6 fw-bold">Gate OUT Release</h1>
+    
+    <a class="btn btn-secondary" data-page="pages/gate_out.html">
+        <i class="fa-solid fa-arrow-left me-2"></i> Back to List
+    </a>
+</div>
+
+<div class="card content-card">
+    <form>
+        <label for="searchContainerOut" class="form-label fw-bold">Search Container Number</label>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control form-control-lg" placeholder="Enter Container # to release..." id="searchContainerOut">
+            <button class="btn btn-outline-primary btn-lg" type="button">
+                <i class="fa-solid fa-magnifying-glass"></i> Search
+            </button>
+        </div>
+        
+        <div class="alert alert-info rounded-3">
+            <strong>Container Found:</strong> MSCU1234567 (40' HC). Status: <strong>Ready for Release</strong>.
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="releaseLine" class="form-label fw-bold">Release Line</label>
+                <input type="text" class="form-control" id="releaseLine" value="MSC" readonly>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="destination" class="form-label fw-bold">Destination</label>
+                <input type="text" class="form-control" id="destination" placeholder="e.g., Nairobi">
+            </div>
+        </div>
+         <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="driverNameOut" class="form-label fw-bold">Driver Name</label>
+                <input type="text" class="form-control" id="driverNameOut">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="truckNumOut" class="form-label fw-bold">Truck Number</label>
+                <input type="text" class="form-control" id="truckNumOut">
+            </div>
+        </div>
+        <hr class="my-4">
+        <button type="submit" class="btn btn-danger btn-lg">
+            <i class="fa-solid fa-circle-check"></i> Release Container
+        </button>
+    </form>
+</div>

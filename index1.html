@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Container Depot System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* --- THEME COLORS --- */
+            --app-primary: #006D44; /* Green Accent */
+            --app-dark-blue: #1C2536; /* Smooth Dark Blue */
+        }
+
+        /* A light grey background for the main content area */
+        html, body {
+            background-color: #f4f7f6;
+            overflow-x: hidden;
+        }
+        
+        /* --- One UI Theme Customizations --- */
+        .btn, .form-control, .form-select {
+            border-radius: 0.75rem !important;
+        }
+        
+        .content-card {
+            border: none;
+            border-radius: 1.5rem !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+        }
+
+        /* --- Top Navbar (Dark Blue) --- */
+        /* Custom class for the dark blue navbar */
+        .bg-app-dark {
+            background-color: var(--app-dark-blue) !important;
+        }
+
+        /* --- Desktop Sidebar (Dark Blue) --- */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            background-color: var(--app-dark-blue); /* Use dark blue */
+            width: 260px;
+            padding-top: 56px; 
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .sidebar .sidebar-nav-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .sidebar .nav-link {
+            border-radius: 0.75rem;
+            font-weight: 500;
+            color: #adb5bd; /* Light grey text for dark bg */
+            margin-bottom: 0.25rem;
+            padding: 0.75rem 1rem;
+        }
+
+        .sidebar .nav-link .fa-solid {
+            margin-right: 12px;
+            font-size: 1.1rem;
+            width: 20px; /* Aligns text */
+            text-align: center;
+        }
+
+        .sidebar .nav-link.active {
+            color: #fff;
+            background-color: var(--app-primary); /* Green accent */
+        }
+
+        /* --- Main Content Area (Light) --- */
+        .main-content {
+            padding: 20px;
+            padding-top: 76px;
+            padding-bottom: 100px;
+            overflow-x: auto; 
+        }
+
+        @media (min-width: 768px) {
+            .main-content {
+                margin-left: 260px;
+                padding-bottom: 20px;
+                width: calc(100% - 260px);
+            }
+        }
+
+        /* --- Mobile Bottom Nav (Light) --- */
+        .bottom-nav {
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+            background-color: #ffffff;
+            overflow-x: auto; 
+            white-space: nowrap;
+        }
+        
+        .bottom-nav .nav-link {
+            color: #6c757d;
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+            flex-grow: 1; 
+            font-size: 0.75rem;
+        }
+
+        .bottom-nav .nav-link.active {
+            color: var(--app-primary);
+            background-color: transparent !important;
+        }
+        
+        .bottom-nav .nav-link .fa-solid {
+            font-size: 1.5rem; 
+            display: block;
+            margin: 0 auto 0.25rem;
+        }
+
+        /* --- Theme Color Helpers --- */
+        .btn-primary {
+            background-color: var(--app-primary);
+            border-color: var(--app-primary);
+        }
+        .btn-primary:hover {
+            background-color: #005232;
+            border-color: #005232;
+        }
+        .btn-outline-primary {
+            color: var(--app-primary);
+            border-color: var(--app-primary);
+        }
+        .btn-outline-primary:hover {
+            background-color: var(--app-primary);
+            color: #fff;
+        }
+        .bg-primary {
+            background-color: var(--app-primary) !important;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-app-dark fixed-top shadow-sm">
+        <div class="container-fluid">
+            
+            <a class="navbar-brand fw-bold" href="#">Container Depot OS</a>
+
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0 d-flex flex-row align-items-center">
+                
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fa-solid fa-bell fs-4"></i>
+                    </a>
+                </li>
+
+                <li class="nav-item d-none d-md-block">
+                     <span class="nav-link text-muted">|</span>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-circle-user fs-4"></i>
+                        <span class="d-none d-md-inline ms-2">John Doe</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end rounded-3" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="#">Profile</a></li>
+                        <li><a class="dropdown-item" href="#">Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#">Logout</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            
+            <nav id="sidebarMenu" class="d-none d-md-flex flex-column sidebar">
+                <div class="sidebar-nav-container">
+                    <div class="nav nav-pills flex-column">
+                        <a class="nav-link active" id="dashboard-tab" data-bs-toggle="pill" href="#dashboard" role="tab" aria-controls="dashboard" aria-selected="true">
+                            <i class="fa-solid fa-table-cells"></i> Dashboard
+                        </a>
+                        <a class="nav-link" id="gate-in-tab" data-bs-toggle="pill" href="#gate-in" role="tab" aria-controls="gate-in" aria-selected="false">
+                            <i class="fa-solid fa-arrow-down-to-bracket"></i> Gate IN
+                        </a>
+                        <a class="nav-link" id="gate-out-tab" data-bs-toggle="pill" href="#gate-out" role="tab" aria-controls="gate-out" aria-selected="false">
+                            <i class="fa-solid fa-arrow-up-from-bracket"></i> Gate OUT
+                        </a>
+                        <a class="nav-link" id="survey-tab" data-bs-toggle="pill" href="#survey" role="tab" aria-controls="survey" aria-selected="false">
+                            <i class="fa-solid fa-magnifying-glass"></i> Container Survey
+                        </a>
+                        <a class="nav-link" id="yard-tab" data-bs-toggle="pill" href="#yard" role="tab" aria-controls="yard" aria-selected="false">
+                            <i class="fa-solid fa-map-location-dot"></i> Yard Position
+                        </a>
+                        <a class="nav-link" id="billing-tab" data-bs-toggle="pill" href="#billing" role="tab" aria-controls="billing" aria-selected="false">
+                            <i class="fa-solid fa-receipt"></i> Billing & Charges
+                        </a>
+                    </div>
+                </div>
+            </nav>
+
+            <main class="main-content">
+                <div class="tab-content" id="myTabContent">
+                    
+                    <div class="tab-pane fade show active" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
+                        <h1 class="display-6 fw-bold mb-4">Dashboard</h1>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="card content-card text-white bg-info">
+                                    <h5 class="card-title">Containers in Yard</h5>
+                                    <h3 class="display-4 fw-bold">450</h3>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card content-card text-white bg-success">
+                                    <h5 class="card-title">Today's Gate IN</h5>
+                                    <h3 class="display-4 fw-bold">32</h3>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card content-card text-white bg-danger">
+                                    <h5 class="card-title">Awaiting Survey</h5>
+                                    <h3 class="display-4 fw-bold">12</h3>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <h3 class="mt-4 mb-3">Interchange History</h3>
+                        <div class="card content-card">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th><th>Container No.</th><th>Type</th><th>Status</th><th>Time</th><th>Line</th><th>Truck</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>1024</td><td>MSCU1234567</td><td>40' HC</td><td><span class="badge rounded-pill bg-success-subtle text-success-emphasis">Gate IN</span></td><td>15:30</td><td>MSC</td><td>KAA 123B</td>
+                                        </tr>
+                                        <tr>
+                                            <td>1023</td><td>CMAU7654321</td><td>20' GP</td><td><span class="badge rounded-pill bg-danger-subtle text-danger-emphasis">Gate OUT</span></td><td>15:28</td><td>CMA</td><td>KBB 456C</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="gate-in" role="tabpanel" aria-labelledby="gate-in-tab">
+                        <h1 class="display-6 fw-bold mb-4">Gate IN Registration</h1>
+                        <div class="card content-card">
+                            <form>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="containerNum" class="form-label fw-bold">Container Number</label>
+                                        <input type="text" class="form-control form-control-lg" id="containerNum" required>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="containerSize" class="form-label fw-bold">Size</label>
+                                        <select class="form-select form-select-lg" id="containerSize">
+                                            <option>20' GP</option>
+                                            <option>40' GP</option>
+                                            <option>40' HC</option>
+                                            <option>45' HC</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="containerLine" class="form-label fw-bold">Line</label>
+                                        <input type="text" class="form-control form-control-lg" id="containerLine">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="driverName" class="form-label fw-bold">Driver Name</label>
+                                        <input type="text" class="form-control" id="driverName">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="truckNum" class="form-label fw-bold">Truck Number</label>
+                                        <input type="text" class="form-control" id="truckNum">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="arrivalPhotos" class="form-label fw-bold">Upload Arrival Photos</label>
+                                    <input class="form-control" type="file" id="arrivalPhotos" multiple>
+                                </div>
+                                <hr class="my-4">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fa-solid fa-circle-check"></i> Register Container
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="gate-out" role="tabpanel" aria-labelledby="gate-out-tab">...</div>
+                    <div class="tab-pane fade" id="survey" role="tabpanel" aria-labelledby="survey-tab">...</div>
+                    <div class="tab-pane fade" id="yard" role="tabpanel" aria-labelledby="yard-tab">...</div>
+                    <div class="tab-pane fade" id="billing" role="tabpanel" aria-labelledby="billing-tab">...</div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <nav class="navbar fixed-bottom d-md-none bottom-nav nav nav-pills">
+        <a class="nav-link active" id="dashboard-tab-m" data-bs-toggle="pill" href="#dashboard" role="tab" aria-controls="dashboard" aria-selected="true">
+            <i class="fa-solid fa-table-cells"></i>
+            <small>Dashboard</small>
+        </a>
+        <a class="nav-link" id="gate-in-tab-m" data-bs-toggle="pill" href="#gate-in" role="tab" aria-controls="gate-in" aria-selected="false">
+            <i class="fa-solid fa-arrow-down-to-bracket"></i>
+            <small>Gate IN</small>
+        </a>
+        <a class="nav-link" id="gate-out-tab-m" data-bs-toggle="pill" href="#gate-out" role="tab" aria-controls="gate-out" aria-selected="false">
+            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+            <small>Gate OUT</small>
+        </a>
+        <a class="nav-link" id="survey-tab-m" data-bs-toggle="pill" href="#survey" role="tab" aria-controls="survey" aria-selected="false">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <small>Survey</small>
+        </a>
+        <a class="nav-link" id="yard-tab-m" data-bs-toggle="pill" href="#yard" role="tab" aria-controls="yard" aria-selected="false">
+            <i class="fa-solid fa-map-location-dot"></i>
+            <small>Yard</small>
+        </a>
+        <a class="nav-link" id="billing-tab-m" data-bs-toggle="pill" href="#billing" role="tab" aria-controls="billing" aria-selected="false">
+            <i class="fa-solid fa-receipt"></i>
+            <small>Billing</small>
+        </a>
+    </nav>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

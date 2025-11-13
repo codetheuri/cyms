@@ -1,0 +1,62 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-6 fw-bold">Container Surveys</h1>
+    
+    <a class="btn btn-primary" data-page="pages/survey_form.html">
+        <i class="fa-solid fa-plus me-2"></i> Start New Survey
+    </a>
+</div>
+
+<div class="card content-card">
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Container No.</th>
+                    <th>Size/Type</th>
+                    <th>Line</th>
+                    <th>Survey Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="fw-bold">MSCU1234567</td>
+                    <td>40' HC</td>
+                    <td>MSC</td>
+                    <td>2025-11-13 16:10</td>
+                    <td><span class="badge rounded-pill bg-success-subtle text-success-emphasis">Surveyed</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary" title="View/Edit Survey">
+                            <i class="fa-solid fa-pencil"></i>
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="fw-bold">CMAU7654321</td>
+                    <td>20' GP</td>
+                    <td>CMA</td>
+                    <td>2025-11-13 14:15</td>
+                    <td><span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">Repair Recommended</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary" title="View/Edit Survey">
+                            <i class="fa-solid fa-pencil"></i>
+                        </button>
+                    </td>
+                </tr>
+                 <tr>
+                    <td class="fw-bold">HLXU4567890</td>
+                    <td>20' GP</td>
+                    <td>Hapag</td>
+                    <td>-</td>
+                    <td><span class="badge rounded-pill bg-danger-subtle text-danger-emphasis">Awaiting Survey</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" title="Start Survey">
+                            <i class="fa-solid fa-play"></i>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,93 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-6 fw-bold">Container Survey</h1>
+    
+    <a class="btn btn-secondary" data-page="pages/survey.html">
+        <i class="fa-solid fa-arrow-left me-2"></i> Back to List
+    </a>
+</div>
+
+<div class="card content-card">
+    <form>
+        <label for="searchContainerSurvey" class="form-label fw-bold">Search Container</label>
+        <div class="input-group mb-4">
+            <input type="text" class="form-control form-control-lg" placeholder="Enter Container # to survey..." id="searchContainerSurvey">
+            <button class="btn btn-outline-primary btn-lg" type="button">
+                    <i class="fa-solid fa-magnifying-glass"></i> Search
+            </button>
+        </div>
+
+        <div class="alert alert-info rounded-3">
+            <strong>Found:</strong> HLXU4567890 (20' GP). Status: <strong>Awaiting Survey</strong>.
+        </div>
+
+        <div class="accordion" id="surveyAccordion">
+            <div class="accordion-item rounded-3 mb-2">
+                <h2 class="accordion-header">
+                    <button class="accordion-button rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true">
+                        <strong>Step 1: External Condition</strong>
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#surveyAccordion">
+                    <div class="accordion-body">
+                        <p>Check all that apply:</p>
+                        <input type="checkbox" class="btn-check" id="dmg-dent" autocomplete="off">
+                        <label class="btn btn-outline-danger me-2 mb-2" for="dmg-dent">Dent</label>
+                        
+                        <input type="checkbox" class="btn-check" id="dmg-scratch" autocomplete="off">
+                        <label class="btn btn-outline-danger me-2 mb-2" for="dmg-scratch">Scratch</label>
+                        
+                        <input type="checkbox" class="btn-check" id="dmg-rust" autocomplete="off">
+                        <label class="btn btn-outline-danger me-2 mb-2" for="dmg-rust">Rust</label>
+                        
+                        <div class="mt-3">
+                            <label class="form-label">External Photos</label>
+                            <input class="form-control" type="file" multiple>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item rounded-3 mb-2">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false">
+                        <strong>Step 2: Internal Condition</strong>
+                    </button>
+                </h2>
+                <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#surveyAccordion">
+                    <div class="accordion-body">
+                        <p>Check all that apply:</p>
+                        <input type="checkbox" class="btn-check" id="dmg-floor" autocomplete="off">
+                        <label class="btn btn-outline-danger me-2 mb-2" for="dmg-floor">Floor Damage</label>
+
+                        <input type="checkbox" class="btn-check" id="dmg-smell" autocomplete="off">
+                        <label class="btn btn-outline-danger me-2 mb-2" for="dmg-smell">Odor/Smell</label>
+                        
+                        <div class="mt-3">
+                            <label class="form-label">Internal Photos</label>
+                            <input class="form-control" type="file" multiple>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item rounded-3 mb-2">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false">
+                        <strong>Step 3: Repair & Summary</strong>
+                    </button>
+                </h2>
+                <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#surveyAccordion">
+                    <div class="accordion-body">
+                        <div class="mb-3">
+                            <label for="repairNotes" class="form-label">Repair Recommendations</label>
+                            <textarea class="form-control" id="repairNotes" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-circle-check"></i> Submit Survey
+        </button>
+    </form>
+</div>

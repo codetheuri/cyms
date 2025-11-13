@@ -1,0 +1,135 @@
+:root {
+    /* --- THEME COLORS --- */
+    --app-primary: #006D44; /* Green Accent */
+  /*  --app-dark-blue: #081631; /* Smooth Dark Blue */
+    --app-dark-blue: #1C2536; /* Smooth Dark Blue */
+}
+
+
+html, body {
+    background-color: #f4f7f6;
+    overflow-x: hidden;
+}
+
+
+.btn, .form-control, .form-select {
+    border-radius: 0.75rem !important;
+}
+
+.content-card {
+    border: none;
+    border-radius: 1.5rem !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 2rem;
+}
+
+.navbar {
+    background-color: var(--app-dark-blue) !important;
+}
+
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    background-color: var(--app-dark-blue); /* Use dark blue */
+    width: 260px;
+    padding-top: 56px; 
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.sidebar .sidebar-nav-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+.sidebar .nav-link {
+    border-radius: 0.75rem;
+    font-weight: 500;
+    color: #adb5bd; /* Light grey text for dark bg */
+    margin-bottom: 0.25rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer; /* Add pointer */
+}
+
+.sidebar .nav-link .fa-solid {
+    margin-right: 12px;
+    font-size: 1.1rem;
+    width: 20px; /* Aligns text */
+    text-align: center;
+}
+
+.sidebar .nav-link.active {
+    color: #fff;
+    background-color: var(--app-primary); /* Green accent */
+}
+
+
+.main-content {
+    padding: 20px;
+    padding-top: 76px;
+    padding-bottom: 100px;
+    overflow-x: auto; 
+    width: 100%; /* Default for mobile */
+}
+
+@media (min-width: 768px) {
+    .main-content {
+        margin-left: 260px;
+        padding-bottom: 20px;
+        width: calc(100% - 260px);
+    }
+}
+
+
+.bottom-nav {
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+    background-color: #ffffff;
+    overflow-x: auto; 
+    white-space: nowrap;
+}
+
+.bottom-nav .nav-link {
+    color: #6c757d;
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    flex-grow: 1; 
+    font-size: 0.75rem;
+    cursor: pointer; /* Add pointer */
+}
+
+.bottom-nav .nav-link.active {
+    color: var(--app-primary);
+    background-color: transparent !important;
+}
+
+.bottom-nav .nav-link .fa-solid {
+    font-size: 1.5rem; 
+    display: block;
+    margin: 0 auto 0.25rem;
+}
+
+.btn-primary {
+    background-color: var(--app-primary);
+    border-color: var(--app-primary);
+}
+.btn-primary:hover {
+    background-color: #005232;
+    border-color: #005232;
+}
+.btn-outline-primary {
+    color: var(--app-primary);
+    border-color: var(--app-primary);
+}
+.btn-outline-primary:hover {
+    background-color: var(--app-primary);
+    color: #fff;
+}
+.bg-primary {
+    background-color: var(--app-primary) !important;
+}
