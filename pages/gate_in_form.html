@@ -1,5 +1,5 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="display-6 fw-bold">Gate IN Registration</h1>
+    <h1 class="display-6 fw-bold">Gate IN Entry Ticket</h1>
     
     <a class="btn btn-secondary" data-page="pages/gate_in.html">
         <i class="fa-solid fa-arrow-left me-2"></i> Back to List
@@ -9,38 +9,83 @@
 <div class="card content-card">
     <form>
         <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="containerNum" class="form-label fw-bold">Container Number</label>
-                <input type="text" class="form-control form-control-lg" id="containerNum" required>
+            <div class="col-md-4 mb-3">
+                <label for="ticketNo" class="form-label fw-bold">Ticket No.</label>
+                <input type="text" class="form-control form-control-lg" id="ticketNo" placeholder="e.g., 6501">
             </div>
-            <div class="col-md-3 mb-3">
-                <label for="containerSize" class="form-label fw-bold">Size</label>
-                <select class="form-select form-select-lg" id="containerSize">
-                    <option>20' GP</option>
-                    <option>40' GP</option>
-                    <option>40' HC</option>
-                    <option>45' HC</option>
+            <div class="col-md-4 mb-3">
+                <label for="dateIn" class="form-label fw-bold">Date IN</label>
+                <input type="date" class="form-control form-control-lg" id="dateIn">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="timeIn" class="form-label fw-bold">Time IN</label>
+                <input type="time" class="form-control form-control-lg" id="timeIn">
+            </div>
+        </div>
+
+        <hr class="my-3">
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label for="vehicleRegNo" class="form-label fw-bold">Vehicle Reg No.</label>
+                <input type="text" class="form-control" id="vehicleRegNo" placeholder="e.g., KAA 123B">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="truckType" class="form-label fw-bold">Truck Type</label>
+                <select class="form-select" id="truckType">
+                    <option selected>Select type...</option>
+                    <option value="TR">TR</option>
+                    <option value="TAST">TAST</option>
+                    <option value="Other">Other</option>
                 </select>
             </div>
-            <div class="col-md-3 mb-3">
-                <label for="containerLine" class="form-label fw-bold">Line</label>
-                <input type="text" class="form-control form-control-lg" id="containerLine">
+            <div class="col-md-4 mb-3">
+                <label for="trailerRegNo" class="form-label fw-bold">Trailer Reg No.</label>
+                <input type="text" class="form-control" id="trailerRegNo" placeholder="e.g., ZD 1234">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="containerNo" class="form-label fw-bold">Container No.</label>
+                <input type="text" class="form-control" id="containerNo">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="sealNumber" class="form-label fw-bold">Seal Number</label>
+                <input type="text" class="form-control" id="sealNumber">
+            </div>
+        </div>
+
+        <hr class="my-3">
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="driverName" class="form-label fw-bold">Driver's Name</label>
+                <input type="text" class="form-control" id="driverName">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="driverId" class="form-label fw-bold">Driver's ID No.</label>
+                <input type="text" class="form-control" id="driverId">
             </div>
         </div>
         <div class="row">
             <div class="col-md-6 mb-3">
-                <label for="driverName" class="form-label fw-bold">Driver Name</label>
-                <input type="text" class="form-control" id="driverName">
+                <label for="ownerName" class="form-label fw-bold">Truck Owner's Name</label>
+                <input type="text" class="form-control" id="ownerName">
             </div>
             <div class="col-md-6 mb-3">
-                <label for="truckNum" class="form-label fw-bold">Truck Number</label>
-                <input type="text" class="form-control" id="truckNum">
+                <label for="ownerContacts" class="form-label fw-bold">Truck Owner's Contacts</label>
+                <input type="text" class="form-control" id="ownerContacts">
             </div>
         </div>
+        
+        <hr class="my-3">
+
         <div class="mb-3">
             <label for="arrivalPhotos" class="form-label fw-bold">Upload Arrival Photos</label>
             <input class="form-control" type="file" id="arrivalPhotos" multiple>
         </div>
+
         <hr class="my-4">
         <button type="submit" class="btn btn-primary btn-lg">
             <i class="fa-solid fa-circle-check"></i> Register Container
