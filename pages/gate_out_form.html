@@ -8,9 +8,9 @@
 
 <div class="card content-card">
     <form>
-        <label for="searchContainerOut" class="form-label fw-bold">Search Container Number</label>
+        <label for="searchContainerOut" class="form-label fw-bold">Search Container to Release</label>
         <div class="input-group mb-3">
-            <input type="text" class="form-control form-control-lg" placeholder="Enter Container # to release..." id="searchContainerOut">
+            <input type="text" class="form-control form-control-lg" placeholder="Enter Container #..." id="searchContainerOut">
             <button class="btn btn-outline-primary btn-lg" type="button">
                 <i class="fa-solid fa-magnifying-glass"></i> Search
             </button>
@@ -19,10 +19,47 @@
         <div class="alert alert-info rounded-3">
             <strong>Container Found:</strong> MSCU1234567 (40' HC). Status: <strong>Ready for Release</strong>.
         </div>
+
+        <hr class="my-3">
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label for="ticketNoOut" class="form-label fw-bold">Outward Ticket No.</label>
+                <input type="text" class="form-control form-control-lg" id="ticketNoOut" placeholder="e.g., 8501">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="dateOut" class="form-label fw-bold">Date OUT</label>
+                <input type="date" class="form-control form-control-lg" id="dateOut">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="timeOut" class="form-label fw-bold">Time OUT</label>
+                <input type="time" class="form-control form-control-lg" id="timeOut">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label for="vehicleRegNoOut" class="form-label fw-bold">Vehicle Reg No.</label>
+                <input type="text" class="form-control" id="vehicleRegNoOut" placeholder="e.g., KCC 456D">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="truckTypeOut" class="form-label fw-bold">Truck Type</label>
+                <select class="form-select" id="truckTypeOut">
+                    <option selected>Select type...</option>
+                    <option value="TR">TR</option>
+                    <option value="TAST">TAST</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="trailerRegNoOut" class="form-label fw-bold">Trailer Reg No.</label>
+                <input type="text" class="form-control" id="trailerRegNoOut" placeholder="e.g., ZE 5678">
+            </div>
+        </div>
         
         <div class="row">
             <div class="col-md-6 mb-3">
-                <label for="releaseLine" class="form-label fw-bold">Release Line</label>
+                <label for="releaseLine" class="form-label fw-bold">Release Line / Agent</label>
                 <input type="text" class="form-control" id="releaseLine" value="MSC" readonly>
             </div>
             <div class="col-md-6 mb-3">
@@ -30,16 +67,30 @@
                 <input type="text" class="form-control" id="destination" placeholder="e.g., Nairobi">
             </div>
         </div>
-         <div class="row">
+
+        <hr class="my-3">
+
+        <div class="row">
             <div class="col-md-6 mb-3">
-                <label for="driverNameOut" class="form-label fw-bold">Driver Name</label>
+                <label for="driverNameOut" class="form-label fw-bold">Driver's Name (OUT)</label>
                 <input type="text" class="form-control" id="driverNameOut">
             </div>
             <div class="col-md-6 mb-3">
-                <label for="truckNumOut" class="form-label fw-bold">Truck Number</label>
-                <input type="text" class="form-control" id="truckNumOut">
+                <label for="driverIdOut" class="form-label fw-bold">Driver's ID No. (OUT)</label>
+                <input type="text" class="form-control" id="driverIdOut">
             </div>
         </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="ownerNameOut" class="form-label fw-bold">Truck Owner's Name</label>
+                <input type="text" class="form-control" id="ownerNameOut">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="ownerContactsOut" class="form-label fw-bold">Truck Owner's Contacts</label>
+                <input type="text" class="form-control" id="ownerContactsOut">
+            </div>
+        </div>
+
         <hr class="my-4">
         <button type="submit" class="btn btn-danger btn-lg">
             <i class="fa-solid fa-circle-check"></i> Release Container
