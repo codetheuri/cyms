@@ -1,0 +1,110 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Afya365",
+        "description": "API documentation for afya365 electronic health records",
+        "contact": {
+            "name": "Ananda Douglas",
+            "email": "admin@crackit.co.ke"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://playground:8080/v1",
+            "description": "API Development Server"
+        },
+        {
+            "url": "http://afya365.crackit.co.ke/v1",
+            "description": "API Staging Server"
+        },
+        {
+            "url": "https://endpoints.afya365.com/v1",
+            "description": "API Production Server"
+        }
+    ],
+    "paths": {
+        "/about": {
+            "get": {
+                "tags": [
+                    "About"
+                ],
+                "summary": "System Info. ",
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/About"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {}
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "About": {
+                "properties": {
+                    "environment": {
+                        "title": "Environment",
+                        "type": "string",
+                        "example": "dev"
+                    },
+                    "version": {
+                        "title": "Application Version",
+                        "type": "string",
+                        "example": "v1"
+                    },
+                    "id": {
+                        "title": "Application ID",
+                        "type": "string",
+                        "example": "a365"
+                    },
+                    "name": {
+                        "title": "Application Name",
+                        "type": "string",
+                        "example": "Afya365"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "security": [
+        {
+            "bearerAuth": []
+        }
+    ],
+    "tags": [
+        {
+            "name": "About",
+            "description": "Introduction to Afya365"
+        }
+    ]
+}

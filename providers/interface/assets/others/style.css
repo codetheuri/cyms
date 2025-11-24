@@ -1,0 +1,127 @@
+:root {
+    /* --- THEME COLORS --- */
+    --app-primary: #068637; /* Green Accent */
+    --app-dark-blue: #1a1a34; /* Smooth Dark Blue 1C2536 */
+}
+
+/* 1. Page-level Styles */
+/* Target the main content area of your template */
+#main-container, body {
+    background-color: #f4f7f6 !important; /* Light grey content background */
+}
+
+/* 2. Header */
+/* Style your template's #page-header */
+#page-header {
+    background-color: var(--app-dark-blue) !important;
+    border-bottom: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+/* Make header text light */
+#page-header .d-flex .btn-alt-secondary,
+#page-header .d-flex .nav-main-link-icon,
+#page-header .d-flex .d-none,
+#page-header .dropdown-toggle {
+    color: #fff !important;
+}
+/* Style the dropdown menu */
+#page-header .dropdown-menu {
+    border-radius: 0.75rem !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 3. Sidebar */
+/* Style your template's #sidebar */
+#sidebar {
+    background-color: var(--app-dark-blue) !important;
+}
+/* Style the sidebar's header (logo area) */
+#sidebar .content-header {
+    background-color: var(--app-dark-blue) !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+/* Style the logo text */
+nav#sidebar .content-header a.fw-semibold {
+    font-size: 1.15rem !important;
+    font-weight: bold !important;
+    color: #fff !important;
+}
+
+/* 4. Sidebar Navigation Links */
+/* This targets the links from your \helpers\Menu::load() */
+nav#sidebar {
+    background-color: var(--app-dark-blue)!important;
+    color: rgb(0, 0, 0) !important;
+}
+.nav-main-link {
+    border-radius: 0.75rem !important;
+    font-weight: 500 !important;
+    color: #adb5bd !important; /* Light grey text */
+    margin: 0.25rem 0.5rem !important;
+    padding: 0.75rem 1rem !important;
+}
+/* Style the icons */
+.nav-main-link .nav-main-link-icon {
+    margin-right: 12px !important;
+    font-size: 1.1rem !important;
+    width: 20px !important;
+    text-align: center !important;
+    color: #adb5bd !important; /* Icon color */
+}
+/* Style the ACTIVE link */
+.nav-main-link.active {
+    color: #fff !important;
+    background-color: var(--app-primary) !important; /* Green accent */
+}
+.nav-main-link.active .nav-main-link-icon {
+    color: #fff !important;
+}
+/* Style hover for inactive links */
+.nav-main-link:not(.active):hover {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+.nav-main-link:not(.active):hover .nav-main-link-icon {
+    color: #fff !important;
+}
+
+/* 5. Content Cards (from our prototype) */
+/* This style will be applied to all .content-card in your views */
+.content-card {
+    border: none;
+    border-radius: 1.5rem !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 2rem;
+    background-color: #fff; /* White cards on grey background */
+}
+
+/* 6. Buttons & Forms (from our prototype) */
+.btn, .form-control, .form-select {
+    border-radius: 0.75rem !important;
+}
+.btn-primary {
+    background-color: var(--app-primary);
+    border-color: var(--app-primary);
+}
+.btn-primary:hover {
+    background-color: #005232;
+    border-color: #005232;
+}
+.btn-outline-primary {
+    color: var(--app-primary);
+    border-color: var(--app-primary);
+}
+.btn-outline-primary:hover {
+    background-color: var(--app-primary);
+    color: #fff;
+}
+.bg-primary {
+    background-color: var(--app-primary) !important;
+}
+
+/* 7. Footer */
+#page-footer {
+    background-color: #f4f7f6 !important; /* Match content background */
+}

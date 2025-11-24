@@ -1,0 +1,522 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Mainstream Module",
+        "description": "API documentation for mainstream module",
+        "contact": {
+            "name": "Ananda Douglas",
+            "email": "admin@crackit.co.ke"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://playground:8080/v1",
+            "description": "API Development Server"
+        },
+        {
+            "url": "http://afya365.crackit.co.ke/v1",
+            "description": "API Staging Server"
+        },
+        {
+            "url": "https://endpoints.afya365.com/v1",
+            "description": "API Production Server"
+        }
+    ],
+    "paths": {
+        "/mainstream/databanks": {
+            "get": {
+                "tags": [
+                    "Databanks"
+                ],
+                "summary": "Lists all Databanks models ",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page No.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per-page",
+                        "in": "query",
+                        "description": "Page Size",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "_search",
+                        "in": "query",
+                        "description": "Search",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "_databank_id",
+                        "in": "query",
+                        "description": "Databank Id",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "_databank_name",
+                        "in": "query",
+                        "description": "Databank Name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "_category",
+                        "in": "query",
+                        "description": "Category",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "_security_key",
+                        "in": "query",
+                        "description": "Security Key",
+                        "schema": {
+                            "type": "text"
+                        }
+                    },
+                    {
+                        "name": "_description",
+                        "in": "query",
+                        "description": "Description",
+                        "schema": {
+                            "type": "text"
+                        }
+                    },
+                    {
+                        "name": "_status",
+                        "in": "query",
+                        "description": "Status",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "_is_deleted",
+                        "in": "query",
+                        "description": "Is Deleted",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "_created_at",
+                        "in": "query",
+                        "description": "Created At",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "_updated_at",
+                        "in": "query",
+                        "description": "Updated At",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Returns a data payload object for all mainstream/databanks",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "dataPayload": {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Databanks"
+                                                    }
+                                                },
+                                                "countOnPage": {
+                                                    "type": "integer",
+                                                    "example": "25"
+                                                },
+                                                "totalCount": {
+                                                    "type": "integer",
+                                                    "example": "50"
+                                                },
+                                                "perPage": {
+                                                    "type": "integer",
+                                                    "example": "25"
+                                                },
+                                                "totalPages": {
+                                                    "type": "integer",
+                                                    "example": "2"
+                                                },
+                                                "currentPage": {
+                                                    "type": "integer",
+                                                    "example": "1"
+                                                },
+                                                "paginationLinks": {
+                                                    "properties": {
+                                                        "first": {
+                                                            "type": "string",
+                                                            "example": "v1/v1/mainstream/databanks?page=1&per-page=25"
+                                                        },
+                                                        "previous": {
+                                                            "type": "string",
+                                                            "example": "v1/v1/mainstream/databanks?page=1&per-page=25"
+                                                        },
+                                                        "self": {
+                                                            "type": "string",
+                                                            "example": "v1/v1/mainstream/databanks?page=1&per-page=25"
+                                                        },
+                                                        "next": {
+                                                            "type": "string",
+                                                            "example": "v1/v1/mainstream/databanks?page=1&per-page=25"
+                                                        },
+                                                        "last": {
+                                                            "type": "string",
+                                                            "example": "v1/v1/mainstream/databanks?page=1&per-page=25"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Databanks"
+                ],
+                "summary": "Creates a new Databanks model ",
+                "requestBody": {
+                    "description": "Fill in databanks data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Databanks"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Data payload",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "dataPayload": {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Databanks"
+                                                },
+                                                "toastMessage": {
+                                                    "type": "string",
+                                                    "example": "databanks created succefully"
+                                                },
+                                                "toastTheme": {
+                                                    "type": "string",
+                                                    "example": "success"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Data Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "errorPayload": {
+                                            "properties": {
+                                                "errors": {
+                                                    "$ref": "#/components/schemas/Databanks"
+                                                },
+                                                "toastMessage": {
+                                                    "type": "string",
+                                                    "example": "Some data could not be validated"
+                                                },
+                                                "toastTheme": {
+                                                    "type": "string",
+                                                    "example": "danger"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/mainstream/databanks/{id}": {
+            "get": {
+                "tags": [
+                    "Databanks"
+                ],
+                "summary": "Displays a single Databanks model",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Databanks unique ID to load",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Displays a single Databanks model.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "dataPayload": {
+                                            "$ref": "#/components/schemas/Databanks"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Resource not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "errorPayload": {
+                                            "properties": {
+                                                "statusCode": {
+                                                    "type": "integer",
+                                                    "example": 404
+                                                },
+                                                "errorMessage": {
+                                                    "type": "string",
+                                                    "example": "Not found"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Databanks"
+                ],
+                "summary": "Updates an existing Databanks model",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Databanks unique ID to load and update",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Finds the Databanks model to be updated based on its primary key value",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Databanks"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Data payload",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "dataPayload": {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Databanks"
+                                                },
+                                                "toastMessage": {
+                                                    "type": "string",
+                                                    "example": "databanks updated succefully"
+                                                },
+                                                "toastTheme": {
+                                                    "type": "string",
+                                                    "example": "success"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Databanks"
+                ],
+                "summary": "Deletes an existing Databanks model.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Databanks unique ID to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Deletion successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "dataPayload": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Databanks"
+                ],
+                "summary": "Restores a deleted Databanks model.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Databanks unique ID to restore",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Restoration successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "dataPayload": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Databanks": {
+                "properties": {
+                    "databank_id": {
+                        "title": "Databank id",
+                        "type": "string",
+                        "example": "string"
+                    },
+                    "databank_name": {
+                        "title": "Databank name",
+                        "type": "string",
+                        "example": "string"
+                    },
+                    "category": {
+                        "title": "Category",
+                        "type": "string",
+                        "example": "string"
+                    },
+                    "security_key": {
+                        "title": "Security key",
+                        "type": "string",
+                        "example": "string"
+                    },
+                    "description": {
+                        "title": "Description",
+                        "type": "string",
+                        "example": "string"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "security": [
+        {
+            "bearerAuth": []
+        }
+    ],
+    "tags": [
+        {
+            "name": "Databanks",
+            "description": "Available endpoints for Databanks model"
+        }
+    ]
+}
