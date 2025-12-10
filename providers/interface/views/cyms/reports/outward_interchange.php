@@ -17,43 +17,85 @@ if ($settings->site_logo) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Outward Interchange - <?= Html::encode($visit->container_number) ?></title>
     <style>
         /* RESET & BASICS */
-        body { 
-            font-family: 'Courier New', Courier, monospace; /* Monospace look like the sample */
-            font-size: 12px; 
-            margin: 0; 
-            padding: 20px; 
-            background: #525659; 
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            /* Monospace look like the sample */
+            font-size: 12px;
+            margin: 0;
+            padding: 20px;
+            background: #525659;
         }
-        .page-container { 
-            background: #fff; 
-            width: 210mm; 
-            min-height: 297mm; 
-            margin: 0 auto; 
-            padding: 15mm; 
-            box-shadow: 0 0 10px rgba(0,0,0,0.5); 
-            position: relative; 
+
+        .page-container {
+            background: #fff;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 15mm;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            position: relative;
         }
-        
+
         /* GRID LAYOUT */
-        table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
-        td { padding: 4px; vertical-align: top; }
-        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5px;
+        }
+
+        td {
+            padding: 4px;
+            vertical-align: top;
+        }
+
         /* BORDERS & BOXES */
-        .box { border: 1px solid #000; padding: 5px; min-height: 35px; }
-        .no-border { border: none !important; }
-        
+        .box {
+            border: 1px solid #000;
+            padding: 5px;
+            min-height: 35px;
+        }
+
+        .no-border {
+            border: none !important;
+        }
+
         /* TYPOGRAPHY */
-        h1 { font-family: 'Arial', sans-serif; font-size: 24px; margin: 0; text-transform: uppercase; font-weight: 900; }
-        .header-sub { font-family: 'Arial', sans-serif; font-size: 10px; line-height: 1.4; }
-        
-        .label { font-family: 'Arial', sans-serif; font-weight: bold; font-size: 9px; color: #555; text-transform: uppercase; display: block; margin-bottom: 2px; }
-        .value { font-weight: bold; font-size: 12px; color: #000; }
-        
+        h1 {
+            font-family: 'Arial', sans-serif;
+            font-size: 24px;
+            margin: 0;
+            text-transform: uppercase;
+            font-weight: 900;
+        }
+
+        .header-sub {
+            font-family: 'Arial', sans-serif;
+            font-size: 10px;
+            line-height: 1.4;
+        }
+
+        .label {
+            font-family: 'Arial', sans-serif;
+            font-weight: bold;
+            font-size: 9px;
+            color: #555;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .value {
+            font-weight: bold;
+            font-size: 12px;
+            color: #000;
+        }
+
         /* WATERMARK STYLE */
         .watermark {
             position: absolute;
@@ -71,13 +113,31 @@ if ($settings->site_logo) {
 
         /* PRINT MEDIA QUERY */
         @media print {
-            body { background: #fff; padding: 0; margin: 0; }
-            .page-container { width: 100%; margin: 0; padding: 10mm; box-shadow: none; }
-            .no-print { display: none !important; }
-            @page { margin: 0; size: A4; }
+            body {
+                background: #fff;
+                padding: 0;
+                margin: 0;
+            }
+
+            .page-container {
+                width: 100%;
+                margin: 0;
+                padding: 10mm;
+                box-shadow: none;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            @page {
+                margin: 0;
+                size: A4;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <!-- Print Controls -->
@@ -88,7 +148,7 @@ if ($settings->site_logo) {
     </div>
 
     <div class="page-container">
-        
+
         <!-- Watermark -->
         <div class="watermark">OUTWARD</div>
 
@@ -211,7 +271,9 @@ if ($settings->site_logo) {
                 <td width="50%">
                     <div class="box">
                         <div class="label">Transporter / Owner</div>
-                        <div class="value"><?= Html::encode($visit->truck_owner_name_out) ?></div>
+                        <div class="value">
+                            <?= $visit->containerOwner ? Html::encode($visit->containerOwner->owner_name) : Html::encode($visit->truck_owner_name_in) ?>
+                        </div>
                     </div>
                 </td>
                 <td width="25%">
@@ -294,4 +356,5 @@ if ($settings->site_logo) {
         }
     </script>
 </body>
+
 </html>

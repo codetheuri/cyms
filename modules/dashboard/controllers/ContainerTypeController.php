@@ -98,6 +98,7 @@ class ContainerTypeController extends DashboardController
     }
     public function actionAjaxCreate()
 {
+    Yii::$app->user->can('dashboard-container-type-create');
     Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
     $model = new \dashboard\models\MasterContainerTypes();
     

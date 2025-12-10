@@ -1,6 +1,6 @@
 <?php
 use yii\helpers\Html;
-use yii\widgets\ActiveForm;
+use helpers\widgets\ActiveForm;
 
 $this->title = 'Gate OUT Release';
 ?>
@@ -61,6 +61,12 @@ $this->title = 'Gate OUT Release';
             <div class="col-md-12 mb-3">
                 <?= $form->field($model, 'destination')->textInput(['placeholder' => 'e.g. Nairobi, Kampala...']) ?>
             </div>
+            <h5 class="border-bottom pb-2 mb-3 mt-3 text-danger">Departure Evidence</h5>
+<div class="row">
+    <div class="col-md-12">
+        <?= $form->field($model, 'departure_photo_file')->fileInput(['accept' => 'image/*'])->label('Gate Out Photo') ?>
+    </div>
+</div>
         </div>
 
         <div class="pt-3 border-top mt-3">

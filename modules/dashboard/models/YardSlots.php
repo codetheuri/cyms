@@ -1,7 +1,7 @@
 <?php
 
 namespace dashboard\models;
-
+use yii\helpers\ArrayHelper;
 use Yii;
 
 /**
@@ -33,8 +33,8 @@ class YardSlots extends  BaseModel
     public function rules()
     {
         return [
-            [['block', 'row', 'bay'], 'required'],
-            [['row', 'bay', 'tier', 'current_visit_id'], 'integer'],
+            [['block', 'row','slot_name'], 'required'],
+            [['row', 'current_visit_id'], 'integer'],
             [['block'], 'string', 'max' => 10],
             [['slot_name'], 'string', 'max' => 20],
             [['slot_name'], 'unique'],
@@ -58,13 +58,34 @@ class YardSlots extends  BaseModel
         ];
     }
 
-    /**
-     * Gets query for [[CurrentVisit]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getCurrentVisit()
+ 
+    public function getVisit()
     {
         return $this->hasOne(ContainerVisits::class, ['visit_id' => 'current_visit_id']);
     }
+    public static function getDropdownList()
+    {
+        $slots = self::find()->where(['current_visit_id' => null])->all();
+        return ArrayHelper::map($slots, 'slot_id', 'slot_name');
+    }
+    public function parkContainer($visit_id)
+    {
+        // 1. Check if container is already parked elsewhere and unpark it
+        $previousSlot = YardSlots::findOne(['current_visit_id' => $visit_id]);
+        if ($previousSlot) {
+            $previousSlot->current_visit_id = null;
+            $previousSlot->save(false);
+        }
+
+        // 2. Park in this slot
+        $this->current_visit_id = $visit_id;
+        return $this->save(false);
+    }
+    
+    public function unpark()
+    {
+        $this->current_visit_id = null;
+        return $this->save(false);
+    }
+
 }

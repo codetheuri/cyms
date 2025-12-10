@@ -114,7 +114,7 @@ class ProfileController extends DashboardController
         Yii::$app->getResponse()->format = 'json';
         return array_merge($model->getItems(), ['success' => $success]);
     }
-    public function actionRevoke($id)
+    public function actionRemove($id)
     {
         $items = Yii::$app->getRequest()->post('items', []);
         $model = new Assignment($id);

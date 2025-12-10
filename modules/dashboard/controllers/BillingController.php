@@ -29,7 +29,11 @@ class BillingController extends DashboardController
         Yii::$app->user->can('dashboard-billing-list');
         $searchModel = new BillingRecordsSearch();
         $dataProvider = $searchModel->search($this->request->queryParams);
-
+            // Recalculate balances for all displayed records
+        foreach ($dataProvider->getModels() as $model) {
+            $model->recalculateBalance();
+        }
+        //  $model->recalculateBalance();
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
@@ -82,7 +86,9 @@ class BillingController extends DashboardController
         ]);
     }
     public function actionView($id)
+
     {
+        // Yii::$app->user->can('dashboard-billing-view');
         $model = $this->findModel($id);
         $visit = $model->visit;
         if ($visit->status !== 'GATE_OUT') {
@@ -108,6 +114,7 @@ class BillingController extends DashboardController
 
     public function actionPayment($id)
     {
+        Yii::$app->user->can('dashboard-billing-update');
         $payment = new BillingPayments();
         $payment->bill_id = $id;
         
@@ -153,6 +160,19 @@ class BillingController extends DashboardController
                 }
             } else {
                 Yii::$app->session->setFlash('error', 'Failed to upload agreement document.');
+            }
+        }
+        return $this->redirect(['view', 'id' => $id]);
+    }
+    public function actionUpdateDiscount($id)
+    {
+        Yii::$app->user->can('dashboard-billing-update');
+        $model = $this->findModel($id);
+        
+        if ($model->load(Yii::$app->request->post())) {
+            // Just save and recalculate. The logic handles the subtraction.
+            if ($model->recalculateBalance()) {
+                Yii::$app->session->setFlash('success', 'Discount updated successfully.');
             }
         }
         return $this->redirect(['view', 'id' => $id]);

@@ -45,26 +45,27 @@ $config = [
             //     'application/json' => 'yii\web\JsonParser',
             // ],
         ],
-        // 'response' => [
-        //     /* Enable JSON Output: */
-        //     'class' => 'yii\web\Response',
-        //     'format' => \yii\web\Response::FORMAT_JSON,
-        //     'charset' => 'UTF-8',
-        //     'on beforeSend' => function ($event) {
-        //         $response = $event->sender;
-        //         if ($response->data !== null && is_array($response->data)) {
-        //             /* delete code param */
-        //             if (array_key_exists('code', $response->data)) {
-        //                 unset($response->data['code']);
-        //             }
-        //             /* change status to statusCode */
-        //             if (array_key_exists('status', $response->data)) {
-        //                 $response->data['statusCode'] = $response->data['status'];
-        //                 unset($response->data['status']);
-        //             }
-        //         }
-        //     },
-        // ],
+        'response' => [
+            /* Enable JSON Output: */
+            'class' => 'yii\web\Response',
+            // 'format' => \yii\web\Response::FORMAT_JSON,
+            'charset' => 'UTF-8',
+            'on beforeSend' => function ($event) {
+                 $event->sender->headers->add('ngrok-skip-browser-warning', 'true');
+                $response = $event->sender;
+                if ($response->data !== null && is_array($response->data)) {
+                    /* delete code param */
+                    if (array_key_exists('code', $response->data)) {
+                        unset($response->data['code']);
+                    }
+                    /* change status to statusCode */
+                    if (array_key_exists('status', $response->data)) {
+                        $response->data['statusCode'] = $response->data['status'];
+                        unset($response->data['status']);
+                    }
+                }
+            },
+        ],
         'cache' => [
             'class' => 'yii\caching\FileCache',
         ],

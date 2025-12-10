@@ -37,6 +37,7 @@ class MasterContainerTypes extends  BaseModel
             [['type_group'], 'string', 'max' => 20],
             [['description'], 'string', 'max' => 100],
             [['iso_code'], 'unique'],
+            [['daily_rate'], 'number', 'min' => 0],
         ];
     }
 

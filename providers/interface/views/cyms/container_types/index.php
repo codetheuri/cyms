@@ -1,80 +1,86 @@
 <?php
 
-use dashboard\models\MasterContainerTypes;
-use helpers\Html;
-use yii\helpers\Url;
+use yii\helpers\Html;
 use helpers\grid\GridView;
 
-/** @var yii\web\View $this */
-/** @var dashboard\models\search\MasterContainerTypesSearch $searchModel */
-/** @var yii\data\ActiveDataProvider $dataProvider */
+/* @var $this yii\web\View */
+/* @var $dataProvider yii\data\ActiveDataProvider */
 
-$this->title = 'Master Container Types';
+$this->title = 'Container Types & Rates';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
-<div class="master-container-types-index row">
-    <div class="col-md-12">
-      <div class="block block-rounded">
-        <div class="block-header block-header-default">
-          <h3 class="block-title"><?= Html::encode($this->title) ?> </h3>
-          <div class="block-options">
-          <?=  Html::customButton([
-            'type' => 'modal',
-            'url' => Url::to(['create']),
-            'appearence' => [
-              'type' => 'text',
-              'text' => 'Create Master Container Types',
-              'theme' => 'primary',
-              'visible' => Yii::$app->user->can('dashboard-container-type-create', true)
-            ],
-            'modal' => ['title' => 'New Master Container Types']
-          ]) ?>
-          </div> 
+
+<div class="block block-rounded content-card">
+    <div class="block-header block-header-default">
+        <h3 class="block-title"><?= Html::encode($this->title) ?></h3>
+        <div class="block-options">
+            <?= Html::a('<i class="fa fa-plus me-1"></i> Add New Type', ['create'], ['class' => 'btn btn-sm btn-primary']) ?>
         </div>
-        <div class="block-content">     
-    <div class="master-container-types-search my-3">
-    <?= $this->render('_search', ['model' => $searchModel]); ?>
     </div>
+    
+    <div class="block-content">
+        <div class="table-responsive">
+            <?= GridView::widget([
+                'dataProvider' => $dataProvider,
+                'tableOptions' => ['class' => 'table table-striped table-hover table-vcenter'],
+                'columns' => [
+                    ['class' => 'yii\grid\SerialColumn'],
 
-    <?= GridView::widget([
-        'dataProvider' => $dataProvider,
-        'columns' => [
-            ['class' => 'yii\grid\SerialColumn'],
-
-            'type_id',
-            'iso_code',
-            'size',
-            'type_group',
-            'description',
-            [
-                'class' => \helpers\grid\ActionColumn::className(),
-                'template' => '{update} {trash}',
-                'headerOptions' => ['width' => '8%'],
-                'contentOptions' => ['style'=>'text-align: center;'],
-                 'buttons' => [
-                    'update' => function ($url, $model, $key) {
-                        return Html::customButton(['type' => 'modal', 'url' => Url::toRoute(['update', 'type_id' => $model->type_id]), 'modal' => ['title' => 'Update  Master Container Types'], 'appearence' => ['icon' => 'edit', 'theme' => 'info']]);
-                    },
-                    'trash' => function ($url, $model, $key) {
-                        return $model->is_deleted !== 1 ?
-                            Html::customButton(['type' => 'link', 'url' => Url::toRoute(['trash', 'type_id' => $model->type_id]),  'appearence' => ['icon' => 'trash', 'theme' => 'danger', 'data' => ['message' => 'Do you want to delete this master container types?']]]) :
-                            Html::customButton(['type' => 'link', 'url' => Url::toRoute(['trash', 'type_id' => $model->type_id]),  'appearence' => ['icon' => 'undo', 'theme' => 'warning', 'data' => ['message' => 'Do you want to restore this master container types?']]]);
-                    },
+                    [
+                        'attribute' => 'iso_code',
+                        'label' => 'ISO',
+                        'contentOptions' => ['class' => 'fw-bold text-primary'],
+                    ],
+                    [
+                        'attribute' => 'size',
+                        'label' => 'Size',
+                        'value' => function($m) { return $m->size . ' ft'; },
+                        'contentOptions' => ['class' => 'text-center'],
+                        'headerOptions' => ['class' => 'text-center'],
+                    ],
+                    'type_group',
+                    'description',
+                    
+                    // --- THE PRICE COLUMN ---
+                    [
+                        'attribute' => 'daily_rate',
+                        'label' => 'Storage Rate (Per Day)',
+                        'format' => ['currency', 'KES'],
+                        'contentOptions' => ['class' => 'text-end fw-bold text-success'],
+                        'headerOptions' => ['class' => 'text-end'],
+                    ],
+                    
+                    // --- ACTIONS COLUMN (Fixed Icons) ---
+                    [
+                        'class' => \helpers\grid\ActionColumn::className(),
+                        'template' => '{update} {delete}',
+                        'headerOptions' => ['width' => '120px', 'class' => 'text-center'],
+                        'contentOptions' => ['class' => 'text-center'],
+                        'buttons' => [
+                            'update' => function ($url, $model, $key) {
+                                return Html::a(
+                                    '<i class="fa fa-pencil-alt"></i>',
+                                    ['update', 'type_id' => $model->type_id],
+                                    ['class' => 'btn btn-sm btn-alt-primary', 'title' => 'Edit', 'data-pjax' => 0]
+                                );
+                            },
+                            'delete' => function ($url, $model, $key) {
+                                return Html::a(
+                                    '<i class="fa fa-trash"></i>',
+                                    ['delete', 'id' => $model->type_id],
+                                    [
+                                        'class' => 'btn btn-sm btn-alt-danger ms-1',
+                                        'title' => 'Delete',
+                                        'data-pjax' => 0,
+                                        'data-confirm' => 'Are you sure you want to delete this item?',
+                                        'data-method' => 'post',
+                                    ]
+                                );
+                            },
+                        ],
+                    ],
                 ],
-                'visibleButtons' => [
-                    'update' => Yii::$app->user->can('dashboard-container-type-update',true),
-                    'trash' => function ($model){
-                         return $model->is_deleted !== 1 ? 
-                                Yii::$app->user->can('dashboard-container-type-delete',true) : 
-                                Yii::$app->user->can('dashboard-container-type-restore',true);
-                    },
-                ],
-            ],
-        ],
-    ]); ?>
-
-
-</div>
-</div>
-      </div>
+            ]); ?>
+        </div>
     </div>
+</div>

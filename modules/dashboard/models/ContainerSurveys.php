@@ -23,6 +23,7 @@ class ContainerSurveys extends  BaseModel
     /**
      * {@inheritdoc}
      */
+    public $survey_photo_file;
     public static function tableName()
     {
         return 'container_surveys';
@@ -39,6 +40,10 @@ class ContainerSurveys extends  BaseModel
             [['survey_date'], 'safe'],
             [['approval_status'], 'string'],
             [['surveyor_name'], 'string', 'max' => 100],
+            [['bill_repairs'], 'boolean'],
+            [['survey_photo_path'], 'string'],
+            [['survey_photo_file'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg', 'maxSize' => 5 * 1024 * 1024],
+
             [['visit_id'], 'exist', 'skipOnError' => true, 'targetClass' => ContainerVisits::class, 'targetAttribute' => ['visit_id' => 'visit_id']],
         ];
     }
@@ -54,11 +59,26 @@ class ContainerSurveys extends  BaseModel
             'survey_date' => 'Survey Date',
             'surveyor_name' => 'Surveyor Name',
             'approval_status' => 'Approval Status',
+            'bill_repairs' => 'Authorize Repairs',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
         ];
     }
 
+    public function uploadSurveyPhoto()
+    {
+        $this->survey_photo_file = \yii\web\UploadedFile::getInstance($this, 'survey_photo_file');
+        if ($this->survey_photo_file) {
+            $path = Yii::getAlias('@webroot') . '/uploads/survey_photos/';
+            if (!is_dir($path)) mkdir($path, 0777, true);
+
+            $fileName = 'SURVEY-' . $this->visit_id . '-' . time() . '.' . $this->survey_photo_file->extension;
+            if ($this->survey_photo_file->saveAs($path . $fileName)) {
+                return 'uploads/survey_photos/' . $fileName;
+            }
+        }
+        return $this->survey_photo_path;
+    }
     /**
      * Gets query for [[SurveyDamages]].
      *

@@ -45,7 +45,7 @@ $this->params['breadcrumbs'][] = $this->title;
             'line_code',
             'line_name',
             'contact_email:email',
-            'created_at',
+            // 'created_at',
             //'updated_at',
             [
                 'class' => \helpers\grid\ActionColumn::className(),

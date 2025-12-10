@@ -23,7 +23,8 @@ $this->title = 'List of User Accounts';
               'type' => 'text',
               'text' => 'Create User',
               'theme' => 'primary',
-              'visible' => Yii::$app->user->can('dashboard-profile-create', true)
+              'visible'=> true, 
+              // 'visible' => Yii::$app->user->can('dashboard-profile-create', true)
             ],
             'modal' => ['title' => 'New User']
           ]) ?>

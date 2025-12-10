@@ -122,7 +122,7 @@ class DefaultController extends DashboardController
             ->all();
 
         $recentPaid = BillingRecords::find()
-            // ->where(['status' => 'PAID'])
+            ->where(['status' => 'PAID'])
             ->orderBy(['updated_at' => SORT_DESC])
             ->limit(5)
             ->all();

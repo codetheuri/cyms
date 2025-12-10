@@ -45,7 +45,11 @@ $this->params['breadcrumbs'][] = $this->title;
                                 if ($model->date_in) {
                                     $in = new DateTime($model->date_in);
                                     $now = new DateTime();
-                                    return $in->diff($now)->days . ' Days';
+                                    $days = $in->diff($now)->days;
+                                    if ($days<=1) {
+                                        return '1 Day';
+                                    }
+                                    return $days . ' Days';
                                 }
                                 return '-';
                             }

@@ -10,6 +10,9 @@ $userMenu = [
     ['title' => 'Billing', 'icon' => 'receipt', 'url' => '/dashboard/billing/index'],
     ['title' => 'Clients / Owners', 'icon' => 'users', 'url' => '/dashboard/container-owner/index'],
     ['title'=> 'Reports', 'icon'=>'book', 'url'=>'/dashboard/reports/index'],
+    ['title' => 'Master Repair Codes', 'icon' => 'wrench', 'url' => '/dashboard/repair-code/index'],
+    ['title' => 'Container Types', 'icon' => 'box', 'url' => '/dashboard/container-type/index'],
+    // ['title' => 'Shipping Lines', 'icon' => 'ship', 'url' => '/dashboard/shipping-line/index'],
 
     ['title' => 'IAM & Admin', 'icon' => 'shield', 'submenus' => [
         ['title' => 'User Management', 'url' => 'profile/index'],

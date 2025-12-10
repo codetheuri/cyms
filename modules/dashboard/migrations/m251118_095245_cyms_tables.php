@@ -27,6 +27,7 @@ class m251118_095245_cyms_tables extends Migration
             'type_id' => $this->bigPrimaryKey(),
             'iso_code' => $this->string(10)->notNull()->unique(),
             'size' => $this->integer()->notNull(),
+            'daily_rate' => $this->decimal(10, 2)->notNull()->defaultValue(0),
             'type_group' => $this->string(20)->notNull(),
             'description' => $this->string(100),
             'is_deleted' => $this->boolean()->notNull()->defaultValue(0),
@@ -51,7 +52,7 @@ class m251118_095245_cyms_tables extends Migration
             // --- CORE IDENTIFIERS ---
             'container_number' => $this->string(20)->notNull(),
             'status' => "ENUM('GATE_IN', 'SURVEYED', 'IN_YARD', 'RELEASE_ORDER', 'GATE_OUT') NOT NULL DEFAULT 'GATE_IN'",
-
+        
             'shipping_line_id' => $this->bigInteger(),
             'container_owner_id' => $this->bigInteger(), // NEW: Replaces manual text
             'container_type_id' => $this->bigInteger(),
@@ -62,6 +63,10 @@ class m251118_095245_cyms_tables extends Migration
             'voyage_number' => $this->string(50),
             'bl_number' => $this->string(100),
 
+        'gross_weight' => $this->integer(),
+        'tare_weight' => $this->integer(),
+        'payload' => $this->integer(),
+     
             // --- GATE IN FIELDS ---
             'ticket_no_in' => $this->string(50),
             'date_in' => $this->date(),
@@ -89,6 +94,8 @@ class m251118_095245_cyms_tables extends Migration
             'driver_id_out' => $this->string(50),
             'yard_clerk_out' => $this->integer(),
             'destination' => $this->string(100),
+            'departure_photo_path' => $this->string(255), 
+       
             // --- CALCULATED FIELDS ---
             'storage_days' => $this->integer()->defaultValue(0),
 
@@ -125,8 +132,6 @@ class m251118_095245_cyms_tables extends Migration
             'slot_id' => $this->primaryKey(),
             'block' => $this->string(10)->notNull(),
             'row' => $this->integer()->notNull(),
-            'bay' => $this->integer()->notNull(),
-            'tier' => $this->integer()->notNull()->defaultValue(1),
             'slot_name' => $this->string(20)->unique(),
             'current_visit_id' => $this->bigInteger()->null(),
             'is_deleted' => $this->boolean()->notNull()->defaultValue(0),
@@ -144,6 +149,8 @@ class m251118_095245_cyms_tables extends Migration
             'survey_date' => $this->dateTime(),
             'surveyor_name' => $this->string(100),
             'approval_status' => "ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING'",
+            'bill_repairs' => $this->boolean()->defaultValue(0),
+            'survey_photo_path' => $this->string(255),
             'is_deleted' => $this->boolean()->notNull()->defaultValue(0),
             'created_at' => $this->integer()->notNull(),
             'updated_at' => $this->integer()->notNull(),
@@ -159,6 +166,7 @@ class m251118_095245_cyms_tables extends Migration
             'repair_code' => $this->string(20),
             'description' => $this->string(255)->notNull(),
             'quantity' => $this->integer()->defaultValue(1),
+            'hours'=> $this->decimal(10, 2)->defaultValue(0),
             'labor_cost' => $this->decimal(10, 2)->defaultValue(0),
             'material_cost' => $this->decimal(10, 2)->defaultValue(0),
             'total_cost' => $this->decimal(10, 2)->defaultValue(0),
@@ -168,6 +176,19 @@ class m251118_095245_cyms_tables extends Migration
 
             'FOREIGN KEY ([[survey_id]]) REFERENCES {{%container_surveys}} ([[survey_id]])' .
                 $this->buildFkClause('ON DELETE CASCADE', 'ON UPDATE CASCADE'),
+        ], $tableOptions);
+        $this->createTable('{{%master_repair_codes}}', [
+            'id' => $this->primaryKey(),
+            'repair_code' => $this->string(20)->notNull()->unique(), 
+            'description' => $this->string(255)->notNull(), 
+            
+           
+            'standard_hours' => $this->decimal(10, 2)->defaultValue(0), 
+            'material_cost' => $this->decimal(10, 2)->defaultValue(0), 
+            'labor_cost' => $this->decimal(10, 2)->defaultValue(0),    
+             'is_deleted' => $this->boolean()->notNull()->defaultValue(0),
+            'created_at' => $this->integer(),
+            'updated_at' => $this->integer(),
         ], $tableOptions);
 
         // 6. Billing Records (THE INVOICE)
@@ -183,7 +204,7 @@ class m251118_095245_cyms_tables extends Migration
             'repair_total' => $this->decimal(10, 2)->defaultValue(0),
             'lift_charges' => $this->decimal(10, 2)->defaultValue(0),
 
-
+            'discount_amount' => $this->decimal(10, 2)->defaultValue(0),
             'grand_total' => $this->decimal(10, 2)->defaultValue(0),
             'total_paid' => $this->decimal(10, 2)->defaultValue(0),
             'balance' => $this->decimal(10, 2)->defaultValue(0),

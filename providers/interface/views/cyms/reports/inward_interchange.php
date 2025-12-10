@@ -5,11 +5,15 @@
 
 use yii\helpers\Html;
 
-// --- FIX: Use Web URL instead of File Path ---
-// This lets the browser load the image like a normal webpage
-$logoUrl = null;
+// --- FIX: Convert Logo to Base64 for Reliable Printing ---
+$logoData = '';
 if ($settings->site_logo) {
-    $logoUrl = Yii::getAlias('@web') . '/' . $settings->site_logo;
+    $path = Yii::getAlias('@webroot') . '/' . $settings->site_logo;
+    if (file_exists($path)) {
+        $type = pathinfo($path, PATHINFO_EXTENSION);
+        $data = file_get_contents($path);
+        $logoData = 'data:image/' . $type . ';base64,' . base64_encode($data);
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -37,7 +41,7 @@ if ($settings->site_logo) {
         }
         
         /* TABLE STYLING */
-        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 0; }
         td, th { padding: 4px 6px; vertical-align: top; }
         .bordered-table td, .bordered-table th { border: 1px solid #000; }
         
@@ -64,22 +68,19 @@ if ($settings->site_logo) {
 </head>
 <body>
 
-    <!-- Print Controls -->
     <div class="no-print" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
         <button onclick="window.print()" style="padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; background: #006D44; color: white; border: none; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
-            🖨️ Print / Save as PDF
+            🖨️ Print
         </button>
     </div>
 
     <div class="page-container">
         
-        <!-- 1. HEADER -->
-        <table>
+        <table style="margin-bottom: 10px;">
             <tr>
                 <td width="20%">
-                    <?php if ($logoUrl): ?>
-                        <!-- Use URL src -->
-                        <img src="<?= $logoUrl ?>" class="logo" alt="Logo" onerror="this.style.display='none'">
+                    <?php if ($logoData): ?>
+                        <img src="<?= $logoData ?>" class="logo">
                     <?php else: ?>
                         <h2 style="color: #ccc;">LOGO</h2>
                     <?php endif; ?>
@@ -115,7 +116,6 @@ if ($settings->site_logo) {
 
         <div style="border-bottom: 2px solid #000; margin-bottom: 15px;"></div>
 
-        <!-- 2. SHIPPING DETAILS -->
         <table class="bordered-table">
             <tr>
                 <td width="50%">
@@ -129,17 +129,19 @@ if ($settings->site_logo) {
             </tr>
         </table>
 
-        <!-- 3. CONTAINER DETAILS -->
         <table class="bordered-table" style="margin-top: -1px;">
             <tr>
                 <td width="30%">
                     <div class="label">Container No.</div>
                     <div class="value" style="font-size: 14px;"><?= Html::encode($visit->container_number) ?></div>
                 </td>
-          
+                <td width="10%">
+                    <div class="label">Size</div>
+                    <div class="value"><?= $visit->containerType ? Html::encode($visit->containerType->size) . "'" : 'N/A' ?></div>
+                </td>
                 <td width="10%">
                     <div class="label">Type</div>
-                    <div class="value">HC</div>
+                    <div class="value"><?= $visit->containerType ? Html::encode($visit->containerType->type_group) : 'N/A' ?></div>
                 </td>
                 <td width="25%">
                     <div class="label">Vessel</div>
@@ -152,31 +154,49 @@ if ($settings->site_logo) {
             </tr>
         </table>
 
-        <!-- 4. TRANSPORT DETAILS -->
         <table class="bordered-table" style="margin-top: 10px;">
             <tr>
                 <td width="30%">
-                    <div class="label">Vehicle Reg No.</div>
-                    <div class="value"><?= Html::encode($visit->vehicle_reg_no_in) ?></div>
-                </td>
-                <td width="30%">
-                    <div class="label">Trailer No.</div>
-                    <div class="value"><?= Html::encode($visit->trailer_reg_no_in) ?></div>
+                    <div class="label">Vehicle Reg No. / Trailer</div>
+                    <div class="value"><?= Html::encode($visit->vehicle_reg_no_in) ?> / <?= Html::encode($visit->trailer_reg_no_in) ?></div>
                 </td>
                 <td width="40%">
                     <div class="label">Driver Name / ID</div>
                     <div class="value"><?= Html::encode($visit->driver_name_in) ?> / <?= Html::encode($visit->driver_id_in) ?></div>
                 </td>
+                <td width="30%">
+                    <div class="label">Signature</div>
+                    <div style="height: 20px;"></div>
+                </td>
             </tr>
             <tr>
                 <td colspan="3">
                     <div class="label">Transporter / Haulier</div>
-                    <div class="value"><?= Html::encode($visit->truck_owner_name_in) ?></div>
+                    <div class="value">
+                        <?= $visit->containerOwner ? Html::encode($visit->containerOwner->owner_name) : Html::encode($visit->truck_owner_name_in) ?>
+                    </div>
                 </td>
             </tr>
         </table>
 
-        <!-- 5. SURVEY SECTION -->
+        <table class="bordered-table" style="margin-top: -1px;">
+            <tr>
+                <td width="25%">
+                    <div class="label">Max Gross Weight</div>
+                    <div class="value"><?= $visit->gross_weight ? number_format($visit->gross_weight) . ' KG' : '' ?></div>
+                </td>
+                <td width="25%">
+                    <div class="label">Tare Weight</div>
+                    <div class="value"><?= $visit->tare_weight ? number_format($visit->tare_weight) . ' KG' : '' ?></div>
+                </td>
+                <td width="25%">
+                    <div class="label">Payload</div>
+                    <div class="value"><?= $visit->payload ? number_format($visit->payload) . ' KG' : '' ?></div>
+                </td>
+               
+            </tr>
+        </table>
+
         <div class="section-header">
             CONDITION REPORT / DAMAGES
         </div>
@@ -187,6 +207,7 @@ if ($settings->site_logo) {
                     <th width="15%" class="text-left">Code</th>
                     <th width="45%" class="text-left">Description</th>
                     <th width="10%" class="text-center">Qty</th>
+                    <th width="15%" class="text-right">Labour</th>
                     <th width="15%" class="text-right">Material</th>
                     <th width="15%" class="text-right">Total</th>
                 </tr>
@@ -202,6 +223,7 @@ if ($settings->site_logo) {
                         <td><?= Html::encode($damage->repair_code) ?></td>
                         <td><?= Html::encode($damage->description) ?></td>
                         <td class="text-center"><?= $damage->quantity ?></td>
+                        <td class="text-right"><?= number_format($damage->labor_cost, 2) ?></td>
                         <td class="text-right"><?= number_format($damage->material_cost, 2) ?></td>
                         <td class="text-right"><?= number_format($damage->total_cost, 2) ?></td>
                     </tr>
@@ -210,7 +232,7 @@ if ($settings->site_logo) {
                 else: 
                 ?>
                     <tr>
-                        <td colspan="5" class="text-center" style="padding: 15px; color: #666;">
+                        <td colspan="6" class="text-center" style="padding: 15px; color: #666;">
                             <i>CONTAINER RECEIVED IN SOUND CONDITION</i>
                         </td>
                     </tr>
@@ -219,45 +241,56 @@ if ($settings->site_logo) {
             <?php if ($grandTotal > 0): ?>
             <tfoot>
                 <tr>
-                    <td colspan="4" class="text-right bold">ESTIMATED REPAIR COST:</td>
+                    <td colspan="5" class="text-right bold">TOTAL REPAIR COST:</td>
                     <td class="text-right bold"><?= number_format($grandTotal, 2) ?></td>
                 </tr>
             </tfoot>
             <?php endif; ?>
         </table>
 
-        <!-- 6. SIGNATURES -->
-        <table style="margin-top: 50px;">
+        <div style="text-align: center; font-weight: bold; margin: 5px 0; font-size: 11px;">
+            THIS CONTAINER WAS RECEIVED IN GOOD CONDITION EXCEPT AS NOTED ABOVE.
+        </div>
+
+        <table class="bordered-table" style="margin-top: 10px; width: 100%;">
             <tr>
-                <td width="33%" class="text-center">
-                    <div style="border-bottom: 1px solid #000; height: 30px;"></div>
-                    <div class="label" style="margin-top: 5px;">
-                        Surveyed By: <?= $survey ? Html::encode($survey->surveyor_name) : '_________________' ?>
+                <td style="width: 35%; height: 60px; vertical-align: top;">
+                    <div class="label">CONTAINER SURVEYED BY:</div>
+                    <div class="value" style="margin-top: 5px;">
+                        <?= $survey ? Html::encode($survey->surveyor_name) : '' ?>
                     </div>
                 </td>
-                <td width="33%" class="text-center">
-                    <div style="border-bottom: 1px solid #000; height: 30px;"></div>
-                    <div class="label" style="margin-top: 5px;">Prepared By: <?= Yii::$app->user->identity->username ?></div>
+                <td style="width: 35%; vertical-align: top;">
+                    <div class="label">EIR PREPARED BY:</div>
+                    <div class="value" style="margin-top: 5px;">
+                        <?= Yii::$app->user->identity->username ?>
+                    </div>
                 </td>
-                <td width="33%" class="text-center">
-                    <div style="border-bottom: 1px solid #000; height: 30px;"></div>
-                    <div class="label" style="margin-top: 5px;">Driver Signature</div>
+                <td style="width: 30%; vertical-align: top;">
+                    <div class="label">SIGNATURE:</div>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" style="vertical-align: top; height: 70px;">
+                    <div class="label">REMARKS:</div>
+                    <div class="value" style="margin-top: 5px; font-family: monospace; white-space: pre-wrap;">
+                        <?= $visit->comments_in ? Html::encode($visit->comments_in) : 'N/A' ?>
+                    </div>
+                </td>
+                <td style="vertical-align: top;">
+                    <div class="label">MCD SIGN / STAMP:</div>
                 </td>
             </tr>
         </table>
         
-        <div style="margin-top: 30px; font-size: 10px; text-align: center; color: #777;">
-            This document is generated electronically. Container surveyed and repaired as per IICL Standards.
+        <div style="margin-top: 20px; font-size: 10px; text-align: center; color: #777;">
+            Container surveyed and repaired as per IICL Standards.
         </div>
-
     </div>
 
-    <!-- Auto-Trigger Print Dialog -->
     <script>
         window.onload = function() {
-            // Ensure images are loaded before printing
             setTimeout(function() {
-                // Uncomment to auto-print if desired
                 // window.print();
             }, 500);
         }

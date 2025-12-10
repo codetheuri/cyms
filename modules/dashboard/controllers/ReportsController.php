@@ -7,24 +7,19 @@ use dashboard\models\ContainerVisits;
 use dashboard\models\BillingRecords;
 use dashboard\models\BillingPayments;
 use dashboard\models\ContainerSurveys;
+use dashboard\models\MasterShippingLines; // Needed for dropdown check
 use admin\models\static\General;
 use helpers\DashboardController;
 use yii\data\ActiveDataProvider;
 use yii\web\NotFoundHttpException;
 use yii\helpers\ArrayHelper;
+use yii\db\Expression;
 
 class ReportsController extends DashboardController
 {
-    // Standard Layout for Index, None for Print
-    // public function init()
-    // {
-    //     parent::init();
-    //     if (in_array($this->action->id, ['inward', 'outward', 'generate'])) {
-    //         $this->layout = false;
-    //     } else {
-    //         $this->layout = 'dashboard';
-    //     }
-    // }
+    public $permissions = [
+        'dashboard-reports-view' => 'View Reports',
+    ];
 
     public function getViewPath()
     {
@@ -33,26 +28,28 @@ class ReportsController extends DashboardController
 
     public function actionIndex()
     {
+        Yii::$app->user->can('dashboard-reports-view');
         return $this->render('index');
     }
 
-    /**
-     * THE MASTER REPORT GENERATOR
-     * Handles PDF (Screen) and Excel Logic for 6 Report Types
-     */
     public function actionGenerate()
     {
+        Yii::$app->user->can('dashboard-reports-view');
         $request = Yii::$app->request;
+        
+        // --- INPUTS ---
         $type = $request->post('report_type');
-        $format = $request->post('format'); // 'print' or 'excel'
+        $format = $request->post('format');
         $dateFrom = $request->post('date_from');
         $dateTo = $request->post('date_to');
+        
+        // New Filters
+        $shippingLine = $request->post('shipping_line_id'); // Filter by Line
+        $moveType = $request->post('move_type'); // Filter Gate Moves (in, out, all)
 
-        // --- 1. PREPARE DATES (Fixes Blank Reports) ---
-        // Strings for DATE columns (e.g., '2023-01-01')
+        // --- DATES ---
         $strFrom = $dateFrom;
         $strTo = $dateTo;
-        // Integers for TIMESTAMP columns (e.g., 1672531200)
         $tsFrom = strtotime($dateFrom . ' 00:00:00');
         $tsTo = strtotime($dateTo . ' 23:59:59');
 
@@ -60,72 +57,125 @@ class ReportsController extends DashboardController
         $columns = [];
         $query = null;
 
-        // ================= REPORT TYPES =================
-
-        // 1. GATE MOVES (Operational)
+        // ================= 1. GATE ACTIVITY (With Direction Filter) =================
         if ($type === 'gate_moves') {
-            $title = "Gate Activity ($strFrom to $strTo)";
-            $query = ContainerVisits::find()
-                ->where(['between', 'date_in', $strFrom, $strTo])
-                ->orWhere(['between', 'date_out', $strFrom, $strTo])
-                ->orderBy(['created_at' => SORT_DESC])
-                ->joinWith(['containerOwner']);
+            
+            $query = ContainerVisits::find()->joinWith(['containerOwner', 'shippingLine']);
 
-            $columns = [
-                ['class' => 'yii\grid\SerialColumn'],
-                'container_number',
-                'status',
-                'date_in:date',
-                'time_in',
-                'date_out:date',
-                [
-                    'label' => 'Transporter/Owner',
-                    'value' => function($m) { return $m->containerOwner->owner_name ?? $m->truck_owner_name_in; }
-                ]
-            ];
+            // Filter by Shipping Line
+            $query->andFilterWhere(['shipping_line_id' => $shippingLine]);
+
+            // Filter by Direction
+            if ($moveType === 'in') {
+                $title = "Gate IN Report ($strFrom to $strTo)";
+                $query->andWhere(['between', 'date_in', $strFrom, $strTo]);
+                
+                // Hide Gate Out columns if only viewing IN
+                $columns = [
+                    ['class' => 'yii\grid\SerialColumn'],
+                    'container_number',
+                    'shippingLine.line_code:text:Line',
+                    'date_in:date',
+                    'time_in',
+                    'vehicle_reg_no_in:text:Truck',
+                    [
+                        'label' => 'Transporter',
+                        'value' => function($m) { return $m->containerOwner->owner_name ?? $m->truck_owner_name_in; }
+                    ]
+                ];
+
+            } elseif ($moveType === 'out') {
+                $title = "Gate OUT Report ($strFrom to $strTo)";
+                $query->andWhere(['between', 'date_out', $strFrom, $strTo])
+                      ->andWhere(['status' => 'GATE_OUT']);
+                
+                $columns = [
+                    ['class' => 'yii\grid\SerialColumn'],
+                    'container_number',
+                    'shippingLine.line_code:text:Line',
+                    'date_out:date',
+                    'time_out',
+                    'vehicle_reg_no_out:text:Truck',
+                    'destination',
+                ];
+
+            } else {
+                // ALL MOVES
+                $title = "Gate Activity (In & Out) - ($strFrom to $strTo)";
+                $query->andWhere(['or', 
+                    ['between', 'date_in', $strFrom, $strTo],
+                    ['between', 'date_out', $strFrom, $strTo]
+                ])->orderBy(['created_at' => SORT_DESC]);
+
+                $columns = [
+                    ['class' => 'yii\grid\SerialColumn'],
+                    'container_number',
+                    'shippingLine.line_code:text:Line',
+                    'status',
+                    'date_in:date',
+                    'date_out:date',
+                    [
+                        'label' => 'Transporter',
+                        'value' => function($m) { return $m->containerOwner->owner_name ?? $m->truck_owner_name_in; }
+                    ]
+                ];
+            }
         }
 
-        // 2. STOCK LIST (Inventory)
+        // ================= 2. STOCK LIST (With Line Filter) =================
         elseif ($type === 'stock_list') {
             $title = "Current Yard Stock List";
             $query = ContainerVisits::find()
                 ->where(['status' => ['IN_YARD', 'SURVEYED']])
-                ->orderBy(['date_in' => SORT_ASC]) // FIFO
+                ->orderBy(['date_in' => SORT_ASC])
                 ->joinWith(['shippingLine']);
+            
+            // Apply Line Filter
+            $query->andFilterWhere(['shipping_line_id' => $shippingLine]);
+
+            if ($shippingLine) {
+                $lineName = MasterShippingLines::findOne($shippingLine)->line_code ?? '';
+                $title .= " - " . $lineName;
+            }
 
             $columns = [
                 ['class' => 'yii\grid\SerialColumn'],
                 'container_number',
                 'shippingLine.line_code:text:Line',
+                'containerType.iso_code:text:Type',
                 'date_in:date',
                 [
-                    'label' => 'Days in Yard',
+                    'label' => 'Days',
                     'value' => function ($m) {
-                        return (new \DateTime($m->date_in))->diff(new \DateTime())->days . ' days';
+                        return (new \DateTime($m->date_in))->diff(new \DateTime())->days;
                     }
                 ],
                 'status',
                 [
                     'label' => 'Condition',
                     'value' => function ($m) {
-                        return $m->getContainerSurvey()->exists() ? $m->containerSurvey->approval_status : 'Pending Survey';
+                        return $m->getContainerSurvey()->exists() ? $m->containerSurvey->approval_status : 'Pending';
                     }
                 ]
             ];
         }
 
-        // 3. AGING REPORT (Risk)
+        // ================= 3. AGING REPORT (With Line Filter) =================
         elseif ($type === 'aging') {
             $title = "Aging Report (> 30 Days)";
             $thirtyDaysAgo = date('Y-m-d', strtotime('-30 days'));
             $query = ContainerVisits::find()
                 ->where(['status' => ['IN_YARD', 'SURVEYED']])
                 ->andWhere(['<', 'date_in', $thirtyDaysAgo])
-                ->orderBy(['date_in' => SORT_ASC]);
+                ->orderBy(['date_in' => SORT_ASC])
+                ->joinWith(['shippingLine']);
+            
+            $query->andFilterWhere(['shipping_line_id' => $shippingLine]);
 
             $columns = [
                 ['class' => 'yii\grid\SerialColumn'],
                 'container_number',
+                'shippingLine.line_code:text:Line',
                 'date_in:date',
                 [
                     'label' => 'Days Stayed',
@@ -134,14 +184,12 @@ class ReportsController extends DashboardController
                         return (new \DateTime($m->date_in))->diff(new \DateTime())->days;
                     }
                 ],
-                [
-                    'label' => 'Owner',
-                    'value' => function($m) { return $m->containerOwner->owner_name ?? $m->truck_owner_name_in; }
-                ]
             ];
         }
 
-        // 4. MONEY PAID (Financial - Cash Book)
+        // ================= FINANCIAL REPORTS (No Change needed, but included for completeness) =================
+        
+        // 4. PAYMENTS
         elseif ($type === 'payments') {
             $title = "Payment Collections ($strFrom to $strTo)";
             $query = BillingPayments::find()
@@ -154,28 +202,24 @@ class ReportsController extends DashboardController
                 'transaction_date:date',
                 'bill.visit.container_number:text:Container',
                 'method',
-                'reference:text:Ref No.',
+                'reference:text:Ref',
                 [
                     'attribute' => 'amount',
                     'format' => ['currency', 'KES'],
                     'contentOptions' => ['style' => 'text-align: right; font-weight: bold;'],
                 ],
-                [
-                    'label' => 'Payer',
-                    'value' => function($m) { return $m->bill->visit->containerOwner->owner_name ?? $m->bill->visit->truck_owner_name_in; }
-                ]
+                'bill.visit.truck_owner_name_in:text:Payer',
             ];
         }
 
-        // 5. INVOICES RAISED (Financial - Revenue)
+        // 5. INVOICES
         elseif ($type === 'invoices') {
             $title = "Invoices Generated ($strFrom to $strTo)";
-            // Use INT Timestamp for created_at
             $query = BillingRecords::find()
                 ->joinWith(['visit'])
                 ->where(['between', BillingRecords::tableName() . '.created_at', $tsFrom, $tsTo])
                 ->orderBy(['created_at' => SORT_DESC]);
-
+            
             $columns = [
                 ['class' => 'yii\grid\SerialColumn'],
                 'invoice_number',
@@ -193,20 +237,20 @@ class ReportsController extends DashboardController
                 'status'
             ];
         }
-
-        // 6. DEBTORS LIST (Outstanding)
+        
+        // 6. DEBTORS
         elseif ($type === 'debtors') {
-            $title = "Outstanding Debtors (Unpaid Invoices)";
+            $title = "Outstanding Debtors";
             $query = BillingRecords::find()
                 ->joinWith(['visit.containerOwner'])
-                ->where(['>', 'balance', 0])
+                ->where(['>', 'balance', 0.01])
                 ->andWhere(['billing_records.status' => ['UNPAID', 'PARTIAL', 'CREDIT']])
                 ->orderBy(['balance' => SORT_DESC]);
 
-            $columns = [
+             $columns = [
                 ['class' => 'yii\grid\SerialColumn'],
                 [
-                    'label' => 'Client / Owner',
+                    'label' => 'Client',
                     'value' => function($m) { return $m->visit->containerOwner->owner_name ?? $m->visit->truck_owner_name_in; }
                 ],
                 'invoice_number',
@@ -216,14 +260,35 @@ class ReportsController extends DashboardController
                     'format' => ['currency', 'KES'],
                     'contentOptions' => ['style' => 'text-align: right; color: red; font-weight: bold;'],
                 ],
-                'status'
+            ];
+        }
+        
+        // 7. REPAIRS
+        elseif ($type === 'repairs') {
+            $title = "Repair Costs Summary";
+            $query = BillingRecords::find()
+                ->joinWith(['visit'])
+                ->where(['>', 'repair_total', 0])
+                ->andWhere(['between', BillingRecords::tableName() . '.created_at', $tsFrom, $tsTo]);
+
+            $columns = [
+                ['class' => 'yii\grid\SerialColumn'],
+                'visit.container_number',
+                [
+                    'attribute' => 'repair_total',
+                    'format' => ['currency', 'KES'],
+                    'contentOptions' => ['style' => 'text-align: right;'],
+                ],
+                'status',
             ];
         }
 
-        // --- EXPORT HANDLER ---
+        // --- OUTPUT ---
+        if (!$query) $query = ContainerVisits::find()->where('0=1');
+
         $dataProvider = new ActiveDataProvider([
-            'query' => $query ?: ContainerVisits::find()->where('0=1'),
-            'pagination' => false, // Dump all data
+            'query' => $query,
+            'pagination' => false,
             'sort' => false,
         ]);
 
@@ -231,31 +296,23 @@ class ReportsController extends DashboardController
         $isExcel = ($format === 'excel');
 
         if ($isExcel) {
-            ob_clean(); // Clear buffer
+            ob_clean();
             header("Content-type: application/vnd.ms-excel");
             header("Content-Disposition: attachment; filename=Report_" . $type . "_" . date('Ymd') . ".xls");
             return $this->renderPartial('print_custom', [
-                'dataProvider' => $dataProvider,
-                'title' => $title,
-                'settings' => $settings,
-                'columns' => $columns,
-                'isExcel' => true
+                'dataProvider' => $dataProvider, 'title' => $title, 'settings' => $settings, 'columns' => $columns, 'isExcel' => true
             ]);
         }
 
         return $this->renderPartial('print_custom', [
-            'dataProvider' => $dataProvider,
-            'title' => $title,
-            'settings' => $settings,
-            'columns' => $columns,
-            'isExcel' => false
+            'dataProvider' => $dataProvider, 'title' => $title, 'settings' => $settings, 'columns' => $columns, 'isExcel' => false
         ]);
     }
-
-    // ... (Keep your actionInward and actionOutward here unchanged) ...
     
-    public function actionInward($id)
+    // ... (actionInward, actionOutward) ...
+     public function actionInward($id)
     {
+        Yii::$app->user->can('dashboard-container-owner-view');
         $visit = $this->findVisitModel($id);
         $survey = ContainerSurveys::findOne(['visit_id' => $id]);
         $settings = new General(); 
@@ -264,6 +321,7 @@ class ReportsController extends DashboardController
 
     public function actionOutward($id)
     {
+        Yii::$app->user->can('dashboard-container-owner-view');
         $visit = $this->findVisitModel($id);
         $settings = new General(); 
         return $this->render('outward_interchange', ['visit' => $visit, 'settings' => $settings]);

@@ -79,8 +79,8 @@ $this->params['breadcrumbs'][] = $this->title;
                             [
                                 'attribute' => 'storage_days',
                                 'label' => 'Days',
-                                'headerOptions' => ['class' => 'text-center'],
-                                'contentOptions' => ['class' => 'text-center'],
+                                // 'headerOptions' => ['class' => 'text-center'],
+                                // 'contentOptions' => ['class' => 'text-center'],
                             ],
 
                             // 5. Balance

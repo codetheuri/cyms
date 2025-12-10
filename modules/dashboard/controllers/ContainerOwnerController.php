@@ -18,9 +18,18 @@ class ContainerOwnerController extends DashboardController
     public function getViewPath() {
         return Yii::getAlias('@ui/views/cyms/clients');
     }
+    public $permissions = [
+        'dashboard-container-owner-list' => 'View Container Owner List',
+        'dashboard-container-owner-create' => 'Add Container Owner',
+        'dashboard-container-owner-update' => 'Edit Container Owner',
+        'dashboard-container-owner-delete' => 'Delete Container Owner',
+        'dashboard-container-owner-restore' => 'Restore Container Owner',
+        'dashboard-container-owner-view' => 'View Container Owner Details',
+    ];
 
     public function actionIndex()
     {
+        Yii::$app->user->can('dashboard-container-owner-list');
         $searchModel = new MasterContainerOwnersSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
@@ -33,6 +42,7 @@ class ContainerOwnerController extends DashboardController
   
     public function actionView($id)
     {
+        Yii::$app->user->can('dashboard-container-owner-view');
         $model = $this->findModel($id);
 
       
@@ -85,7 +95,8 @@ class ContainerOwnerController extends DashboardController
     }
 
     public function actionCreate()
-    {
+    {  
+        Yii::$app->user->can('dashboard-container-owner-create');
         $model = new MasterContainerOwners();
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             Yii::$app->session->setFlash('success', 'Client added successfully');
@@ -96,6 +107,7 @@ class ContainerOwnerController extends DashboardController
 
     public function actionUpdate($id)
     {
+        Yii::$app->user->can('dashboard-container-owner-update');
         $model = $this->findModel($id);
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             Yii::$app->session->setFlash('success', 'Client updated successfully');
@@ -106,6 +118,7 @@ class ContainerOwnerController extends DashboardController
 
     public function actionExport($id, $type = 'print')
     {
+        Yii::$app->user->can('dashboard-container-owner-view');
         $model = $this->findModel($id);
         $settings = new General();
 

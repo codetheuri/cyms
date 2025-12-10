@@ -47,11 +47,11 @@ use yii\helpers\Url;
                                 <span class="nav-main-link-name">General Settings</span>
                             </a>
                         </li>
-                        <li class="nav-main-item">
+                        <!-- <li class="nav-main-item">
                             <a class="nav-main-link" href="<?= Url::to(['/admin/settings/tariff-setting']) ?>">
                                 <span class="nav-main-link-name">Tariff & Billing</span>
                             </a>
-                        </li>
+                        </li> -->
                         <li class="nav-main-item">
                             <a class="nav-main-link" href="<?= Url::to(['/dashboard/shipping-line/index']) ?>">
                                 <span class="nav-main-link-name">Shipping Lines</span>

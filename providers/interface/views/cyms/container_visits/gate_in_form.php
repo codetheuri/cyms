@@ -1,7 +1,9 @@
 <?php
-use yii\helpers\Html;
-use yii\widgets\ActiveForm;
+
 use yii\helpers\Url;
+use yii\helpers\Html;
+use yii\widgets\Pjax;
+use helpers\widgets\ActiveForm;
 
 /* @var yii\web\View $this */
 /* @var dashboard\models\ContainerVisits $model */
@@ -38,8 +40,17 @@ $readOnlyAttr = ['readonly' => !$isNew];
                 <?= $form->field($model, 'time_in')->input('time', $readOnlyAttr) ?>
             </div>
             
-            <div class="col-md-4 mb-3">
-                <?= $form->field($model, 'container_number')->textInput(['class' => 'form-control form-control-lg fw-bold text-uppercase', 'placeholder' => 'ABCD1234567']) ?>
+           <div class="col-md-6 mb-3">
+                <?= $form->field($model, 'container_number')->textInput(array_merge(
+                    [
+                        'class' => 'form-control form-control-lg fw-bold', 
+                        'placeholder' => 'MSCU1234567', 
+                        'maxlength' => 11,
+                        'oninput' => "this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')" // JS Enforcer
+                    ], 
+                    $readOnlyAttr
+                )) ?>
+                <div class="form-text fs-xs">Format: 4 Letters + 7 Numbers</div>
             </div>
             
             <!-- CONTAINER TYPE (With Quick Add) -->

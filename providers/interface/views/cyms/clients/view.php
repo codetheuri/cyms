@@ -85,7 +85,11 @@ $this->title = $model->owner_name;
                     [
                         'label' => 'Days',
                         'value' => function ($m) {
-                            return (new DateTime($m->date_in))->diff(new DateTime())->days . ' days';
+                            $days = new DateTime($m->date_in)->diff(new DateTime())->days . ' days';
+                            if ($days<=1) {
+                                return '1 day';
+                            }
+                            return $days;
                         }
                     ],
                     'status',
