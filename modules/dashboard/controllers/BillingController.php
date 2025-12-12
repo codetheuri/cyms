@@ -14,6 +14,7 @@ class BillingController extends DashboardController
 {
     public $permissions = [
         'dashboard-billing-list' => 'View BillingRecords List',
+        'dashboard-billing-view' => 'View BillingRecords Details',
         'dashboard-billing-create' => 'Add BillingRecords',
         'dashboard-billing-update' => 'Edit BillingRecords',
         'dashboard-billing-delete' => 'Delete BillingRecords',

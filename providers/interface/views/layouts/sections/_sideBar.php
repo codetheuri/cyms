@@ -38,41 +38,6 @@ use helpers\Html;
             <!-- <?= \helpers\Menu::load() ?> -->
               <?= \helpers\PermissionMenu::load() ?>
 
-            <!-- 2. Manual Settings Section (At the Bottom) -->
-            <ul class="nav-main">
-                <li class="nav-main-heading">System Configuration</li>
-                
-                <li class="nav-main-item">
-                    <a class="nav-main-link nav-main-link-submenu" data-toggle="submenu" aria-haspopup="true" aria-expanded="false" href="#">
-                        <i class="nav-main-link-icon fa fa-cog fa-spin"></i>
-                        <span class="nav-main-link-name">Settings</span>
-                    </a>
-                    <ul class="nav-main-submenu">
-                        <li class="nav-main-item">
-                            <a class="nav-main-link" href="<?= Url::to(['/admin/settings/general-setting']) ?>">
-                                <span class="nav-main-link-name">General Settings</span>
-                            </a>
-                        </li>
-                        <!-- <li class="nav-main-item">
-                            <a class="nav-main-link" href="<?= Url::to(['/admin/settings/tariff-setting']) ?>">
-                                <span class="nav-main-link-name">Tariff & Billing</span>
-                            </a>
-                        </li> -->
-                        <li class="nav-main-item">
-                            <a class="nav-main-link" href="<?= Url::to(['/dashboard/shipping-line/index']) ?>">
-                                <span class="nav-main-link-name">Shipping Lines</span>
-                            </a>
-                        </li>
-                        <!-- Add Container Types if needed -->
-                         <!-- <li class="nav-main-item">
-                            <a class="nav-main-link" href="<?= Url::to(['/dashboard/container-type/index']) ?>">
-                                <span class="nav-main-link-name">Container Types</span>
-                            </a>
-                        </li> -->
-                    </ul>
-                </li>
-            </ul>
-             
         </div>
     </div>
 </nav>

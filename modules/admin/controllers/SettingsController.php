@@ -11,7 +11,9 @@ use admin\models\static\Tariff;
 class SettingsController extends \helpers\DashboardController
 {
     public $layout = 'dashboard';
-
+       public $permissions = [
+        'dashboard-settings-list' => 'Access Settings Module',
+    ];
     public function getViewPath()
     {
         return Yii::getAlias('@ui/views/admin/settings');
@@ -19,6 +21,7 @@ class SettingsController extends \helpers\DashboardController
     
  public function actionGeneralSetting()
     {
+        Yii:: $app->user->can('dashboard-settings-list');
         $this->layout = '@ui/views/layouts/sublayout/settings';
         $model = new General();
 
@@ -53,7 +56,8 @@ class SettingsController extends \helpers\DashboardController
     }
 
     public function actionTariffSetting()
-    {
+    { 
+        Yii:: $app->user->can('dashboard-settings-list');
         $this->layout = '@ui/views/layouts/sublayout/settings';
         $model = new Tariff();
 
@@ -76,6 +80,7 @@ class SettingsController extends \helpers\DashboardController
     }
   public function actionEmailSetting()
     {
+        Yii:: $app->user->can('dashboard-settings-list');
         $this->layout = '@ui/views/layouts/sublayout/settings';
         $model = new \admin\models\static\Email();
 

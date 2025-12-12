@@ -135,6 +135,9 @@ $bgHead = $isExcel ? 'bgcolor="#CCCCCC"' : '';
                 <td>
                     <?php 
                         $days = (new DateTime($visit->date_in))->diff(new DateTime())->days;
+                        IF ($days < 1) {
+                            $days = 1;
+                        }
                         echo $days . ' Days';
                     ?>
                 </td>

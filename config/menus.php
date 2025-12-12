@@ -7,7 +7,7 @@ $userMenu = [
     ['title' => 'Container Survey', 'icon' => 'magnifying-glass', 'url' => '/dashboard/survey/index', 'permission'=>'dashboard-survey-list'],
 
     ['title' => 'Yard Position', 'icon' => 'map-location-dot', 'url' => '/dashboard/yard/index','permission'=>'dashboard-yard-view'],
-    ['title' => 'Billing', 'icon' => 'receipt', 'url' => '/dashboard/billing/index','permission'=>'dashboard-billing-view'],
+    ['title' => 'Billing', 'icon' => 'receipt', 'url' => '/dashboard/billing/index','permission'=>'dashboard-billing-list'],
     ['title' => 'Clients / Owners', 'icon' => 'users', 'url' => '/dashboard/container-owner/index', 'permission'=>'dashboard-container-owner-list'],
     ['title'=> 'Reports', 'icon'=>'book', 'url'=>'/dashboard/reports/index', 'permission'=>'dashboard-reports-view'],
     ['title' => 'Master Repair Codes', 'icon' => 'wrench', 'url' => '/dashboard/repair-code/index', 'permission'=>'dashboard-repair-code-list'],
@@ -17,9 +17,9 @@ $userMenu = [
     ['title' => 'IAM & Admin', 'icon' => 'shield', 'permission'=>'dashboard-profile-list', 'submenus' => [
         ['title' => 'User Management', 'url' => 'profile/index'],
         ['title' => 'Manage Roles', 'url' => 'role/index'],
-        // ['title' => 'Manage Permissions', 'url' => 'permission/index'],
+        ['title' => 'Manage Permissions', 'url' => 'permission/index'],
     ]],
-    ['title' => 'Settings', 'icon' => 'cog fa-spin', 'submenus' => [
+    ['title' => 'Settings', 'icon' => 'cog fa-spin','permission'=>'dashboard-settings-list', 'submenus' => [
         ['title' => 'General Settings', 'url' => '/admin/settings/general-setting'],
         ['title' => 'Email Settings', 'url' => '/admin/settings/email-setting'],
         ['title' => 'Tariff & Billing', 'url' => '/admin/settings/tariff-setting'],
