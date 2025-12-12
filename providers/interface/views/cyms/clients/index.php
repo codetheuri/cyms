@@ -8,7 +8,22 @@ $this->title = 'Clients & Transporters';
     <div class="block-header block-header-default">
         <h3 class="block-title"><?= Html::encode($this->title) ?></h3>
         <div class="block-options">
-            <?= Html::a('<i class="fa fa-plus"></i> Add Client', ['create'], ['class' => 'btn btn-sm btn-primary']) ?>
+            <?=html::customButton(
+                [
+                    'type' => 'modal',
+                    'url' => ['create'],
+                    'appearence' => [
+                        'icon'=>'fa plus', 
+                        'type' => 'text',
+                        'text' => 'Add Client',
+                        'theme' => 'primary',
+                        'visible' => Yii::$app->user->can('dashboard-container-owner-create', true)
+                    ],
+                    'modal' => ['title' => 'New Client']
+                ]
+            )
+            ?>
+          
         </div>
     </div>
     <div class="block-content">

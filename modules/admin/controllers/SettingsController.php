@@ -74,5 +74,26 @@ class SettingsController extends \helpers\DashboardController
 
         return $this->render('tariff_settings', ['model' => $model]);
     }
+  public function actionEmailSetting()
+    {
+        $this->layout = '@ui/views/layouts/sublayout/settings';
+        $model = new \admin\models\static\Email();
 
+        if ($model->load(Yii::$app->request->post())) {
+            
+            if ($model->validate()) {
+                // Save settings to DB Config
+                foreach ($model->attributes as $key => $value) {
+                    Yii::$app->config->set($key, $value);
+                }
+                
+                Yii::$app->session->setFlash('success', 'Email Settings updated successfully.');
+                return $this->refresh();
+            } else {
+                 Yii::$app->session->setFlash('error', 'Validation failed. Please check the inputs.');
+            }
+        }
+
+        return $this->render('email_settings', ['model' => $model]);
+    }
 }

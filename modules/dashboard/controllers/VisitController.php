@@ -37,7 +37,7 @@ class VisitController extends DashboardController
     public function actionIndex()
 
     {
-    //    Yii::$app->user->can('dashboard-visit-list');
+       Yii::$app->user->can('dashboard-visit-list');
         $searchModel = new ContainerVisitsSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
@@ -51,7 +51,7 @@ class VisitController extends DashboardController
     }
     public function actionGateIn()
     {
-        // Yii::$app->user->can('dashboard-visit-gate-in');
+        Yii::$app->user->can('dashboard-visit-gate-in');
         $model = new ContainerVisits();
         $model->scenario = ContainerVisits::SCENARIO_GATE_IN;
 
@@ -134,7 +134,7 @@ class VisitController extends DashboardController
 
     public function actionSurvey($visit_id)
     {
-        // Yii::$app->user->can('dashboard-visit-survey');
+        Yii::$app->user->can('dashboard-visit-survey');
         $visit = $this->findModel($visit_id);
 
         // 1. Find/Create Survey
@@ -268,7 +268,7 @@ class VisitController extends DashboardController
   public function actionGateOut($id)
 
     {
-        // Yii::$app->user->can('dashboard-visit-gate-out');
+        Yii::$app->user->can('dashboard-visit-gate-out');
         $model = $this->findModel($id);
 
         // --- 1. BILLING CHECK (Keep existing logic) ---
@@ -350,7 +350,7 @@ class VisitController extends DashboardController
     public function actionAjaxCreateOwner()
 
     {
-        // Yii::$app->user->can('dashboard-container-owner-create');
+        Yii::$app->user->can('dashboard-container-owner-create');
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         $model = new \dashboard\models\MasterContainerOwners();
         if ($model->load(Yii::$app->request->post()) && $model->save()) {

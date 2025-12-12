@@ -28,6 +28,7 @@ $this->title = $name;
                             The above error occurred while the Web server was processing your request.
                         </p>
                         <a class="link-fx" href="<?=Url::to(['/dashboard'])?>">Go Back to Dashboard</a>
+                        <?= Html::a('Logout', ['/dashboard/iam/logout'], ['class' => 'btn btn-secondary']) ?>
                     </h2>
                     <!-- END Error Header -->
                 </div>

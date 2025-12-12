@@ -1,79 +1,69 @@
 <?php
-use helpers\Html;
 
-$this->title = Html::encode('Email Settings');
+use yii\helpers\Html;
+use yii\bootstrap5\ActiveForm;
+
+/* @var $this yii\web\View */
+/* @var $model admin\models\static\Email */
+/* @var $form yii\bootstrap5\ActiveForm */
+
+$this->title = 'Email Settings';
 ?>
 
-
 <div class="card-body w-100">
-    <!-- <div class="content-page-header">
-        <h5>Email Settings</h5>
-    </div> -->
+    
+    <?php $form = ActiveForm::begin([
+        'id' => 'email-settings-form',
+        'options' => ['class' => 'w-100'],
+        'fieldConfig' => [
+            // This wrapper class matches your original template style
+            'options' => ['class' => 'input-block mb-3'], 
+            'inputOptions' => ['class' => 'form-control'],
+        ],
+    ]); ?>
+
     <div class="row">
-        <h5 class="mail-title">mail Provider</h5>
-        <div class="col-lg-6 col-12">
-            <div class="input-block mb-3">
-                <div class="mail-provider">
-                    <h4>PHP Mail</h4>
-                    <div class="mail-setting">
-                        <a href="email-settings.html" data-bs-toggle="modal"
-                            data-bs-target="#bank_details"><i
-                                class="fe fe-settings"></i></a>
-                        <div class="status-toggle">
-                            <input id="rating_1" class="check" type="checkbox" checked="">
-                            <label for="rating_1"
-                                class="checktoggle checkbox-bg">checkbox</label>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="col-lg-4 col-12">
+            <?= $form->field($model, 'sender_name')->textInput(['placeholder' => 'Enter Sender Name']) ?>
         </div>
-        <div class="col-lg-6 col-12">
-            <div class="input-block mb-3">
-                <div class="mail-provider">
-                    <h4>SMTP</h4>
-                    <div class="mail-setting">
-                        <a href="email-settings.html"><i class="fe fe-settings"></i></a>
-                        <div class="status-toggle">
-                            <input id="rating_2" class="check" type="checkbox" checked="">
-                            <label for="rating_2"
-                                class="checktoggle checkbox-bg">checkbox</label>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
+        <div class="col-lg-4 col-12">
+            <?= $form->field($model, 'sender_email')->textInput(['placeholder' => 'Enter Sender Email']) ?>
         </div>
-        <div class="col-lg-6 col-12">
-            <div class="input-block mb-3">
-                <label>Email From Name</label>
-                <input type="text" class="form-control" placeholder="Enter Email From Name">
-            </div>
+         <div class="col-lg-4 col-12">
+            <?= $form->field($model, 'admin_email')->textInput(['placeholder' => 'Enter Admin Email']) ?>
         </div>
+
         <div class="col-lg-6 col-12">
-            <div class="input-block mb-3">
-                <label>Email From Address</label>
-                <input type="text" class="form-control"
-                    placeholder="Enter Email From Address">
-            </div>
+            <?= $form->field($model, 'smtp_host')->textInput(['placeholder' => 'e.g. mail.domain.com']) ?>
         </div>
+
+        <div class="col-lg-3 col-6">
+            <?= $form->field($model, 'smtp_port')->textInput(['placeholder' => 'e.g. 587']) ?>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <?= $form->field($model, 'email_encryption')->dropDownList([
+                'tls' => 'TLS', 
+                'ssl' => 'SSL',
+                '' => 'None'
+            ], ['class' => 'form-select']) ?>
+        </div>
+
         <div class="col-lg-6 col-12">
-            <div class="input-block mb-3">
-                <label>Email Global Footer</label>
-                <input type="text" class="form-control"
-                    placeholder="Enter Email Global Footer">
-            </div>
+            <?= $form->field($model, 'smtp_user')->textInput(['placeholder' => 'Enter SMTP Username']) ?>
         </div>
+
         <div class="col-lg-6 col-12">
-            <div class="input-block mb-3">
-                <label>Send Test Email</label>
-                <input type="text" class="form-control" placeholder="Enter Email Address">
-            </div>
+            <?= $form->field($model, 'smtp_password')->passwordInput(['placeholder' => 'Enter SMTP Password']) ?>
         </div>
+
         <div class="col-lg-12">
             <div class="btn-path text-end">
-                <a href="javascript:void(0);" class="btn btn-primary">Save Changes</a>
+                <?= Html::submitButton('Save Changes', ['class' => 'btn btn-primary']) ?>
             </div>
         </div>
     </div>
+
+    <?php ActiveForm::end(); ?>
 </div>
-<!-- </div> -->

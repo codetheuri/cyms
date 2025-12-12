@@ -1,5 +1,6 @@
 <?php
 use yii\helpers\Url;
+use helpers\Html;
 ?>
 <nav id="sidebar" aria-label="Main Navigation">
     <!-- Side Header -->
@@ -28,9 +29,14 @@ use yii\helpers\Url;
     <div class="js-sidebar-scroll">
         <!-- Side Navigation -->
         <div class="content-side">
+       
+
+           
+       
             
-            <!-- 1. Dynamic Menu (Loaded from menu.php) -->
-            <?= \helpers\Menu::load() ?>
+            
+            <!-- <?= \helpers\Menu::load() ?> -->
+              <?= \helpers\PermissionMenu::load() ?>
 
             <!-- 2. Manual Settings Section (At the Bottom) -->
             <ul class="nav-main">
@@ -66,7 +72,7 @@ use yii\helpers\Url;
                     </ul>
                 </li>
             </ul>
-            
+             
         </div>
     </div>
 </nav>

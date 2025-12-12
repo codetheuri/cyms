@@ -88,7 +88,7 @@ class BillingController extends DashboardController
     public function actionView($id)
 
     {
-        // Yii::$app->user->can('dashboard-billing-view');
+        Yii::$app->user->can('dashboard-billing-view');
         $model = $this->findModel($id);
         $visit = $model->visit;
         if ($visit->status !== 'GATE_OUT') {
