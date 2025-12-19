@@ -123,7 +123,7 @@ $badgeColor = match ($model->status) {
                                         <a href="#" data-bs-toggle="modal" data-bs-target="#modal-discount" class="fs-xs text-primary ms-2">(Edit)</a>
                                     <?php endif; ?>
                                 <?php else: ?>
-                                    <?php if ($model->status !== 'PAID' && $model->status !== 'CREDIT'): ?>
+                                    <?php if ($model->status !== 'PAID'): ?>
                                         <a href="#" class="btn btn-sm btn-alt-secondary text-primary" data-bs-toggle="modal" data-bs-target="#modal-discount">
                                             <i class="fa fa-tag me-1"></i> Add Discount
                                         </a>

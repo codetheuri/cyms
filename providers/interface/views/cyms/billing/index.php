@@ -118,22 +118,50 @@ $this->params['breadcrumbs'][] = $this->title;
                                 'buttons' => [
                                     // Button A: VIEW (Always Visible)
                                     'view' => function ($url, $model, $key) {
-                                        return Html::a(
-                                            '<i class="fa fa-eye"></i>',
-                                            ['view', 'id' => $model->bill_id],
-                                            ['class' => 'btn btn-sm btn-alt-secondary me-1', 'title' => 'View Invoice', 'data-pjax' => 0]
-                                        );
+                                        return Html::customButton([
+                                            'title' => 'View Invoice',
+                                            'type' => 'link',
+                                           
+                                            'appearence' => [
+                                                'type' => 'icon',
+                                                'text' => 'view invoice',
+                                                // 'iconText' => 'eye',
+                                                'icon' => 'eye',
+                                                'theme' => 'secondary',
+                                                'size' => 'sm',
+                                                'visible' => Yii::$app->user->can('dashboard-billing-view'),
+                                            ],
+                                            'url' => ['view', 'id' => $model->bill_id,
+                                        ]
+                                            // '<i class="fa fa-eye"></i>',
+                                            // ['view', 'id' => $model->bill_id],
+                                            // ['class' => 'btn btn-sm btn-alt-secondary me-1', 'title' => 'View Invoice', 'data-pjax' => 0]
+                                 ] );
                                     },
 
                                     // Button B: PAY (Conditional)
                                     'pay' => function ($url, $model, $key) {
                                         // Show only if Balance > 0 AND not authorized credit
                                         if ($model->balance > 0.01 ) {
-                                            return Html::a(
-                                                '<i class="fa fa-money-bill-wave"></i>',
-                                                ['view', 'id' => $model->bill_id], // Redirects to same page, but intent is clear
-                                                ['class' => 'btn btn-sm btn-primary', 'title' => 'Record Payment', 'data-pjax' => 0]
-                                            );
+                                            return Html::customButton([
+                                                'title' => 'Pay Invoice',
+                                                'type' => 'link',
+                                               
+                                                'appearence' => [
+                                                    'type' => 'icon',
+                                                    'icon' => 'money-bill-wave',
+                                                    'theme' => 'primary',
+                                                    'size' => 'sm',
+                                                    'visible' => Yii::$app->user->can('dashboard-billing-view'),
+                                                ],
+                                                'url' => ['view', 'id' => $model->bill_id,
+
+
+                                            ]
+                                                // '<i class="fa fa-money-bill-wave"></i>',
+                                                // ['view', 'id' => $model->bill_id], // Redirects to same page, but intent is clear
+                                                // ['class' => 'btn btn-sm btn-primary', 'title' => 'Record Payment', 'data-pjax' => 0]
+                                ]);
                                         }
                                         return ''; // Return nothing if paid
                                     },

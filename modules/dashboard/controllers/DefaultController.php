@@ -235,8 +235,8 @@ class DefaultController extends DashboardController
             '/dashboard/billing/index' => 'Billing',
             '/dashboard/container-owner/index' => 'Clients / Owners',
             '/dashboard/reports/index' => 'Reports',
-            '/profile/index' => 'User Management',
-            '/role/index' => 'Manage Roles',
+            '/dashboard/profile/index' => 'User Management',
+            '/dashboard/role/index' => 'Manage Roles',
         ];
         
         return $labels[$route] ?? 'Module';
