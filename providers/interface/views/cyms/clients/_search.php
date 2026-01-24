@@ -9,7 +9,15 @@ use yii\widgets\ActiveForm;
 ?>
 
 <div class="master-container-owners-search">
+<div class="clearfix">
+     <div class="float-start">
+         <?= Html::dropDownList('per-page',
+        isset(Yii::$app->request->queryParams['per-page']) ? Yii::$app->request->queryParams['per-page'] : 25,
+        Yii::$app->params['pageSize'],
+        ['class'=>'form-select form-select-sm'])
+        ?>
 
+    </div>
     <?php $form = ActiveForm::begin([
         'action' => ['index'],
         'method' => 'get',
@@ -34,5 +42,5 @@ use yii\widgets\ActiveForm;
     </div>
 
     <?php ActiveForm::end(); ?>
-
+</div>
 </div>

@@ -11,52 +11,80 @@ use yii\helpers\Url;
 $this->title = 'Invoice #' . $model->invoice_number;
 $visit = $model->visit;
 
-// Ensure numbers are floats for calculations
-$storage = (float)$model->storage_total;
-$repair = (float)$model->repair_total;
-$lift = (float)($model->lift_charges ?? 0);
-$subTotal = $storage + $repair;
+// --- 1. SETTINGS & LOGIC FOR LIFT SPLIT ---
+$settingLiftOn  = (float) Yii::$app->config->get('lift_on_charges');
+$settingLiftOff = (float) Yii::$app->config->get('lift_off_charges');
+$currentLift    = (float) ($model->lift_charges ?? 0);
+
+// Lift Logic
+$hasLiftOff = ($currentLift >= $settingLiftOff);
+$hasLiftOn = ($currentLift >= ($settingLiftOff + $settingLiftOn)) || 
+             (abs($currentLift - $settingLiftOn) < 0.01 && !$hasLiftOff);
+
+// --- 2. CALCULATE TOTALS ---
+$storage  = (float)$model->storage_total;
+$repair   = (float)$model->repair_total;
+$subTotal = $storage + $repair + $currentLift; 
+
 $discount = (float)$model->discount_amount;
 $grandTotal = $subTotal - $discount;
 
-// Status Logic
+// Status Badge Logic
 $badgeColor = match ($model->status) {
     'PAID' => 'success',
     'PARTIAL' => 'warning',
     'CREDIT' => 'info',
     default => 'danger'
 };
+
+// Date/Time Helper
+$dateIn = Yii::$app->formatter->asDate($visit->date_in);
+$timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '';
 ?>
 
-<div class="block block-rounded content-card mb-4 border-start border-5 border-<?= $badgeColor ?>">
+<div class="block block-rounded content-card mb-4 border-start border-5 border-<?= $badgeColor ?> shadow-sm">
     <div class="block-content block-content-full py-3">
         <div class="row align-items-center">
+            
             <div class="col-md-4 border-end">
-                <div class="fs-sm text-muted text-uppercase fw-bold mb-1">Container Info</div>
-                <div class="fs-3 fw-bold text-dark">
-                    <i class="fa fa-box me-2 text-secondary"></i><?= $visit->container_number ?>
+                <div class="fs-xs text-muted text-uppercase fw-bold mb-1">Container</div>
+                <div class="fs-3 fw-bold text-dark d-flex align-items-center">
+                    <i class="fa fa-box text-secondary me-2"></i><?= $visit->container_number ?>
                 </div>
-                <div class="fs-sm text-muted mt-1">
-                    <span class="me-3"><i class="fa fa-calendar-alt me-1"></i> In: <?= Yii::$app->formatter->asDate($visit->date_in) ?></span>
-                    <span><i class="fa fa-ticket-alt me-1"></i> Tkt: <?= $visit->ticket_no_in ?></span>
+                <div class="fs-sm text-muted">
+                    <span class="badge bg-secondary"><?= $visit->containerType->iso_code ?? 'Type N/A' ?></span>
+                    <span class="ms-2"><i class="fa fa-ticket-alt me-1"></i> <?= $visit->ticket_no_in ?></span>
                 </div>
             </div>
 
             <div class="col-md-5 border-end ps-md-4">
-                <div class="fs-sm text-muted text-uppercase fw-bold mb-1">Bill To</div>
-                <div class="fs-4 fw-bold text-dark text-truncate">
-                    <?= $visit->containerOwner->owner_name ?? $visit->truck_owner_name_in ?>
-                </div>
-                <div class="fs-sm text-muted">
-                    <i class="fa fa-phone me-1"></i> <?= $visit->containerOwner->owner_contact ?? $visit->truck_owner_contact_in ?? 'No Contact' ?>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="fs-xs text-muted text-uppercase fw-bold mb-1">Entry Time</div>
+                        <div class="fw-bold text-dark fs-5">
+                            <?= $dateIn ?>
+                        </div>
+                        <div class="fs-sm text-muted">
+                            <i class="fa fa-clock me-1"></i> <?= $timeIn ?>
+                        </div>
+                    </div>
+                    <div class="col-6 text-center border-start">
+                        <div class="fs-xs text-muted text-uppercase fw-bold mb-1">Duration</div>
+                        <div class="fs-3 fw-bold text-primary">
+                            <?= $model->storage_days ?> <small class="fs-sm text-muted fw-normal">Days</small>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div class="col-md-3 text-center text-md-end ps-md-4">
-                <div class="fs-sm text-muted text-uppercase fw-bold mb-1">Status</div>
+                <div class="fs-xs text-muted text-uppercase fw-bold mb-1">Billing Status</div>
                 <span class="badge bg-<?= $badgeColor ?> fs-5 px-3 py-2 rounded-pill">
                     <?= $model->status ?>
                 </span>
+                <div class="fs-xs text-muted mt-2">
+                    <?= $visit->containerOwner->owner_name ?? $visit->truck_owner_name_in ?>
+                </div>
             </div>
         </div>
     </div>
@@ -66,7 +94,7 @@ $badgeColor = match ($model->status) {
     <div class="col-lg-7">
         <div class="block block-rounded content-card h-100">
             <div class="block-header block-header-default bg-body-light">
-                <h3 class="block-title"><i class="fa fa-file-invoice-dollar me-2 text-muted"></i> Invoice Breakdown</h3>
+                <h3 class="block-title fw-bold"><i class="fa fa-file-invoice-dollar me-2 text-muted"></i> Invoice Details</h3>
             </div>
             
             <div class="block-content p-0">
@@ -74,22 +102,92 @@ $badgeColor = match ($model->status) {
                     <thead class="bg-body-light border-bottom">
                         <tr class="text-uppercase fs-xs text-muted">
                             <th class="ps-4">Description</th>
-                            <th class="text-center">Qty / Days</th>
+                            <th class="text-center">Action / Qty</th>
                             <th class="text-end">Rate</th>
                             <th class="text-end pe-4">Total</th>
                         </tr>
                     </thead>
                     <tbody>
+                        
                         <tr>
                             <td class="ps-4">
                                 <div class="fw-bold text-dark">Storage Charges</div>
-                                <div class="fs-xs text-muted">Daily Rate</div>
+                                <div class="fs-xs text-muted">Daily Rate (x <?= $model->storage_days ?> days)</div>
                             </td>
                             <td class="text-center">
-                                <span class="badge bg-secondary"><?= $model->storage_days ?> Days</span>
+                                <span class="badge bg-primary-light text-primary"><?= $model->storage_days ?> Days</span>
                             </td>
-                            <td class="text-end text-muted"><?= number_format($model->tariff_rate, 2) ?></td>
+                            <td class="text-end text-muted">
+                                <?= number_format($model->tariff_rate, 2) ?>
+                                <?php if ($model->status !== 'PAID'): ?>
+                                    <a href="#" data-bs-toggle="modal" data-bs-target="#modal-rate" class="fs-xs text-primary ms-1" title="Edit Rate">
+                                        <i class="fa fa-pen"></i>
+                                    </a>
+                                <?php endif; ?>
+                            </td>
                             <td class="text-end fw-bold pe-4"><?= number_format($storage, 2) ?></td>
+                        </tr>
+
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark">Lift Off (Gate In)</div>
+                                <div class="fs-xs text-muted">Offloading from truck</div>
+                            </td>
+                            <td class="text-center">
+                                <?php if ($model->status !== 'PAID'): ?>
+                                    <?php if ($hasLiftOff): ?>
+                                        <?= Html::a('<i class="fa fa-times me-1"></i> Remove', ['toggle-lift-off', 'id'=>$model->bill_id], [
+                                            'data-method' => 'post',
+                                            'data-params' => ['action' => 'remove'],
+                                            'class' => 'btn btn-xs btn-alt-danger',
+                                            'title' => 'Remove Charge'
+                                        ]) ?>
+                                    <?php else: ?>
+                                        <?= Html::a('<i class="fa fa-plus me-1"></i> Add', ['toggle-lift-off', 'id'=>$model->bill_id], [
+                                            'data-method' => 'post',
+                                            'data-params' => ['action' => 'add'],
+                                            'class' => 'btn btn-xs btn-alt-primary'
+                                        ]) ?>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                     <span class="badge bg-secondary"><?= $hasLiftOff ? 'Applied' : 'N/A' ?></span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-end text-muted"><?= number_format($settingLiftOff, 2) ?></td>
+                            <td class="text-end fw-bold pe-4">
+                                <?= ($hasLiftOff) ? number_format($settingLiftOff, 2) : '0.00' ?>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark">Lift On (Gate Out)</div>
+                                <div class="fs-xs text-muted">Loading onto truck</div>
+                            </td>
+                            <td class="text-center">
+                                <?php if ($model->status !== 'PAID'): ?>
+                                    <?php if ($hasLiftOn): ?>
+                                        <?= Html::a('<i class="fa fa-times me-1"></i> Remove', ['toggle-lift-on', 'id'=>$model->bill_id], [
+                                            'data-method' => 'post',
+                                            'data-params' => ['action' => 'remove'],
+                                            'class' => 'btn btn-xs btn-alt-danger',
+                                            'title' => 'Remove Charge'
+                                        ]) ?>
+                                    <?php else: ?>
+                                        <?= Html::a('<i class="fa fa-plus me-1"></i> Add', ['toggle-lift-on', 'id'=>$model->bill_id], [
+                                            'data-method' => 'post',
+                                            'data-params' => ['action' => 'add'],
+                                            'class' => 'btn btn-xs btn-alt-primary'
+                                        ]) ?>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                     <span class="badge bg-secondary"><?= $hasLiftOn ? 'Applied' : 'N/A' ?></span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-end text-muted"><?= number_format($settingLiftOn, 2) ?></td>
+                            <td class="text-end fw-bold pe-4">
+                                <?= ($hasLiftOn) ? number_format($settingLiftOn, 2) : '0.00' ?>
+                            </td>
                         </tr>
 
                         <?php if($repair > 0): ?>
@@ -103,8 +201,6 @@ $badgeColor = match ($model->status) {
                             <td class="text-end fw-bold pe-4"><?= number_format($repair, 2) ?></td>
                         </tr>
                         <?php endif; ?>
-
-                       
                     </tbody>
 
                     <tfoot class="border-top bg-body-light">
@@ -172,7 +268,7 @@ $badgeColor = match ($model->status) {
     </div>
 
     <div class="col-lg-5">
-
+        
         <?php if ($model->balance > 0.01 && $model->status !== 'PAID' ): ?>
             <div class="block block-rounded content-card border-top border-5 border-success mb-3 shadow-sm">
                 <div class="block-header bg-body-light">
@@ -235,47 +331,75 @@ $badgeColor = match ($model->status) {
                 </div>
                 <div class="block-content block-content-full">
                     <div class="alert alert-warning fs-xs py-2 mb-3">
-                        <i class="fa fa-exclamation-triangle me-1"></i> Requires Supervisor Agreement
+                        <i class="fa fa-exclamation-triangle me-1"></i> Requires Supervisor Agreement & ATL Number
                     </div>
                     <?php $form = ActiveForm::begin([
                         'action' => ['authorize-credit', 'id' => $model->bill_id],
                         'options' => ['enctype' => 'multipart/form-data']
                     ]); ?>
                     
-                    <div class="mb-2">
-                        <?= $form->field($model, 'authorized_by')->textInput(['placeholder' => 'Supervisor Name', 'class' => 'form-control form-control-alt']) ?>
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-6">
+                            <?= $form->field($model, 'authorized_by')->textInput([
+                                'placeholder' => 'Supervisor', 
+                                'class' => 'form-control form-control-alt'
+                            ])->label('Authorized By') ?>
+                        </div>
+                        <div class="col-md-6">
+                            <?= $form->field($model, 'atl_number')->textInput([
+                                'placeholder' => 'ATL-001', 
+                                'class' => 'form-control form-control-alt fw-bold',
+                                'required' => true
+                            ])->label('ATL No.') ?>
+                        </div>
                     </div>
+
                     <div class="mb-3">
-                        <?= $form->field($model, 'agreement_file')->fileInput(['required' => true, 'class' => 'form-control'])->label('Upload Agreement') ?>
+                        <?= $form->field($model, 'agreement_file')->fileInput(['required' => true, 'class' => 'form-control'])->label('Upload Signed Agreement') ?>
                     </div>
                     
-                    <button type="submit" class="btn btn-warning w-100">
-                        Authorize & Release
+                    <button type="submit" class="btn btn-warning w-100 fw-bold">
+                        <i class="fa fa-check-double me-1"></i> Authorize & Release
                     </button>
                     <?php ActiveForm::end(); ?>
                 </div>
             </div>
+
         <?php elseif ($model->status === 'CREDIT'): ?>
             <div class="block block-rounded content-card bg-info-light mb-3">
                 <div class="block-content block-content-full">
-                    <h5 class="text-info fw-bold mb-2"><i class="fa fa-info-circle me-1"></i> On Credit</h5>
-                    <p class="fs-sm mb-2 text-dark">
-                        Authorized By: <strong><?= Html::encode($model->authorized_by) ?></strong>
-                    </p>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="text-info fw-bold mb-0"><i class="fa fa-info-circle me-1"></i> Authorized Credit Exit</h5>
+                        <button type="button" class="btn btn-sm btn-alt-info bg-white" data-bs-toggle="modal" data-bs-target="#modal-edit-credit">
+                            <i class="fa fa-pen me-1"></i> Edit Details
+                        </button>
+                    </div>
+                    
+                    <div class="row g-2 fs-sm mb-3">
+                        <div class="col-6">
+                            <div class="text-muted text-uppercase fs-xs">Supervisor</div>
+                            <div class="fw-bold text-dark"><?= Html::encode($model->authorized_by) ?></div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted text-uppercase fs-xs">ATL Number</div>
+                            <div class="fw-bold text-dark"><?= Html::encode($model->atl_number) ?></div>
+                        </div>
+                    </div>
+
                     <?php if ($model->credit_agreement_path): ?>
                         <a href="<?= Yii::getAlias('@web') . '/' . $model->credit_agreement_path ?>" target="_blank" class="btn btn-sm btn-info w-100">
-                            <i class="fa fa-file-pdf me-1"></i> View Agreement
+                            <i class="fa fa-file-pdf me-1"></i> View Signed Agreement
                         </a>
                     <?php endif; ?>
                 </div>
             </div>
         <?php endif; ?>
+
         <?php if ($model->balance <= 0.01 || $model->status ==='CREDIT'): ?>
         <div class="d-grid mt-4">
              <?= Html::a('<i class="fa fa-arrow-right me-2"></i> Proceed to Gate OUT', ['/dashboard/visit/out-index'], ['class' => 'btn btn-alt-secondary btn-lg']) ?>
         </div>
         <?php endif; ?>
-
     </div>
 </div>
 
@@ -300,7 +424,7 @@ $badgeColor = match ($model->status) {
                                 'type' => 'number', 
                                 'step' => '0.01', 
                                 'class' => 'form-control',
-                                'max' => $subTotal // Use calculated subtotal as max
+                                'max' => $subTotal 
                             ])->label(false) ?>
                         </div>
                     </div>
@@ -314,3 +438,78 @@ $badgeColor = match ($model->status) {
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="modal-rate" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <?php $form = ActiveForm::begin(['action' => ['update-rate', 'id' => $model->bill_id]]); ?>
+            <div class="block block-rounded shadow-none mb-0">
+                <div class="block-header block-header-default">
+                    <h3 class="block-title">Adjust Daily Rate</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="block-content fs-sm py-4">
+                    <div class="alert alert-warning py-2 mb-3">
+                        <small><i class="fa fa-info-circle me-1"></i> Changing the rate will recalculate the entire storage bill.</small>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Daily Tariff Rate</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text">KES</span>
+                            <?= $form->field($model, 'tariff_rate', ['options' => ['tag' => false]])->textInput([
+                                'type' => 'number', 
+                                'step' => '0.01', 
+                                'class' => 'form-control',
+                            ])->label(false) ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="block-content block-content-full block-content-sm text-end border-top bg-body-light">
+                    <button type="button" class="btn btn-alt-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Rate</button>
+                </div>
+            </div>
+            <?php ActiveForm::end(); ?>
+        </div>
+    </div>
+</div>
+
+<?php if ($model->status === 'CREDIT'): ?>
+<div class="modal fade" id="modal-edit-credit" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <?php $form = ActiveForm::begin(['action' => ['update-credit-details', 'id' => $model->bill_id]]); ?>
+            <div class="block block-rounded shadow-none mb-0">
+                <div class="block-header block-header-default">
+                    <h3 class="block-title">Correct Authorization Details</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="block-content fs-sm py-4">
+                    <div class="alert alert-warning py-2 mb-3">
+                        <small><i class="fa fa-exclamation-triangle me-1"></i> Use this to fix typos in the Authorization number or Supervisor name.</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <?= $form->field($model, 'authorized_by')->textInput([
+                            'class' => 'form-control',
+                            'placeholder' => 'Supervisor Name'
+                        ])->label('Authorized By') ?>
+                    </div>
+
+                    <div class="mb-3">
+                        <?= $form->field($model, 'atl_number')->textInput([
+                            'class' => 'form-control fw-bold',
+                            'placeholder' => 'ATL-XXX'
+                        ])->label('ATL Number') ?>
+                    </div>
+                </div>
+                <div class="block-content block-content-full block-content-sm text-end border-top bg-body-light">
+                    <button type="button" class="btn btn-alt-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </div>
+            <?php ActiveForm::end(); ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>

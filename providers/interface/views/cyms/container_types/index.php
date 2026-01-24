@@ -19,6 +19,9 @@ $this->params['breadcrumbs'][] = $this->title;
     </div>
     
     <div class="block-content">
+          <div class="my-3">
+          <?= $this->render('_search', ['model' => $searchModel]); ?>
+        </div>
         <div class="table-responsive">
             <?= GridView::widget([
                 'dataProvider' => $dataProvider,

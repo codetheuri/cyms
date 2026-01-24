@@ -36,7 +36,7 @@ class ContainerVisits extends  BaseModel
             [['date_in', 'time_in', 'vehicle_reg_no_in', 'driver_name_in', 'shipping_line_id', 'container_owner_id', 'container_type_id'], 'required', 'on' => self::SCENARIO_GATE_IN],
 
             // --- GATE OUT SCENARIO ---
-            [['date_out', 'time_out', 'vehicle_reg_no_out', 'destination'], 'required', 'on' => self::SCENARIO_GATE_OUT],
+            [['date_out', 'time_out', 'vehicle_reg_no_out'], 'required', 'on' => self::SCENARIO_GATE_OUT],
             [['gross_weight', 'tare_weight', 'payload'], 'integer', 'min' => 0],
             // [['gross_weight', 'tare_weight', 'payload'], 'required'],
             [['departure_photo_file'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg', 'maxSize' => 5 * 1024 * 1024],
@@ -65,7 +65,8 @@ class ContainerVisits extends  BaseModel
                 'arrival_photo_path'
             ], 'safe'],
 
-            [['storage_days', 'shipping_line_id'], 'integer'],
+            [[ 'shipping_line_id'], 'integer'],
+            [['storage_days'], 'number'],
             [['comments_in'], 'string'],
             [
                 ['container_number'],
@@ -211,20 +212,28 @@ class ContainerVisits extends  BaseModel
             // ---------------------------------------------------------
             // 3. CALCULATE STORAGE DAYS
             // ---------------------------------------------------------
-            if ($this->scenario == self::SCENARIO_GATE_OUT && $this->date_in && $this->date_out) {
-                $in = new \DateTime($this->date_in);
-                $out = new \DateTime($this->date_out);
-                $diff = $in->diff($out);
-                $days = $diff->days;
+         if ($this->scenario == self::SCENARIO_GATE_OUT && $this->date_in && $this->date_out) {
+            $startStr = $this->date_in . ' ' . ($this->time_in ?: '00:00:00');
+            $endStr   = $this->date_out . ' ' . ($this->time_out ?: '23:59:59');
 
-                // Minimum 1 day charge logic
-                if ($days < 1) $days = 1;
-                $this->storage_days = $days;
+            $start = strtotime($startStr);
+            $end   = strtotime($endStr);
+            
+            $diffSeconds = $end - $start;
+
+            // Apply same logic: Part of a day is a full day
+            if ($diffSeconds < 0) {
+                 $days = 1;
+            } else {
+                 $days = floor($diffSeconds / 86400) + 1;
             }
 
-            return true;
+            $this->storage_days = $days;
         }
-        return false;
+
+        return true;
+    }
+    return false;
     }
 
 

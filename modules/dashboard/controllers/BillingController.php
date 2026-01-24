@@ -30,7 +30,7 @@ class BillingController extends DashboardController
         Yii::$app->user->can('dashboard-billing-list');
         $searchModel = new BillingRecordsSearch();
         $dataProvider = $searchModel->search($this->request->queryParams);
-            // Recalculate balances for all displayed records
+        // Recalculate balances for all displayed records
         foreach ($dataProvider->getModels() as $model) {
             $model->recalculateBalance();
         }
@@ -55,10 +55,11 @@ class BillingController extends DashboardController
 
             $visit = ContainerVisits::findOne($model->visit_id);
             if ($visit) {
-                $in = new \DateTime($visit->date_in);
-                $now = new \DateTime();
-                $days = $in->diff($now)->days;
-                $model->storage_days = ($days < 1) ? 1 : $days;
+                $startStr = $visit->date_in . ' ' . ($visit->time_in ?: '00:00:00');
+                $diffSeconds = time() - strtotime($startStr);
+
+                // New Logic
+                $model->storage_days = ($diffSeconds < 0) ? 1 : (floor($diffSeconds / 86400) + 1);
             }
 
             if ($model->save() && $model->recalculateBalance()) {
@@ -93,14 +94,8 @@ class BillingController extends DashboardController
         $model = $this->findModel($id);
         $visit = $model->visit;
         if ($visit->status !== 'GATE_OUT') {
-            $in = new \DateTime($visit->date_in);
-            $now = new \DateTime();
-            $days = $in->diff($now)->days;
-            if ($days < 1) $days = 1;
-            if ($model->storage_days != $days) {
-                $model->storage_days = $days;
-                $model->recalculateBalance();
-            }
+
+            $model->recalculateBalance();
         }
 
         $paymentModel = new BillingPayments();
@@ -118,7 +113,7 @@ class BillingController extends DashboardController
         Yii::$app->user->can('dashboard-billing-update');
         $payment = new BillingPayments();
         $payment->bill_id = $id;
-        
+
 
         if ($payment->load(Yii::$app->request->post())) {
             if ($payment->save()) {
@@ -143,39 +138,125 @@ class BillingController extends DashboardController
     //     }
     //     return $this->redirect(['index']);
     // }
-    public function actionAuthorizeCredit($id)
-    {
-        Yii::$app->user->can('dashboard-billing-update');
-        $model = $this->findModel($id);
+   // dashboard/controllers/BillingController.php
 
-        if ($model->load(Yii::$app->request->post())) {
+public function actionAuthorizeCredit($id)
+{
+    Yii::$app->user->can('dashboard-billing-update');
+    $model = $this->findModel($id);
 
-         
-            if ($model->uploadAgreement()) {
-               
-                $model->status = 'CREDIT';
+    if ($model->load(Yii::$app->request->post())) {
+        
+        // 1. Upload File
+        if ($model->uploadAgreement()) {
+            
+            $model->status = 'CREDIT';
 
-                if ($model->save(false)) {
-                    Yii::$app->session->setFlash('success', 'Credit Authorized. Container can now be released.');
-                    return $this->redirect(['view', 'id' => $id]);
-                }
+            // 2. Validate & Save (This will now include atl_number)
+            if ($model->save()) {
+                Yii::$app->session->setFlash('success', 'Credit Authorized with ATL #' . $model->atl_number);
+                return $this->redirect(['view', 'id' => $id]);
             } else {
-                Yii::$app->session->setFlash('error', 'Failed to upload agreement document.');
+                 Yii::$app->session->setFlash('error', 'Validation failed: ' . json_encode($model->errors));
             }
+        } else {
+            Yii::$app->session->setFlash('error', 'Failed to upload agreement document.');
         }
-        return $this->redirect(['view', 'id' => $id]);
     }
+    return $this->redirect(['view', 'id' => $id]);
+}
     public function actionUpdateDiscount($id)
     {
         Yii::$app->user->can('dashboard-billing-update');
         $model = $this->findModel($id);
-        
+
         if ($model->load(Yii::$app->request->post())) {
             // Just save and recalculate. The logic handles the subtraction.
             if ($model->recalculateBalance()) {
                 Yii::$app->session->setFlash('success', 'Discount updated successfully.');
             }
         }
+        return $this->redirect(['view', 'id' => $id]);
+    }
+    public function actionUpdateRate($id)
+    {
+        Yii::$app->user->can('dashboard-billing-update');
+        $model = $this->findModel($id);
+
+        // Only update rate, then recalculate everything else
+        if ($model->load(Yii::$app->request->post())) {
+            if ($model->recalculateBalance()) {
+                Yii::$app->session->setFlash('success', 'Daily Rate updated successfully.');
+            }
+        }
+        return $this->redirect(['view', 'id' => $id]);
+    }
+    // In BillingController.php
+
+    public function actionToggleLiftOn($id)
+    {
+        Yii::$app->user->can('dashboard-billing-update');
+        $model = $this->findModel($id);
+
+        $cost = (float) Yii::$app->config->get('lift_on_charges');
+
+        // Check if Lift On is already "inside" the total
+        // Logic: If current charges seem high enough to include Lift On, remove it. 
+        // Since we don't have separate columns, we use a session flag or simple math assumption.
+        // BETTER APPROACH for "No Migration": Just Add/Subtract explicitly.
+
+        $action = Yii::$app->request->post('action'); // 'add' or 'remove'
+
+        if ($action === 'add') {
+            $model->lift_charges += $cost;
+            Yii::$app->session->setFlash('success', 'Lift On Charge Added.');
+        } else {
+            $model->lift_charges -= $cost;
+            if ($model->lift_charges < 0) $model->lift_charges = 0;
+            Yii::$app->session->setFlash('warning', 'Lift On Charge Removed.');
+        }
+
+        $model->recalculateBalance();
+        return $this->redirect(['view', 'id' => $id]);
+    }
+
+    public function actionToggleLiftOff($id)
+    {
+        Yii::$app->user->can('dashboard-billing-update');
+        $model = $this->findModel($id);
+        $cost = (float) Yii::$app->config->get('lift_off_charges');
+
+        $action = Yii::$app->request->post('action'); // 'add' or 'remove'
+
+        if ($action === 'add') {
+            $model->lift_charges += $cost;
+            Yii::$app->session->setFlash('success', 'Lift Off Charge Added.');
+        } else {
+            $model->lift_charges -= $cost;
+            if ($model->lift_charges < 0) $model->lift_charges = 0;
+            Yii::$app->session->setFlash('warning', 'Lift Off Charge Removed.');
+        }
+
+        $model->recalculateBalance();
+        return $this->redirect(['view', 'id' => $id]);
+    }
+    public function actionUpdateCreditDetails($id)
+    {
+        Yii::$app->user->can('dashboard-billing-update'); // Ensure permission
+        $model = $this->findModel($id);
+
+        if ($model->load(Yii::$app->request->post())) {
+            // We use save(false) to skip strictly validating the whole model 
+            // (like file uploads) since we are just fixing text typos.
+            // But we specifically only update these two attributes.
+            $model->updateAttributes([
+                'atl_number' => $model->atl_number,
+                'authorized_by' => $model->authorized_by
+            ]);
+            
+            Yii::$app->session->setFlash('success', 'Credit Authorization details updated.');
+        }
+        
         return $this->redirect(['view', 'id' => $id]);
     }
     protected function findModel($bill_id)

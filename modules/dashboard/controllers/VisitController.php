@@ -32,6 +32,8 @@ class VisitController extends DashboardController
         'dashboard-visit-gate-out' => 'Gate Out Container',
         'dashboard-visit-survey' => 'Survey Container',
         'dashboard-visit-view' => 'View Container Visit Details',
+        'dashboard-visit-update' => 'Update Container Visit',
+        'dashboard-visit-delete' => 'Delete Container Visit',
     ];
 
     public function actionIndex()
@@ -278,18 +280,13 @@ class VisitController extends DashboardController
             $bill = new \dashboard\models\BillingRecords();
             $bill->visit_id = $id;
             $bill->tariff_rate = Yii::$app->config->get('storage_rate_per_day') ?? 0;
-            $liftOn = Yii::$app->config->get('lift_on_charges') ?? 0;
+            // $liftOn = Yii::$app->config->get('lift_on_charges') ?? 0;
             $liftOff = Yii::$app->config->get('lift_off_charges') ?? 0;
-            $bill->lift_charges = $liftOn + $liftOff;
+            $bill->lift_charges= $liftOff;
+            $bill->save9();
         }
 
-        // Calculate Days
-        $in = new \DateTime($model->date_in);
-        $now = new \DateTime();
-        $days = $in->diff($now)->days;
-        $bill->storage_days = ($days < 1) ? 1 : $days;
-
-        // Refresh Bill
+        
         $bill->recalculateBalance();
 
         // Check Payment Status
@@ -365,6 +362,143 @@ class VisitController extends DashboardController
         return $this->render('view', [
             'model' => $this->findModel($id),
         ]);
+    }
+ 
+
+    public function actionUpdate($id)
+{
+    Yii::$app->user->can('dashboard-visit-view');
+    $model = $this->findModel($id);
+    
+    // Use Gate In scenario to validate fields like container number format
+    $model->scenario = ContainerVisits::SCENARIO_GATE_IN;
+
+    if ($model->load(Yii::$app->request->post())) {
+        
+        // Handle Photo Update if they upload a new one
+        $model->arrival_photo_file = UploadedFile::getInstance($model, 'arrival_photo_file');
+        if ($model->arrival_photo_file) {
+            $path = $model->uploadArrivalPhoto();
+            if ($path) {
+                $model->arrival_photo_path = $path;
+            }
+        }
+
+        if ($model->save()) {
+            // CRITICAL: If dates changed, recalculate the Bill
+            $bill = BillingRecords::findOne(['visit_id' => $model->visit_id]);
+            if ($bill) {
+                $bill->recalculateBalance(); 
+            }
+
+            Yii::$app->session->setFlash('success', 'Visit details updated successfully.');
+            return $this->redirect(['view', 'id' => $model->visit_id]);
+        }
+    }
+
+    // Prepare Dropdowns (Required for gate_in_form to work)
+    $shippingLines = ArrayHelper::map(MasterShippingLines::find()->all(), 'line_id', 'line_name');
+    $owners = ArrayHelper::map(MasterContainerOwners::find()->all(), 'owner_id', 'owner_name');
+    $types = ArrayHelper::map(MasterContainerTypes::find()->all(), 'type_id', function ($m) {
+        return $m->size . "' " . $m->type_group . ' (' . $m->iso_code . ')';
+    });
+
+    // --- THE FIX IS HERE ---
+    // Point to 'gate_in_form' instead of 'update'
+    return $this->render('gate_in_form', [
+        'model' => $model,
+        'shippingLines' => $shippingLines, // Must pass these!
+        'owners' => $owners,
+        'types' => $types,
+    ]);
+}
+
+    /**
+     * ACTION: Soft Delete / Restore (Toggle)
+     */
+    public function actionTrash($id)
+    {
+        Yii::$app->user->can('dashboard-visit-view');
+        $model = $this->findModel($id);
+        
+        if ($model->is_deleted) {
+            // Restore
+            $model->restore(); // Assuming your BaseModel has restore() logic handling is_deleted=0
+            Yii::$app->session->setFlash('success', 'Record has been restored.');
+        } else {
+            // Soft Delete
+            $model->delete(); // Assuming your BaseModel treats delete() as soft delete if softDelete behavior is attached
+            // OR if you do it manually:
+            // $model->is_deleted = 1; $model->save(false);
+            
+            Yii::$app->session->setFlash('warning', 'Record moved to trash.');
+        }
+        
+        return $this->redirect(Yii::$app->request->referrer ?: ['index']);
+    }
+
+    /**
+     * ACTION: Permanent Delete
+     * This physically removes the record from the database.
+     */
+    public function actionForceDelete($id)
+    {
+        Yii::$app->user->can('dashboard-visit-view');
+        $model = $this->findModel($id);
+        
+        try {
+            // Force Delete logic (Physically remove row)
+            // If your BaseModel uses SoftDeleteBehavior, you might need $model->forceDelete();
+            // If not using behavior, standard $model->delete() on a soft-deleted record typically still just updates flag.
+            // To physically delete in Yii2 manually:
+             $model->forceDelete();
+            
+            Yii::$app->session->setFlash('success', 'Record permanently deleted.');
+            
+        } catch (\Exception $e) {
+            // Check for Foreign Key Constraints
+            if ($e->getCode() == 23000 || strpos($e->getMessage(), '1451') !== false) {
+                Yii::$app->session->setFlash('error', '<b>Cannot Delete:</b> This visit has related records (e.g., Billing, Surveys) that prevent deletion.');
+            } else {
+                Yii::$app->session->setFlash('error', 'Delete Failed: ' . $e->getMessage());
+            }
+        }
+
+        return $this->redirect(['index']);
+    }
+
+    /**
+     * ACTION: Render Restore/Delete Options Modal
+     */
+    public function actionRestoreOption($id)
+    {
+        if (Yii::$app->request->isAjax) {
+            return $this->renderAjax('_restore_option', [
+                'model' => $this->findModel($id)
+            ]);
+        }
+        return $this->redirect(['index']);
+    }
+    public function actionAjaxComment($id)
+    {
+        $model = $this->findModel($id);
+        
+        // If form submitted
+        if ($model->load(Yii::$app->request->post())) {
+            // Save only the comments field (skip other validations for speed)
+            // We use updateAttributes to be precise and safe
+            $model->updateAttributes(['comments_in' => $model->comments_in]);
+            
+            Yii::$app->session->setFlash('success', 'Flags/Comments updated.');
+            return $this->redirect(['index']);
+        }
+
+        if (Yii::$app->request->isAjax) {
+            return $this->renderAjax('_comment_form', [
+                'model' => $model
+            ]);
+        }
+        return $this->redirect(['index']);
     }
     protected function findModel($id)
     {

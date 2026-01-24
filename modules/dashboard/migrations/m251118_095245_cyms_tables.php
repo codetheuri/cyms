@@ -97,7 +97,7 @@ class m251118_095245_cyms_tables extends Migration
             'departure_photo_path' => $this->string(255), 
        
             // --- CALCULATED FIELDS ---
-            'storage_days' => $this->integer()->defaultValue(0),
+            'storage_days' => $this->decimal(10,2)->defaultValue(0),
 
             'is_deleted' => $this->boolean()->notNull()->defaultValue(0),
             'created_at' => $this->integer()->notNull(),
@@ -198,7 +198,7 @@ class m251118_095245_cyms_tables extends Migration
             'invoice_number' => $this->string(50),
 
 
-            'storage_days' => $this->integer()->defaultValue(0),
+            'storage_days' => $this->decimal(10,2)->defaultValue(0),
             'tariff_rate' => $this->decimal(10, 2)->defaultValue(0),
             'storage_total' => $this->decimal(10, 2)->defaultValue(0),
             'repair_total' => $this->decimal(10, 2)->defaultValue(0),

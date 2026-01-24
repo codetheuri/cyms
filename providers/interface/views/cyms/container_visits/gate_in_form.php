@@ -156,10 +156,24 @@ $readOnlyAttr = ['readonly' => !$isNew];
                 <label class="form-label">Documents (ID, Manifest, etc)</label>
                 <?= $form->field($model, 'document_files[]')->fileInput(['multiple' => true, 'accept' => 'image/*,application/pdf'])->label(false) ?>
             </div>
-            <div class="col-md-12 mb-3">
-                <?= $form->field($model, 'comments_in')->textarea(['rows' => 2, 'placeholder' => 'Any remarks...']) ?>
-            </div>
+        
         </div>
+        <div class="block block-rounded border-start border-5 border-warning mb-3">
+    <div class="block-header bg-warning-light">
+        <h3 class="block-title text-warning-dark fw-bold">
+            <i class="fa fa-exclamation-triangle me-1"></i> Special Instructions / Flags
+        </h3>
+    </div>
+    <div class="block-content block-content-full">
+        <?= $form->field($model, 'comments_in')->textarea([
+            'rows' => 3, 
+            'placeholder' => 'Examples: "Mistake entry - please delete", "Police Case - DO NOT RELEASE", "Damaged on arrival"...'
+        ])->label(false) ?>
+        <div class="form-text text-muted">
+            <strong>Note:</strong> Anything written here will trigger an alert during Gate Out and highlight this record for Admins.
+        </div>
+    </div>
+</div>
 
         <div class="pt-4 border-top mt-3">
             <?= Html::submitButton('<i class="fa fa-check"></i> Save Gate IN', ['class' => 'btn btn-lg btn-primary']) ?>

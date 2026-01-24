@@ -8,6 +8,7 @@ $this->title = 'Clients & Transporters';
     <div class="block-header block-header-default">
         <h3 class="block-title"><?= Html::encode($this->title) ?></h3>
         <div class="block-options">
+            
             <?=html::customButton(
                 [
                     'type' => 'modal',
@@ -27,6 +28,7 @@ $this->title = 'Clients & Transporters';
         </div>
     </div>
     <div class="block-content">
+        
         <div class="mb-3">
             <?= $this->render('_search', ['model' => $searchModel]); ?>
         </div>
