@@ -9,6 +9,10 @@ use helpers\DashboardController;
 use yii\web\NotFoundHttpException;
 use dashboard\models\BillingPayments;
 use dashboard\models\ContainerVisits;
+use kartik\mpdf\Pdf;
+// use Mpdf\Mpdf;
+// use Mpdf\Output\Destination;
+
 
 class BillingController extends DashboardController
 {
@@ -138,33 +142,33 @@ class BillingController extends DashboardController
     //     }
     //     return $this->redirect(['index']);
     // }
-   // dashboard/controllers/BillingController.php
+    // dashboard/controllers/BillingController.php
 
-public function actionAuthorizeCredit($id)
-{
-    Yii::$app->user->can('dashboard-billing-update');
-    $model = $this->findModel($id);
+    public function actionAuthorizeCredit($id)
+    {
+        Yii::$app->user->can('dashboard-billing-update');
+        $model = $this->findModel($id);
 
-    if ($model->load(Yii::$app->request->post())) {
-        
-        // 1. Upload File
-        if ($model->uploadAgreement()) {
-            
-            $model->status = 'CREDIT';
+        if ($model->load(Yii::$app->request->post())) {
 
-            // 2. Validate & Save (This will now include atl_number)
-            if ($model->save()) {
-                Yii::$app->session->setFlash('success', 'Credit Authorized with ATL #' . $model->atl_number);
-                return $this->redirect(['view', 'id' => $id]);
+            // 1. Upload File
+            if ($model->uploadAgreement()) {
+
+                $model->status = 'CREDIT';
+
+                // 2. Validate & Save (This will now include atl_number)
+                if ($model->save()) {
+                    Yii::$app->session->setFlash('success', 'Credit Authorized with ATL #' . $model->atl_number);
+                    return $this->redirect(['view', 'id' => $id]);
+                } else {
+                    Yii::$app->session->setFlash('error', 'Validation failed: ' . json_encode($model->errors));
+                }
             } else {
-                 Yii::$app->session->setFlash('error', 'Validation failed: ' . json_encode($model->errors));
+                Yii::$app->session->setFlash('error', 'Failed to upload agreement document.');
             }
-        } else {
-            Yii::$app->session->setFlash('error', 'Failed to upload agreement document.');
         }
+        return $this->redirect(['view', 'id' => $id]);
     }
-    return $this->redirect(['view', 'id' => $id]);
-}
     public function actionUpdateDiscount($id)
     {
         Yii::$app->user->can('dashboard-billing-update');
@@ -253,12 +257,61 @@ public function actionAuthorizeCredit($id)
                 'atl_number' => $model->atl_number,
                 'authorized_by' => $model->authorized_by
             ]);
-            
+
             Yii::$app->session->setFlash('success', 'Credit Authorization details updated.');
         }
-        
+
         return $this->redirect(['view', 'id' => $id]);
     }
+
+
+
+   public function actionGenerateInvoice($id)
+{
+    $model = $this->findModel($id);
+    $model->recalculateBalance();
+
+    $header = $this->renderPartial('_invoice_header', ['model' => $model]);
+    $footer = $this->renderPartial('_invoice_footer');
+    $body   = $this->renderPartial('_invoice_body',   ['model' => $model]);
+
+    $css = "
+        body { font-family: 'Helvetica', sans-serif; color: #333; }
+        .invoice-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .invoice-table th { background-color: #2c3e50; color: #ffffff; text-align: left; padding: 12px; font-size: 9pt; text-transform: uppercase; }
+        .invoice-table td { padding: 10px; border-bottom: 1px solid #eee; font-size: 10pt; vertical-align: top; }
+        .text-right { text-align: right; }
+        .bold { font-weight: bold; }
+        .total-row { background-color: #f8f9fa; font-weight: bold; border-top: 2px solid #2c3e50 !important; }
+        .section-title { border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 25px; font-size: 12pt; color: #2c3e50; font-weight: bold; }
+        .danger { color: #c0392b; }
+        .success { color: #27ae60; }
+    ";
+
+    $pdf = new \kartik\mpdf\Pdf([
+        'mode' => \kartik\mpdf\Pdf::MODE_UTF8,
+        'format' => \kartik\mpdf\Pdf::FORMAT_A4,
+        'destination' => \kartik\mpdf\Pdf::DEST_DOWNLOAD,
+        'filename' => 'Invoice-' . $model->invoice_number . '.pdf',
+        'content' => $body,
+        'cssInline' => $css, 
+        'options' => [
+            'title' => 'Invoice ' . $model->invoice_number,
+            'tempDir' => Yii::getAlias('@runtime/mpdf'),
+            'margin_top' => 55,       // Increased to prevent overlap
+            'margin_bottom' => 30,
+            'margin_header' => 15,    // Added padding for the header
+            'margin_footer' => 10,
+        ],
+        'methods' => [
+            'SetHTMLHeader' => [$header],
+            'SetHTMLFooter' => [$footer],
+        ]
+    ]);
+
+    if (ob_get_length()) ob_end_clean();
+    return $pdf->render();
+}
     protected function findModel($bill_id)
     {
         if (($model = BillingRecords::findOne(['bill_id' => $bill_id])) !== null) {

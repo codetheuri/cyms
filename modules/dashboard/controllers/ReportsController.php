@@ -32,11 +32,11 @@ class ReportsController extends DashboardController
         return $this->render('index');
     }
 
-  public function actionGenerate()
+    public function actionGenerate()
     {
         Yii::$app->user->can('dashboard-reports-view');
         $request = Yii::$app->request;
-        
+
         $data = $this->prepareReportData($request);
 
         $isExcel = ($request->post('format') === 'excel');
@@ -50,14 +50,14 @@ class ReportsController extends DashboardController
 
         return $this->renderPartial('print_custom', array_merge($data, ['isExcel' => false]));
     }
-    
+
     // ... (actionInward, actionOutward) ...
-     public function actionInward($id)
+    public function actionInward($id)
     {
         Yii::$app->user->can('dashboard-container-owner-view');
         $visit = $this->findVisitModel($id);
         $survey = ContainerSurveys::findOne(['visit_id' => $id]);
-        $settings = new General(); 
+        $settings = new General();
         return $this->render('inward_interchange', ['visit' => $visit, 'survey' => $survey, 'settings' => $settings]);
     }
 
@@ -65,14 +65,14 @@ class ReportsController extends DashboardController
     {
         Yii::$app->user->can('dashboard-container-owner-view');
         $visit = $this->findVisitModel($id);
-        $settings = new General(); 
+        $settings = new General();
         return $this->render('outward_interchange', ['visit' => $visit, 'settings' => $settings]);
     }
     public function actionEmailReport()
     {
         Yii::$app->user->can('dashboard-reports-view');
         $request = Yii::$app->request;
-         $emailTo = Yii::$app->config->get('admin_email');
+        $emailTo = Yii::$app->config->get('admin_email');
         // $emailTo= "theurij113@gmail.com";
         // $emailTo = $request->post('email_to'); 
 
@@ -104,7 +104,7 @@ class ReportsController extends DashboardController
         return $this->redirect(['index']);
     }
 
-protected function prepareReportData($request)
+    protected function prepareReportData($request)
     {
         $type = $request->post('report_type');
         $dateFrom = $request->post('date_from');
@@ -123,7 +123,7 @@ protected function prepareReportData($request)
         $query = null;
 
         // --- HELPER 1: Format Date + Time (e.g. 25 Jan 2026 14:30) ---
-        $formatDateTime = function($date, $time) {
+        $formatDateTime = function ($date, $time) {
             if (!$date) return '-';
             $d = Yii::$app->formatter->asDate($date, 'php:d M Y');
             $t = $time ? date('H:i', strtotime($time)) : '00:00';
@@ -131,15 +131,15 @@ protected function prepareReportData($request)
         };
 
         // --- HELPER 2: Calculate Integer Days (1 min = 1 Day) ---
-        $calcDays = function($date, $time) {
+        $calcDays = function ($date, $time) {
             if (!$date) return 0;
             // Combine Date+Time or default to midnight
             $start = strtotime($date . ' ' . ($time ?: '00:00:00'));
             $now = time();
-            
+
             // Calculate difference
             $diff = $now - $start;
-            
+
             // Logic: Floor + 1 (So 0.1 days becomes 1 Day)
             return ($diff < 0) ? 1 : (floor($diff / 86400) + 1);
         };
@@ -152,39 +152,43 @@ protected function prepareReportData($request)
             if ($moveType === 'in') {
                 $title = "Gate IN Report ($strFrom to $strTo)";
                 $query->andWhere(['between', 'date_in', $strFrom, $strTo]);
-                
+
                 $columns = [
                     ['class' => 'yii\grid\SerialColumn'],
                     'container_number',
                     'shippingLine.line_code:text:Line',
                     [
                         'label' => 'Gate In Time',
-                        'value' => function($m) use ($formatDateTime) { return $formatDateTime($m->date_in, $m->time_in); }
+                        'value' => function ($m) use ($formatDateTime) {
+                            return $formatDateTime($m->date_in, $m->time_in);
+                        }
                     ],
                     'vehicle_reg_no_in:text:Truck',
-                    ['label' => 'Transporter', 'value' => function($m) { return $m->containerOwner->owner_name ?? $m->truck_owner_name_in; }]
+                    ['label' => 'Transporter', 'value' => function ($m) {
+                        return $m->containerOwner->owner_name ?? $m->truck_owner_name_in;
+                    }]
                 ];
-
             } elseif ($moveType === 'out') {
                 $title = "Gate OUT Report ($strFrom to $strTo)";
                 $query->andWhere(['between', 'date_out', $strFrom, $strTo])->andWhere(['status' => 'GATE_OUT']);
-                
+
                 $columns = [
                     ['class' => 'yii\grid\SerialColumn'],
                     'container_number',
                     'shippingLine.line_code:text:Line',
                     [
                         'label' => 'Gate Out Time',
-                        'value' => function($m) use ($formatDateTime) { return $formatDateTime($m->date_out, $m->time_out); }
+                        'value' => function ($m) use ($formatDateTime) {
+                            return $formatDateTime($m->date_out, $m->time_out);
+                        }
                     ],
                     'vehicle_reg_no_out:text:Truck',
                     'destination',
                 ];
-
             } else {
                 $title = "Gate Activity (In & Out) - ($strFrom to $strTo)";
                 $query->andWhere(['or', ['between', 'date_in', $strFrom, $strTo], ['between', 'date_out', $strFrom, $strTo]])
-                      ->orderBy(['created_at' => SORT_DESC]);
+                    ->orderBy(['created_at' => SORT_DESC]);
 
                 $columns = [
                     ['class' => 'yii\grid\SerialColumn'],
@@ -193,13 +197,19 @@ protected function prepareReportData($request)
                     'status',
                     [
                         'label' => 'In',
-                        'value' => function($m) use ($formatDateTime) { return $formatDateTime($m->date_in, $m->time_in); }
+                        'value' => function ($m) use ($formatDateTime) {
+                            return $formatDateTime($m->date_in, $m->time_in);
+                        }
                     ],
                     [
                         'label' => 'Out',
-                        'value' => function($m) use ($formatDateTime) { return $formatDateTime($m->date_out, $m->time_out); }
+                        'value' => function ($m) use ($formatDateTime) {
+                            return $formatDateTime($m->date_out, $m->time_out);
+                        }
                     ],
-                    ['label' => 'Transporter', 'value' => function($m) { return $m->containerOwner->owner_name ?? $m->truck_owner_name_in; }]
+                    ['label' => 'Transporter', 'value' => function ($m) {
+                        return $m->containerOwner->owner_name ?? $m->truck_owner_name_in;
+                    }]
                 ];
             }
         }
@@ -211,7 +221,7 @@ protected function prepareReportData($request)
                 ->where(['status' => ['IN_YARD', 'SURVEYED']])
                 ->orderBy(['date_in' => SORT_ASC])
                 ->joinWith(['shippingLine']);
-            
+
             $query->andFilterWhere(['shipping_line_id' => $shippingLine]);
 
             if ($shippingLine) {
@@ -226,18 +236,24 @@ protected function prepareReportData($request)
                 'containerType.iso_code:text:Type',
                 [
                     'label' => 'Date In',
-                    'value' => function($m) use ($formatDateTime) { return $formatDateTime($m->date_in, $m->time_in); }
+                    'value' => function ($m) use ($formatDateTime) {
+                        return $formatDateTime($m->date_in, $m->time_in);
+                    }
                 ],
                 [
                     'label' => 'Days',
                     'contentOptions' => ['style' => 'font-weight:bold; text-align:center;'],
                     // FIX: Use the calcDays helper logic
-                    'value' => function ($m) use ($calcDays) { return $calcDays($m->date_in, $m->time_in); }
+                    'value' => function ($m) use ($calcDays) {
+                        return $calcDays($m->date_in, $m->time_in);
+                    }
                 ],
                 'status',
                 [
                     'label' => 'Condition',
-                    'value' => function ($m) { return $m->getContainerSurvey()->exists() ? $m->containerSurvey->approval_status : 'Pending'; }
+                    'value' => function ($m) {
+                        return $m->getContainerSurvey()->exists() ? $m->containerSurvey->approval_status : 'Pending';
+                    }
                 ]
             ];
         }
@@ -251,7 +267,7 @@ protected function prepareReportData($request)
                 ->andWhere(['<', 'date_in', $thirtyDaysAgo])
                 ->orderBy(['date_in' => SORT_ASC])
                 ->joinWith(['shippingLine']);
-            
+
             $query->andFilterWhere(['shipping_line_id' => $shippingLine]);
 
             $columns = [
@@ -260,13 +276,17 @@ protected function prepareReportData($request)
                 'shippingLine.line_code:text:Line',
                 [
                     'label' => 'Date In',
-                    'value' => function($m) use ($formatDateTime) { return $formatDateTime($m->date_in, $m->time_in); }
+                    'value' => function ($m) use ($formatDateTime) {
+                        return $formatDateTime($m->date_in, $m->time_in);
+                    }
                 ],
                 [
                     'label' => 'Days Stayed',
                     'contentOptions' => ['style' => 'color: red; font-weight: bold; text-align:center;'],
                     // FIX: Use the calcDays helper logic
-                    'value' => function ($m) use ($calcDays) { return $calcDays($m->date_in, $m->time_in); }
+                    'value' => function ($m) use ($calcDays) {
+                        return $calcDays($m->date_in, $m->time_in);
+                    }
                 ],
             ];
         }
@@ -287,13 +307,12 @@ protected function prepareReportData($request)
                 ['attribute' => 'amount', 'format' => ['currency', 'KES'], 'contentOptions' => ['style' => 'text-align: right; font-weight: bold;']],
                 'bill.visit.truck_owner_name_in:text:Payer',
             ];
-        }
-        elseif ($type === 'invoices') {
+        } elseif ($type === 'invoices') {
             $title = "Invoices Generated ($strFrom to $strTo)";
             $query = BillingRecords::find()->joinWith(['visit'])
                 ->where(['between', BillingRecords::tableName() . '.created_at', $tsFrom, $tsTo])
                 ->orderBy(['created_at' => SORT_DESC]);
-            
+
             $columns = [
                 ['class' => 'yii\grid\SerialColumn'],
                 'invoice_number',
@@ -302,23 +321,23 @@ protected function prepareReportData($request)
                 ['attribute' => 'balance', 'format' => ['currency', 'KES'], 'contentOptions' => ['style' => 'text-align: right; color: red;']],
                 'status'
             ];
-        }
-        elseif ($type === 'debtors') {
+        } elseif ($type === 'debtors') {
             $title = "Outstanding Debtors";
             $query = BillingRecords::find()->joinWith(['visit.containerOwner'])
                 ->where(['>', 'balance', 0.01])
                 ->andWhere(['billing_records.status' => ['UNPAID', 'PARTIAL', 'CREDIT']])
                 ->orderBy(['balance' => SORT_DESC]);
 
-             $columns = [
+            $columns = [
                 ['class' => 'yii\grid\SerialColumn'],
-                ['label' => 'Client', 'value' => function($m) { return $m->visit->containerOwner->owner_name ?? $m->visit->truck_owner_name_in; }],
+                ['label' => 'Client', 'value' => function ($m) {
+                    return $m->visit->containerOwner->owner_name ?? $m->visit->truck_owner_name_in;
+                }],
                 'invoice_number',
                 'visit.container_number',
                 ['attribute' => 'balance', 'format' => ['currency', 'KES'], 'contentOptions' => ['style' => 'text-align: right; color: red; font-weight: bold;']],
             ];
-        }
-        elseif ($type === 'repairs') {
+        } elseif ($type === 'repairs') {
             $title = "Repair Costs Summary";
             $query = BillingRecords::find()->joinWith(['visit'])
                 ->where(['>', 'repair_total', 0])
@@ -349,69 +368,69 @@ protected function prepareReportData($request)
             'type' => $type
         ];
     }
-public function actionBackupDatabase()
-{
-    // 1. Define File Paths
-    $dbName = Yii::$app->db->username; // Or parse dsn
-    // Note: Better to parse DSN, but for simplicity assuming config is standard
-    $dsn = Yii::$app->db->dsn;
-    preg_match('/dbname=([^;]*)/', $dsn, $matches);
-    $dbName = $matches[1];
-    
-    $filename = 'backup_' . $dbName . '_' . date('Y-m-d_H-i-s') . '.sql';
-    $zipFilename = $filename . '.zip';
-    $savePath = Yii::getAlias('@runtime/') . $filename;
-    $zipPath = Yii::getAlias('@runtime/') . $zipFilename;
+    public function actionBackupDatabase()
+    {
+        // 1. Define File Paths
+        $dbName = Yii::$app->db->username; // Or parse dsn
+        // Note: Better to parse DSN, but for simplicity assuming config is standard
+        $dsn = Yii::$app->db->dsn;
+        preg_match('/dbname=([^;]*)/', $dsn, $matches);
+        $dbName = $matches[1];
 
-    // 2. Get DB Credentials
-    $username = Yii::$app->db->username;
-    $password = Yii::$app->db->password;
-    $host = 'localhost'; // Usually localhost
+        $filename = 'backup_' . $dbName . '_' . date('Y-m-d_H-i-s') . '.sql';
+        $zipFilename = $filename . '.zip';
+        $savePath = Yii::getAlias('@runtime/') . $filename;
+        $zipPath = Yii::getAlias('@runtime/') . $zipFilename;
 
-    // 3. Run mysqldump command
-    // NOTE: This requires mysqldump to be installed and accessible via shell
-    $command = "mysqldump --user={$username} --password={$password} --host={$host} {$dbName} > {$savePath}";
-    system($command, $output);
+        // 2. Get DB Credentials
+        $username = Yii::$app->db->username;
+        $password = Yii::$app->db->password;
+        $host = 'localhost'; // Usually localhost
 
-    if (!file_exists($savePath) || filesize($savePath) == 0) {
-        Yii::$app->session->setFlash('error', 'Backup failed: Could not generate SQL dump.');
+        // 3. Run mysqldump command
+        // NOTE: This requires mysqldump to be installed and accessible via shell
+        $command = "mysqldump --user={$username} --password={$password} --host={$host} {$dbName} > {$savePath}";
+        system($command, $output);
+
+        if (!file_exists($savePath) || filesize($savePath) == 0) {
+            Yii::$app->session->setFlash('error', 'Backup failed: Could not generate SQL dump.');
+            return $this->redirect(['index']);
+        }
+
+        // 4. Zip the file (to save space in email)
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE) === TRUE) {
+            $zip->addFile($savePath, $filename);
+            $zip->close();
+        }
+
+        // 5. Send via Email using your existing Hook
+        $emailTo = Yii::$app->config->get('admin_email');
+        $mailer = Yii::createObject(['class' => 'dashboard\hooks\Mail']);
+
+        // Read the ZIP content
+        $attachmentContent = file_get_contents($zipPath);
+
+        $sent = $mailer->sendReportAttachment(
+            $emailTo,
+            "System Database Backup - " . date('Y-m-d'),
+            "Attached is the full system database backup.",
+            $attachmentContent,
+            $zipFilename
+        );
+
+        // 6. Cleanup (Delete temp files)
+        @unlink($savePath);
+        @unlink($zipPath);
+
+        if ($sent) {
+            Yii::$app->session->setFlash('success', 'Database backup emailed successfully!');
+        } else {
+            Yii::$app->session->setFlash('error', 'Backup generated but email failed.');
+        }
+
         return $this->redirect(['index']);
     }
-
-    // 4. Zip the file (to save space in email)
-    $zip = new \ZipArchive();
-    if ($zip->open($zipPath, \ZipArchive::CREATE) === TRUE) {
-        $zip->addFile($savePath, $filename);
-        $zip->close();
-    }
-
-    // 5. Send via Email using your existing Hook
-    $emailTo = Yii::$app->config->get('admin_email');
-    $mailer = Yii::createObject(['class' => 'dashboard\hooks\Mail']);
-    
-    // Read the ZIP content
-    $attachmentContent = file_get_contents($zipPath);
-    
-    $sent = $mailer->sendReportAttachment(
-        $emailTo, 
-        "System Database Backup - " . date('Y-m-d'), 
-        "Attached is the full system database backup.", 
-        $attachmentContent, 
-        $zipFilename
-    );
-
-    // 6. Cleanup (Delete temp files)
-    @unlink($savePath);
-    @unlink($zipPath);
-
-    if ($sent) {
-        Yii::$app->session->setFlash('success', 'Database backup emailed successfully!');
-    } else {
-        Yii::$app->session->setFlash('error', 'Backup generated but email failed.');
-    }
-
-    return $this->redirect(['index']);
-}
     protected function findVisitModel($id)
     {
         if (($model = ContainerVisits::findOne($id)) !== null) {

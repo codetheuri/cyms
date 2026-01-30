@@ -16,6 +16,7 @@ class ConfigWrapper
             '@ui' => '@app/providers/interface',
             '@cmd' => '@app/providers/console',
             '@modules' => '@app/modules',
+            '@uploads' => '@app/uploads',
         ];
         $this->_modules = [
             'admin' => [

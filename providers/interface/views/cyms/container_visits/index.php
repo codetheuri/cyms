@@ -32,7 +32,7 @@ $this->title = 'Gate IN Records';
         <div class="user-search my-3">
             <?= $this->render('_search', ['model' => $searchModel]); ?>
         </div>
-        
+
         <?= GridView::widget([
             'dataProvider' => $dataProvider,
             // 'filterModel' => $searchModel, // Uncomment if you want filters back
@@ -45,7 +45,7 @@ $this->title = 'Gate IN Records';
             'tableOptions' => ['class' => 'table table-striped table-hover table-vcenter'],
             'columns' => [
                 ['class' => 'yii\grid\SerialColumn'],
-                
+
                 // 1. TICKET
                 [
                     'attribute' => 'ticket_no_in',
@@ -99,7 +99,7 @@ $this->title = 'Gate IN Records';
                     'label' => 'Date In',
                     'attribute' => 'date_in',
                     'format' => 'raw',
-                    'value' => function($model) {
+                    'value' => function ($model) {
                         $date = Yii::$app->formatter->asDate($model->date_in, 'php:d M Y');
                         $time = $model->time_in ? date('H:i', strtotime($model->time_in)) : '';
                         return "<div>{$date}</div><div class='fs-xs text-muted'><i class='fa fa-clock me-1'></i>{$time} hrs</div>";
@@ -120,18 +120,27 @@ $this->title = 'Gate IN Records';
                         return "<span class='badge $color'>{$model->status}</span>";
                     }
                 ],
-                
+
+                // 'comments_in',
+                // [
+                //     'attribute' => 'comments_in',
+                //     'format' => 'raw',
+                //     'value' => function ($model) {
+                //         return \yii\helpers\StringHelper::truncateWords($model->comments_in, 10, "...");
+                //     },
+                // ],
+
                 // 8. ACTIONS (Cleaned Up)
                 [
                     'class' => 'yii\grid\ActionColumn',
                     'header' => 'Actions',
                     'template' => '<div class="btn-group">{view} {flag} {trash}</div> <div class="btn-group">{dropdown}</div>',
                     'buttons' => [
-                        
+
                         // VIEW
                         'view' => function ($url, $model) {
                             return Html::a('<i class="fa fa-eye"></i>', ['view', 'id' => $model->visit_id], [
-                                'class' => 'btn btn-sm btn-alt-secondary', 
+                                'class' => 'btn btn-sm btn-alt-secondary',
                                 'title' => 'View Details',
                                 'data-bs-toggle' => 'tooltip'
                             ]);
@@ -186,7 +195,7 @@ $this->title = 'Gate IN Records';
                                     ['class' => 'dropdown-item']
                                 ) . '</li>';
                             }
-                            
+
                             // Edit Link (Full Edit)
                             if ($model->status === 'IN_YARD') {
                                 $links .= '<li>' . Html::a(
@@ -216,7 +225,7 @@ $this->title = 'Gate IN Records';
                                     ['class' => 'dropdown-item', 'target' => '_blank']
                                 ) . '</li>';
                             }
-                            
+
                             if (empty($links)) return '';
 
                             return '<div class="btn-group">
