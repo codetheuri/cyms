@@ -12,7 +12,7 @@ $status = $bill ? $bill->status : 'UNKNOWN';
 
 // Lift On Check
 $settingLiftOn = (float) Yii::$app->config->get('lift_on_charges');
-$hasLiftOn = $bill && ($bill->lift_charges >= $settingLiftOn); // Simplified check
+$hasLiftOn = $bill && ($bill->lift_charges >= $settingLiftOn);
 
 // Status Styles
 $statusColor = match($status) {
@@ -25,8 +25,11 @@ $statusIcon = match($status) {
     'CREDIT' => 'fa fa-file-signature',
     default => 'fa fa-times-circle'
 };
+
+// Check for Flag comments
 $hasComments = !empty($model->comments_in);
 ?>
+
 <?php if ($hasComments): ?>
     <div class="alert alert-danger border-3 border-danger shadow-sm mb-4">
         <div class="d-flex align-items-center">
@@ -47,6 +50,7 @@ $hasComments = !empty($model->comments_in);
         </div>
     </div>
 <?php endif; ?>
+
 <div class="block block-rounded border-start border-5 border-<?= $statusColor ?> shadow-sm mb-4">
     <div class="block-content block-content-full py-3">
         <div class="row align-items-center">
@@ -157,15 +161,26 @@ $hasComments = !empty($model->comments_in);
 
                     <div class="col-md-6">
                         <h6 class="text-uppercase text-muted fw-bold border-bottom pb-2 mb-3">
-                            <i class="fa fa-map-marker-alt me-2"></i>Logistics
+                            <i class="fa fa-map-marker-alt me-2"></i>Logistics & Timing
                         </h6>
+
+                        <div class="alert alert-warning py-2 fs-sm">
+                            <i class="fa fa-clock me-1"></i> 
+                            <strong>Backdating:</strong> If the truck left yesterday, please correct the date below. 
+                            The billing days will freeze based on the Date selected here.
+                        </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <?= $form->field($model, 'date_out')->input('date', ['readonly' => true]) ?>
+                                <?= $form->field($model, 'date_out')->input('date', [
+                                    'class' => 'form-control fw-bold',
+                                    'max' => date('Y-m-d')
+                                ])->label('Actual Date Out') ?>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <?= $form->field($model, 'time_out')->input('time', ['readonly' => true]) ?>
+                                <?= $form->field($model, 'time_out')->input('time', [
+                                    'class' => 'form-control fw-bold'
+                                ])->label('Actual Time Out') ?>
                             </div>
                         </div>
 
@@ -176,10 +191,6 @@ $hasComments = !empty($model->comments_in);
                             ])->label('Container Destination') ?>
                         </div>
 
-                        <div class="alert alert-warning py-2">
-                             <small><i class="fa fa-exclamation-circle"></i> Ensure the Ticket No matches the printed Gate Pass.</small>
-                        </div>
-                        
                         <div class="mb-3">
                              <?= $form->field($model, 'ticket_no_out')->textInput(['readonly' => true, 'class' => 'form-control bg-body-light fw-bold']) ?>
                         </div>
@@ -198,7 +209,8 @@ $hasComments = !empty($model->comments_in);
                 <div class="pt-4 mt-4 border-top">
                     <div class="row align-items-center">
                         <div class="col-md-8 text-muted fs-sm">
-                            By clicking release, you confirm that the container has physically left the yard and all fees have been settled.
+                            By clicking release, you confirm that the container has physically left the yard. 
+                            The storage counter will stop at the selected Time Out.
                         </div>
                         <div class="col-md-4 text-end">
                             <?= Html::submitButton('<i class="fa fa-truck-moving me-2"></i> RELEASE CONTAINER', [

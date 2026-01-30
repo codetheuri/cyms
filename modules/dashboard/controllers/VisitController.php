@@ -267,83 +267,88 @@ class VisitController extends DashboardController
             'currentSlotId' => $currentSlotId, // Pass current selection
         ]);
     }
-  public function actionGateOut($id)
+public function actionGateOut($id)
+{
+    Yii::$app->user->can('dashboard-visit-gate-out');
+    $model = $this->findModel($id);
 
-    {
-        Yii::$app->user->can('dashboard-visit-gate-out');
-        $model = $this->findModel($id);
+    // --- 1. BILLING CHECK ---
+    $bill = \dashboard\models\BillingRecords::findOne(['visit_id' => $id]);
 
-        // --- 1. BILLING CHECK (Keep existing logic) ---
-        $bill = \dashboard\models\BillingRecords::findOne(['visit_id' => $id]);
-
-        if (!$bill) {
-            $bill = new \dashboard\models\BillingRecords();
-            $bill->visit_id = $id;
-            $bill->tariff_rate = Yii::$app->config->get('storage_rate_per_day') ?? 0;
-            // $liftOn = Yii::$app->config->get('lift_on_charges') ?? 0;
-            $liftOff = Yii::$app->config->get('lift_off_charges') ?? 0;
-            $bill->lift_charges= $liftOff;
-            $bill->save9();
-        }
-
-        
-        $bill->recalculateBalance();
-
-        // Check Payment Status
-        $isPaid = ($bill->status === 'PAID' || $bill->status === 'CREDIT' || $bill->balance <= 0.01);
-
-        if (!$isPaid) {
-            Yii::$app->session->setFlash('error', 'Container cannot be released. Outstanding Balance: ' . number_format($bill->balance, 2));
-            return $this->redirect(['/dashboard/billing/view', 'id' => $bill->bill_id]);
-        }
-
-        // --- 2. GATE OUT LOGIC (Fixed File Upload) ---
-        $model->scenario = ContainerVisits::SCENARIO_GATE_OUT;
-
-        if (empty($model->date_out)) {
-            $model->date_out = date('Y-m-d');
-            $model->time_out = date('H:i');
-        }
-
-        if ($model->load(Yii::$app->request->post())) {
-            
-            // 1. Get File Instance
-            $model->departure_photo_file = \yii\web\UploadedFile::getInstance($model, 'departure_photo_file');
-
-            // 2. VALIDATE FIRST
-            if ($model->validate()) {
-                
-                // 3. Upload File (Now safe to move)
-                $photoPath = $model->uploadDeparturePhoto();
-                if ($photoPath) {
-                    $model->departure_photo_path = $photoPath;
-                }
-                
-                $model->status = 'GATE_OUT';
-
-                // 4. Save with validation DISABLED (since we already validated)
-                if ($model->save(false)) {
-                    
-                    // Clear Yard Slot
-                    $slot = \dashboard\models\YardSlots::findOne(['current_visit_id' => $id]);
-                    if ($slot) {
-                        $slot->unpark();
-                    }
-
-                    Yii::$app->session->setFlash('success', 'Container Released Successfully.');
-                    return $this->redirect(['out-index']);
-                }
-            } else {
-                // Show Validation Errors
-                $errors = implode('<br>', \yii\helpers\ArrayHelper::getColumn($model->getErrors(), 0));
-                Yii::$app->session->setFlash('error', 'Validation Error: ' . $errors);
-            }
-        }
-
-        return $this->render('gate_out_form', [
-            'model' => $model,
-        ]);
+    if (!$bill) {
+        $bill = new \dashboard\models\BillingRecords();
+        $bill->visit_id = $id;
+        $bill->tariff_rate = Yii::$app->config->get('storage_rate_per_day') ?? 0;
+        $liftOff = Yii::$app->config->get('lift_off_charges') ?? 0;
+        $bill->lift_charges = $liftOff;
+        $bill->save(false);
     }
+
+    // Recalculate to ensure current status is up to date
+    $bill->recalculateBalance();
+
+    // Check Payment Status
+    $isPaid = ($bill->status === 'PAID' || $bill->status === 'CREDIT' || $bill->balance <= 0.01);
+
+    if (!$isPaid) {
+        Yii::$app->session->setFlash('error', 'Container cannot be released. Outstanding Balance: ' . number_format($bill->balance, 2));
+        return $this->redirect(['/dashboard/billing/view', 'id' => $bill->bill_id]);
+    }
+
+    // --- 2. GATE OUT LOGIC ---
+    $model->scenario = ContainerVisits::SCENARIO_GATE_OUT;
+
+    // Default to NOW, but allow user to change it in form
+    if (empty($model->date_out)) {
+        $model->date_out = date('Y-m-d');
+        $model->time_out = date('H:i');
+    }
+
+    if ($model->load(Yii::$app->request->post())) {
+        
+        // Handle File Upload
+        $model->departure_photo_file = \yii\web\UploadedFile::getInstance($model, 'departure_photo_file');
+
+        if ($model->validate()) {
+            
+            // Upload Photo
+            $photoPath = $model->uploadDeparturePhoto();
+            if ($photoPath) {
+                $model->departure_photo_path = $photoPath;
+            }
+            
+            $model->status = 'GATE_OUT';
+
+            if ($model->save(false)) {
+                
+                // --- FREEZE BILLING ---
+                // Now that we have saved the Date Out (even if backdated),
+                // we call recalculateBalance() one last time.
+                // The Bill Model will see status='GATE_OUT' and calculate days 
+                // based on the specific Date Out we just saved.
+                if ($bill) {
+                    $bill->recalculateBalance();
+                }
+                
+                // Clear Yard Slot
+                $slot = \dashboard\models\YardSlots::findOne(['current_visit_id' => $id]);
+                if ($slot) {
+                    $slot->unpark();
+                }
+
+                Yii::$app->session->setFlash('success', 'Container Released Successfully.');
+                return $this->redirect(['out-index']);
+            }
+        } else {
+            $errors = implode('<br>', \yii\helpers\ArrayHelper::getColumn($model->getErrors(), 0));
+            Yii::$app->session->setFlash('error', 'Validation Error: ' . $errors);
+        }
+    }
+
+    return $this->render('gate_out_form', [
+        'model' => $model,
+    ]);
+}
     public function actionAjaxCreateOwner()
 
     {
