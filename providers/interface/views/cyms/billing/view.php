@@ -18,13 +18,13 @@ $currentLift    = (float) ($model->lift_charges ?? 0);
 
 // Lift Logic
 $hasLiftOff = ($currentLift >= $settingLiftOff);
-$hasLiftOn = ($currentLift >= ($settingLiftOff + $settingLiftOn)) || 
-             (abs($currentLift - $settingLiftOn) < 0.01 && !$hasLiftOff);
+$hasLiftOn = ($currentLift >= ($settingLiftOff + $settingLiftOn)) ||
+    (abs($currentLift - $settingLiftOn) < 0.01 && !$hasLiftOff);
 
 // --- 2. CALCULATE TOTALS ---
 $storage  = (float)$model->storage_total;
 $repair   = (float)$model->repair_total;
-$subTotal = $storage + $repair + $currentLift; 
+$subTotal = $storage + $repair + $currentLift;
 
 $discount = (float)$model->discount_amount;
 $grandTotal = $subTotal - $discount;
@@ -45,7 +45,7 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
 <div class="block block-rounded content-card mb-4 border-start border-5 border-<?= $badgeColor ?> shadow-sm">
     <div class="block-content block-content-full py-3">
         <div class="row align-items-center">
-            
+
             <div class="col-md-4 border-end">
                 <div class="fs-xs text-muted text-uppercase fw-bold mb-1">Container</div>
                 <div class="fs-3 fw-bold text-dark d-flex align-items-center">
@@ -96,7 +96,7 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
             <div class="block-header block-header-default bg-body-light">
                 <h3 class="block-title fw-bold"><i class="fa fa-file-invoice-dollar me-2 text-muted"></i> Invoice Details</h3>
             </div>
-            
+
             <div class="block-content p-0">
                 <table class="table table-vcenter table-borderless mb-0">
                     <thead class="bg-body-light border-bottom">
@@ -108,7 +108,7 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
                         </tr>
                     </thead>
                     <tbody>
-                        
+
                         <tr>
                             <td class="ps-4">
                                 <div class="fw-bold text-dark">Storage Charges</div>
@@ -136,21 +136,21 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
                             <td class="text-center">
                                 <?php if ($model->status !== 'PAID'): ?>
                                     <?php if ($hasLiftOff): ?>
-                                        <?= Html::a('<i class="fa fa-times me-1"></i> Remove', ['toggle-lift-off', 'id'=>$model->bill_id], [
+                                        <?= Html::a('<i class="fa fa-times me-1"></i> Remove', ['toggle-lift-off', 'id' => $model->bill_id], [
                                             'data-method' => 'post',
                                             'data-params' => ['action' => 'remove'],
                                             'class' => 'btn btn-xs btn-alt-danger',
                                             'title' => 'Remove Charge'
                                         ]) ?>
                                     <?php else: ?>
-                                        <?= Html::a('<i class="fa fa-plus me-1"></i> Add', ['toggle-lift-off', 'id'=>$model->bill_id], [
+                                        <?= Html::a('<i class="fa fa-plus me-1"></i> Add', ['toggle-lift-off', 'id' => $model->bill_id], [
                                             'data-method' => 'post',
                                             'data-params' => ['action' => 'add'],
                                             'class' => 'btn btn-xs btn-alt-primary'
                                         ]) ?>
                                     <?php endif; ?>
                                 <?php else: ?>
-                                     <span class="badge bg-secondary"><?= $hasLiftOff ? 'Applied' : 'N/A' ?></span>
+                                    <span class="badge bg-secondary"><?= $hasLiftOff ? 'Applied' : 'N/A' ?></span>
                                 <?php endif; ?>
                             </td>
                             <td class="text-end text-muted"><?= number_format($settingLiftOff, 2) ?></td>
@@ -167,21 +167,21 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
                             <td class="text-center">
                                 <?php if ($model->status !== 'PAID'): ?>
                                     <?php if ($hasLiftOn): ?>
-                                        <?= Html::a('<i class="fa fa-times me-1"></i> Remove', ['toggle-lift-on', 'id'=>$model->bill_id], [
+                                        <?= Html::a('<i class="fa fa-times me-1"></i> Remove', ['toggle-lift-on', 'id' => $model->bill_id], [
                                             'data-method' => 'post',
                                             'data-params' => ['action' => 'remove'],
                                             'class' => 'btn btn-xs btn-alt-danger',
                                             'title' => 'Remove Charge'
                                         ]) ?>
                                     <?php else: ?>
-                                        <?= Html::a('<i class="fa fa-plus me-1"></i> Add', ['toggle-lift-on', 'id'=>$model->bill_id], [
+                                        <?= Html::a('<i class="fa fa-plus me-1"></i> Add', ['toggle-lift-on', 'id' => $model->bill_id], [
                                             'data-method' => 'post',
                                             'data-params' => ['action' => 'add'],
                                             'class' => 'btn btn-xs btn-alt-primary'
                                         ]) ?>
                                     <?php endif; ?>
                                 <?php else: ?>
-                                     <span class="badge bg-secondary"><?= $hasLiftOn ? 'Applied' : 'N/A' ?></span>
+                                    <span class="badge bg-secondary"><?= $hasLiftOn ? 'Applied' : 'N/A' ?></span>
                                 <?php endif; ?>
                             </td>
                             <td class="text-end text-muted"><?= number_format($settingLiftOn, 2) ?></td>
@@ -190,16 +190,16 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
                             </td>
                         </tr>
 
-                        <?php if($repair > 0): ?>
-                        <tr>
-                            <td class="ps-4">
-                                <div class="fw-bold text-dark">Repair Charges</div>
-                                <div class="fs-xs text-muted">Survey Damages</div>
-                            </td>
-                            <td class="text-center text-muted">-</td>
-                            <td class="text-end text-muted">-</td>
-                            <td class="text-end fw-bold pe-4"><?= number_format($repair, 2) ?></td>
-                        </tr>
+                        <?php if ($repair > 0): ?>
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark">Repair Charges</div>
+                                    <div class="fs-xs text-muted">Survey Damages</div>
+                                </td>
+                                <td class="text-center text-muted">-</td>
+                                <td class="text-end text-muted">-</td>
+                                <td class="text-end fw-bold pe-4"><?= number_format($repair, 2) ?></td>
+                            </tr>
                         <?php endif; ?>
                     </tbody>
 
@@ -237,13 +237,15 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
                         </tr>
                     </tfoot>
                 </table>
-                
+
                 <div class="bg-white p-4">
                     <h6 class="text-uppercase text-muted fs-xs fw-bold border-bottom pb-2 mb-3">Payment History</h6>
                     <table class="table table-striped table-sm mb-0">
                         <tbody>
                             <?php if (empty($model->payments)): ?>
-                                <tr><td colspan="3" class="text-center text-muted fst-italic py-2">No payments received yet.</td></tr>
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted fst-italic py-2">No payments received yet.</td>
+                                </tr>
                             <?php else: ?>
                                 <?php foreach ($model->payments as $payment): ?>
                                     <tr>
@@ -268,8 +270,8 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
     </div>
 
     <div class="col-lg-5">
-        
-        <?php if ($model->balance > 0.01 && $model->status !== 'PAID' ): ?>
+
+        <?php if ($model->balance > 0.01 && $model->status !== 'PAID'): ?>
             <div class="block block-rounded content-card border-top border-5 border-success mb-3 shadow-sm">
                 <div class="block-header bg-body-light">
                     <h3 class="block-title text-success"><i class="fa fa-cash-register me-2"></i> Record Payment</h3>
@@ -282,10 +284,10 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
                         <div class="input-group input-group-lg">
                             <span class="input-group-text bg-success text-white fw-bold">KES</span>
                             <?= $form->field($paymentModel, 'amount', ['options' => ['tag' => false]])->textInput([
-                                'type' => 'number', 
-                                'step' => '0.01', 
-                                'max' => $model->balance, 
-                                'value' => $model->balance, 
+                                'type' => 'number',
+                                'step' => '0.01',
+                                'max' => $model->balance,
+                                'value' => $model->balance,
                                 'class' => 'form-control fw-bold'
                             ])->label(false) ?>
                         </div>
@@ -313,7 +315,7 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
                 </div>
             </div>
         <?php endif; ?>
-        
+
         <?php if ($model->status === 'PAID'): ?>
             <div class="block block-rounded content-card bg-success-light mb-3">
                 <div class="block-content block-content-full text-center py-5">
@@ -337,17 +339,17 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
                         'action' => ['authorize-credit', 'id' => $model->bill_id],
                         'options' => ['enctype' => 'multipart/form-data']
                     ]); ?>
-                    
+
                     <div class="row g-2 mb-2">
                         <div class="col-md-6">
                             <?= $form->field($model, 'authorized_by')->textInput([
-                                'placeholder' => 'Supervisor', 
+                                'placeholder' => 'Supervisor',
                                 'class' => 'form-control form-control-alt'
                             ])->label('Authorized By') ?>
                         </div>
                         <div class="col-md-6">
                             <?= $form->field($model, 'atl_number')->textInput([
-                                'placeholder' => 'ATL-001', 
+                                'placeholder' => 'ATL-001',
                                 'class' => 'form-control form-control-alt fw-bold',
                                 'required' => true
                             ])->label('ATL No.') ?>
@@ -357,7 +359,7 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
                     <div class="mb-3">
                         <?= $form->field($model, 'agreement_file')->fileInput(['required' => true, 'class' => 'form-control'])->label('Upload Signed Agreement') ?>
                     </div>
-                    
+
                     <button type="submit" class="btn btn-warning w-100 fw-bold">
                         <i class="fa fa-check-double me-1"></i> Authorize & Release
                     </button>
@@ -374,7 +376,7 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
                             <i class="fa fa-pen me-1"></i> Edit Details
                         </button>
                     </div>
-                    
+
                     <div class="row g-2 fs-sm mb-3">
                         <div class="col-6">
                             <div class="text-muted text-uppercase fs-xs">Supervisor</div>
@@ -395,11 +397,20 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
             </div>
         <?php endif; ?>
 
-        <?php if ($model->balance <= 0.01 || $model->status ==='CREDIT'): ?>
         <div class="d-grid mt-4">
-             <?= Html::a('<i class="fa fa-arrow-right me-2"></i> Proceed to Gate OUT', ['/dashboard/visit/out-index'], ['class' => 'btn btn-alt-secondary btn-lg']) ?>
+            <?= Html::a(
+                'Print Invoice',
+                ['/dashboard/billing/generate-invoice', 'id' => $model->bill_id],
+                ['class' => 'btn btn-alt-primary btn-lg']
+            ) ?>
         </div>
+
+        <?php if ($model->balance <= 0.01 || $model->status === 'CREDIT'): ?>
+            <div class="d-grid mt-2">
+                <?= Html::a('<i class="fa fa-arrow-right me-2"></i> Proceed to Gate OUT', ['/dashboard/visit/out-index'], ['class' => 'btn btn-alt-secondary btn-lg']) ?>
+            </div>
         <?php endif; ?>
+
     </div>
 </div>
 
@@ -421,10 +432,10 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
                         <div class="input-group input-group-lg">
                             <span class="input-group-text">KES</span>
                             <?= $form->field($model, 'discount_amount', ['options' => ['tag' => false]])->textInput([
-                                'type' => 'number', 
-                                'step' => '0.01', 
+                                'type' => 'number',
+                                'step' => '0.01',
                                 'class' => 'form-control',
-                                'max' => $subTotal 
+                                'max' => $subTotal
                             ])->label(false) ?>
                         </div>
                     </div>
@@ -457,8 +468,8 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
                         <div class="input-group input-group-lg">
                             <span class="input-group-text">KES</span>
                             <?= $form->field($model, 'tariff_rate', ['options' => ['tag' => false]])->textInput([
-                                'type' => 'number', 
-                                'step' => '0.01', 
+                                'type' => 'number',
+                                'step' => '0.01',
                                 'class' => 'form-control',
                             ])->label(false) ?>
                         </div>
@@ -475,41 +486,41 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
 </div>
 
 <?php if ($model->status === 'CREDIT'): ?>
-<div class="modal fade" id="modal-edit-credit" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <?php $form = ActiveForm::begin(['action' => ['update-credit-details', 'id' => $model->bill_id]]); ?>
-            <div class="block block-rounded shadow-none mb-0">
-                <div class="block-header block-header-default">
-                    <h3 class="block-title">Correct Authorization Details</h3>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="block-content fs-sm py-4">
-                    <div class="alert alert-warning py-2 mb-3">
-                        <small><i class="fa fa-exclamation-triangle me-1"></i> Use this to fix typos in the Authorization number or Supervisor name.</small>
+    <div class="modal fade" id="modal-edit-credit" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <?php $form = ActiveForm::begin(['action' => ['update-credit-details', 'id' => $model->bill_id]]); ?>
+                <div class="block block-rounded shadow-none mb-0">
+                    <div class="block-header block-header-default">
+                        <h3 class="block-title">Correct Authorization Details</h3>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    
-                    <div class="mb-3">
-                        <?= $form->field($model, 'authorized_by')->textInput([
-                            'class' => 'form-control',
-                            'placeholder' => 'Supervisor Name'
-                        ])->label('Authorized By') ?>
-                    </div>
+                    <div class="block-content fs-sm py-4">
+                        <div class="alert alert-warning py-2 mb-3">
+                            <small><i class="fa fa-exclamation-triangle me-1"></i> Use this to fix typos in the Authorization number or Supervisor name.</small>
+                        </div>
 
-                    <div class="mb-3">
-                        <?= $form->field($model, 'atl_number')->textInput([
-                            'class' => 'form-control fw-bold',
-                            'placeholder' => 'ATL-XXX'
-                        ])->label('ATL Number') ?>
+                        <div class="mb-3">
+                            <?= $form->field($model, 'authorized_by')->textInput([
+                                'class' => 'form-control',
+                                'placeholder' => 'Supervisor Name'
+                            ])->label('Authorized By') ?>
+                        </div>
+
+                        <div class="mb-3">
+                            <?= $form->field($model, 'atl_number')->textInput([
+                                'class' => 'form-control fw-bold',
+                                'placeholder' => 'ATL-XXX'
+                            ])->label('ATL Number') ?>
+                        </div>
+                    </div>
+                    <div class="block-content block-content-full block-content-sm text-end border-top bg-body-light">
+                        <button type="button" class="btn btn-alt-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
                     </div>
                 </div>
-                <div class="block-content block-content-full block-content-sm text-end border-top bg-body-light">
-                    <button type="button" class="btn btn-alt-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                </div>
+                <?php ActiveForm::end(); ?>
             </div>
-            <?php ActiveForm::end(); ?>
         </div>
     </div>
-</div>
 <?php endif; ?>

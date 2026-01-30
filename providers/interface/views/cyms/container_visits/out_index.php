@@ -18,11 +18,11 @@ $this->params['breadcrumbs'][] = $this->title;
         <div class="block block-rounded content-card">
             <div class="block-header block-header-default">
                 <h3 class="block-title fw-bold">
-                    <i class="fa fa-truck-loading me-2 text-muted"></i><?= Html::encode($this->title) ?> 
+                    <i class="fa fa-truck-loading me-2 text-muted"></i><?= Html::encode($this->title) ?>
                 </h3>
             </div>
             <div class="block-content">
-                
+
                 <div class="container-visits-search my-3">
                     <?= $this->render('_search', ['model' => $searchModel]); ?>
                 </div>
@@ -38,9 +38,9 @@ $this->params['breadcrumbs'][] = $this->title;
                             'attribute' => 'container_number',
                             'format' => 'raw',
                             'contentOptions' => ['class' => 'fs-5'],
-                            'value' => function($model) {
-                                return Html::tag('span', $model->container_number, ['class' => 'fw-bold text-primary']) . 
-                                       '<br><small class="text-muted">' . ($model->containerType->iso_code ?? '-') . '</small>';
+                            'value' => function ($model) {
+                                return Html::tag('span', $model->container_number, ['class' => 'fw-bold text-primary']) .
+                                    '<br><small class="text-muted">' . ($model->containerType->iso_code ?? '-') . '</small>';
                             }
                         ],
 
@@ -55,7 +55,7 @@ $this->params['breadcrumbs'][] = $this->title;
                             'attribute' => 'date_in',
                             'label' => 'Entry Time',
                             'format' => 'raw',
-                            'value' => function($model) {
+                            'value' => function ($model) {
                                 if ($model->date_in) {
                                     $date = Yii::$app->formatter->asDate($model->date_in, 'php:d M Y');
                                     $time = $model->time_in ? date('H:i', strtotime($model->time_in)) : '00:00';
@@ -64,35 +64,77 @@ $this->params['breadcrumbs'][] = $this->title;
                                 return '-';
                             }
                         ],
-                        
-                        // 4. DAYS IN YARD (Integer Logic + Styling)
+
+                        // 4. DAYS IN YARD (Integer Logic + Styling) ,,affar 1 minute for 24 hrs
+                        // [
+                        //     'label' => 'Duration',
+                        //     'format' => 'raw',
+                        //     'contentOptions' => ['class' => 'text-center'],
+                        //     'headerOptions' => ['class' => 'text-center'],
+                        //     'value' => function($model) {
+                        //         if ($model->date_in) {
+                        //             $start = strtotime($model->date_in . ' ' . ($model->time_in ?: '00:00:00'));
+                        //             $diff = time() - $start;
+
+                        //             // Integer Logic: Part of a day counts as full day
+                        //             $days = floor($diff / 86400) + 1;
+
+                        //             // Color coding for long stays
+                        //             $badgeClass = ($days > 30) ? 'bg-danger' : (($days > 14) ? 'bg-warning' : 'bg-info');
+
+                        //             return "<span class='badge {$badgeClass} fs-sm'>{$days} Days</span>";
+                        //         }
+                        //         return '-';
+                        //     }
+                        // ],
+
+                         
                         [
                             'label' => 'Duration',
                             'format' => 'raw',
                             'contentOptions' => ['class' => 'text-center'],
                             'headerOptions' => ['class' => 'text-center'],
-                            'value' => function($model) {
+                            'value' => function ($model) {
                                 if ($model->date_in) {
+                                    // Start time (use time_in or default to 00:00)
                                     $start = strtotime($model->date_in . ' ' . ($model->time_in ?: '00:00:00'));
-                                    $diff = time() - $start;
-                                    
-                                    // Integer Logic: Part of a day counts as full day
-                                    $days = floor($diff / 86400) + 1;
+                                    $now = time();
+
+                                    // Calculate total seconds difference
+                                    $diff = $now - $start;
+
+                                    // If positive difference (past date), calculate days
+                                    if ($diff > 0) {
+                                        // Add 1 to count current partial day as full day
+                                        $days = floor($diff / 86400) + 1;
+                                    } else {
+                                        // Future date or just entered (seconds ago)
+                                        $days = 1;
+                                    }
+
+                                    // Ensure minimum 1 day
+                                    $days = max(1, $days);
 
                                     // Color coding for long stays
-                                    $badgeClass = ($days > 30) ? 'bg-danger' : (($days > 14) ? 'bg-warning' : 'bg-info');
-                                    
-                                    return "<span class='badge {$badgeClass} fs-sm'>{$days} Days</span>";
+                                    $badgeClass = ($days > 30) ? 'bg-danger' : (($days > 14) ? 'bg-warning' : 'bg-success');
+
+                                    // Yii2 pluralization: "day" or "days"
+                                    $dayText = \Yii::t('app', '{n, plural, =1{day} other{days}}', ['n' => $days]);
+
+                                    return Html::tag('span', "{$days} {$dayText}", [
+                                        'class' => "badge {$badgeClass} fs-sm",
+                                        'title' => 'Entered: ' . date('Y-m-d H:i', $start)
+                                    ]);
                                 }
-                                return '-';
+                                return Html::tag('span', '-', ['class' => 'text-muted']);
                             }
                         ],
-                        
+
                         // 5. STATUS
                         [
                             'attribute' => 'status',
                             'format' => 'raw',
-                            'value' => function($model) {
+                            'value' => function ($model) {
                                 return '<span class="badge bg-success"><i class="fa fa-check me-1"></i> READY</span>';
                             }
                         ],
