@@ -35,6 +35,21 @@ $this->title = 'Gate IN Records';
 
         <?= GridView::widget([
             'dataProvider' => $dataProvider,
+            'emptyText' => '
+        <div class="ai-empty-state">
+            <div class="ai-empty-icon">
+                <i class="fa fa-robot fa-bounce" style="--fa-animation-duration: 3s;"></i>
+            </div>
+            <h3 class="ai-empty-title">I couldn\'t find that.</h3>
+            <p class="ai-empty-desc">
+                I searched through the container records, tickets, and trucks, <br>
+                but nothing matched your query.
+            </p>
+            <a href="' . Url::to(['index']) . '" class="btn btn-sm btn-alt-primary rounded-pill px-4 mt-3">
+                <i class="fa fa-undo me-1"></i> Clear Search & Show All
+            </a>
+        </div>
+    ',
             // 'filterModel' => $searchModel, // Uncomment if you want filters back
             'rowOptions' => function ($model) {
                 if (!empty($model->comments_in)) {
