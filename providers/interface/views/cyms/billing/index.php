@@ -129,7 +129,7 @@ $this->params['breadcrumbs'][] = $this->title;
                             [
                                 'class' => \helpers\grid\ActionColumn::className(),
                                 'header' => 'Manage',
-                                'template' => '<div class="btn-group btn-group-sm">{view} {pay}</div>',
+                                'template' => '{view} {pay} {print}',
                                 'headerOptions' => ['width' => '100px', 'class' => 'text-center'],
                                 'contentOptions' => ['class' => 'text-center'],
                                 'buttons' => [
@@ -138,6 +138,14 @@ $this->params['breadcrumbs'][] = $this->title;
                                             'class' => 'btn btn-alt-secondary',
                                             'title' => 'View Invoice',
                                             'data-pjax' => 0
+                                        ]);
+                                    },
+                                    'print' => function ($url, $model) {
+                                        return Html::a('<i class="fa fa-print"></i>', ['generate-invoice', 'id' => $model->bill_id], [
+                                            'class' => 'btn btn-alt-secondary',
+                                            'title' => 'Print Invoice',
+                                            'data-pjax' => 0,
+                                            'target' => '_blank',
                                         ]);
                                     },
                                     'pay' => function ($url, $model) {
