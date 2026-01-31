@@ -2,7 +2,6 @@
 
 use yii\helpers\Url;
 use yii\helpers\Html;
-use kartik\select2\Select2;
 use yii\helpers\ArrayHelper;
 use helpers\widgets\ActiveForm;
 use dashboard\models\MasterContainerOwners;
@@ -16,6 +15,10 @@ use dashboard\models\MasterContainerOwners;
 $isNew = $model->isNewRecord;
 $this->title = $isNew ? 'New Gate IN Entry' : 'Update Gate IN Entry';
 $readOnlyAttr = ['readonly' => !$isNew];
+
+// --- 1. LOAD SELECT2 FROM CDN (Bypasses Composer) ---
+$this->registerCssFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css");
+$this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js", ['depends' => [\yii\web\JqueryAsset::class]]);
 ?>
 
 <div class="block block-rounded content-card">
@@ -29,7 +32,6 @@ $readOnlyAttr = ['readonly' => !$isNew];
 
         <?php $form = ActiveForm::begin(['options' => ['enctype' => 'multipart/form-data']]); ?>
 
-        <!-- 1. TICKET & CONTAINER -->
         <h5 class="text-primary border-bottom pb-2 mb-4"><i class="fa fa-ticket-alt me-2"></i> Ticket & Container</h5>
         <div class="row">
             <div class="col-md-4 mb-3">
@@ -48,14 +50,13 @@ $readOnlyAttr = ['readonly' => !$isNew];
                         'class' => 'form-control form-control-lg fw-bold',
                         'placeholder' => 'MSCU1234567',
                         'maxlength' => 11,
-                        'oninput' => "this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')" // JS Enforcer
+                        'oninput' => "this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')"
                     ],
                     $readOnlyAttr
                 )) ?>
                 <div class="form-text fs-xs">Format: 4 Letters + 7 Numbers</div>
             </div>
 
-            <!-- CONTAINER TYPE (With Quick Add) -->
             <div class="col-md-4 mb-3">
                 <label class="form-label">Type / Size</label>
                 <div class="input-group">
@@ -63,7 +64,6 @@ $readOnlyAttr = ['readonly' => !$isNew];
                         $types,
                         ['prompt' => 'Select Type...', 'class' => 'form-select', 'id' => 'type-dropdown']
                     )->label(false) ?>
-
 
                     <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#addTypeModal" title="Add New Type">
                         <i class="fa fa-plus"></i>
@@ -76,10 +76,8 @@ $readOnlyAttr = ['readonly' => !$isNew];
             </div>
         </div>
 
-        <!-- 2. SHIPPING & VOYAGE -->
         <h5 class="text-primary border-bottom pb-2 mb-4 mt-4"><i class="fa fa-ship me-2"></i> Shipping Details</h5>
         <div class="row">
-            <!-- SHIPPING LINE (With Quick Add) -->
             <div class="col-md-6 mb-3">
                 <label class="form-label">Shipping Line</label>
                 <div class="input-group">
@@ -108,26 +106,20 @@ $readOnlyAttr = ['readonly' => !$isNew];
             </div>
         </div>
 
-        <!-- 3. TRUCK & OWNER -->
         <h5 class="text-primary border-bottom pb-2 mb-4 mt-4"><i class="fa fa-truck me-2"></i> Transport Details</h5>
         <div class="row">
-            <!-- OWNER (With Quick Add) -->
+            
             <div class="col-md-6 mb-3">
                 <label class="form-label">Container Owner / Transporter</label>
                 <div class="input-group">
-                    <?= $form->field($model, 'container_owner_id')->widget(Select2::class, [
-                        'data' => ArrayHelper::map(MasterContainerOwners::find()->select(['owner_id', 'owner_name'])->all(), 'owner_id', 'owner_name'),
-                        'language' => 'en',
-                        'options' => [
-                            'placeholder' => 'Select Owner...',
-                            'owner_id' => 'owner_id',
-                        ],
-                        'pluginOptions' => [
-                            'allowClear' => true,
-                            'initialize' => true,
-
-                        ],
-                    ])->label(false) ?>
+                    <?= $form->field($model, 'container_owner_id', ['options' => ['tag' => false]])->dropDownList(
+                        $owners, 
+                        [
+                            'prompt' => 'Select Owner...', 
+                            'class' => 'form-select', 
+                            'id' => 'owner-dropdown' // Targeted by JS below
+                        ]
+                    )->label(false) ?>
 
                     <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#addOwnerModal" title="Add New Owner">
                         <i class="fa fa-plus"></i>
@@ -157,7 +149,6 @@ $readOnlyAttr = ['readonly' => !$isNew];
             </div>
         </div>
 
-        <!-- 4. DOCUMENTS & COMMENTS -->
         <h5 class="text-primary border-bottom pb-2 mb-4 mt-4"><i class="fa fa-paperclip me-2"></i> Evidence & Docs</h5>
         <div class="row">
             <div class="col-md-6 mb-3">
@@ -168,8 +159,8 @@ $readOnlyAttr = ['readonly' => !$isNew];
                 <label class="form-label">Documents (ID, Manifest, etc)</label>
                 <?= $form->field($model, 'document_files[]')->fileInput(['multiple' => true, 'accept' => 'image/*,application/pdf'])->label(false) ?>
             </div>
-
         </div>
+        
         <div class="block block-rounded border-start border-5 border-warning mb-3">
             <div class="block-header bg-warning-light">
                 <h3 class="block-title text-warning-dark fw-bold">
@@ -195,15 +186,10 @@ $readOnlyAttr = ['readonly' => !$isNew];
     </div>
 </div>
 
-<!-- ===================== MODALS ===================== -->
-
-<!-- 1. ADD OWNER MODAL -->
 <div class="modal fade" id="addOwnerModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-body-light">
-                <h5 class="modal-title">Add Owner</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
+            <div class="modal-header bg-body-light"><h5 class="modal-title">Add Owner</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
                 <form id="form-owner">
                     <div class="mb-3"><label>Name</label><input type="text" name="MasterContainerOwners[owner_name]" class="form-control" required></div>
@@ -215,13 +201,10 @@ $readOnlyAttr = ['readonly' => !$isNew];
     </div>
 </div>
 
-<!-- 2. ADD SHIPPING LINE MODAL -->
 <div class="modal fade" id="addLineModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-body-light">
-                <h5 class="modal-title">Add Shipping Line</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
+            <div class="modal-header bg-body-light"><h5 class="modal-title">Add Shipping Line</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
                 <form id="form-line">
                     <div class="mb-3"><label>Code</label><input type="text" name="MasterShippingLines[line_code]" class="form-control" placeholder="e.g. MSC" required></div>
@@ -233,13 +216,10 @@ $readOnlyAttr = ['readonly' => !$isNew];
     </div>
 </div>
 
-<!-- 3. ADD CONTAINER TYPE MODAL -->
 <div class="modal fade" id="addTypeModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-body-light">
-                <h5 class="modal-title">Add Container Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
+            <div class="modal-header bg-body-light"><h5 class="modal-title">Add Container Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
                 <form id="form-type">
                     <div class="row">
@@ -254,13 +234,30 @@ $readOnlyAttr = ['readonly' => !$isNew];
     </div>
 </div>
 
-<!-- ===================== JAVASCRIPT ===================== -->
 <?php
 $urlOwner = Url::to(['/dashboard/visit/ajax-create-owner']);
 $urlLine  = Url::to(['/dashboard/shipping-line/ajax-create']);
 $urlType  = Url::to(['/dashboard/container-type/ajax-create']);
 
 $script = <<< JS
+    // 1. INITIALIZE SELECT2 FOR SEARCHABLE DROPDOWNS
+    $(document).ready(function() {
+        $('#owner-dropdown').select2({
+            placeholder: "Select or Search Owner...",
+            allowClear: true,
+            dropdownParent: $('#owner-dropdown').parent(), // Fixes modal z-index issues if any
+            width: '100%'
+        });
+
+        // Also make Line searchable if you want
+        $('#line-dropdown').select2({
+            placeholder: "Select Line...",
+            allowClear: true,
+            width: '100%'
+        });
+    });
+
+    // 2. QUICK ADD LOGIC
     function setupQuickAdd(formId, url, dropdownId, modalId) {
         $(formId).on('submit', function(e) {
             e.preventDefault();
@@ -268,7 +265,11 @@ $script = <<< JS
                 url: url, type: 'POST', data: $(this).serialize(),
                 success: function(res) {
                     if(res.success) {
-                        $(dropdownId).append(new Option(res.name, res.id, true, true));
+                        // Create the Option
+                        var newOption = new Option(res.name, res.id, true, true);
+                        $(dropdownId).append(newOption).trigger('change'); // Trigger change for Select2
+                        
+                        // Close Modal
                         bootstrap.Modal.getInstance(document.querySelector(modalId)).hide();
                         $(formId)[0].reset();
                     } else { alert('Error saving data.'); }
