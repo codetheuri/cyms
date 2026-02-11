@@ -2,6 +2,6 @@
     <tr>
         <td width="33%">Printed on <?= date('d/m/Y H:i') ?></td>
         <td width="33%" align="center">Page {PAGENO} of {nbpg}</td>
-        <td width="33%" align="right">Software by <?= $_SERVER['APP_CODE'] ?? 'yiisoft' ?>?></td>
+        <td width="33%" align="right">Developed by <?= $_SERVER['APP_DEVELOPER'] ?? 'yiisoft' ?>?></td>
     </tr>
 </table>

@@ -170,11 +170,15 @@ if ($settings->site_logo) {
                 </td>
             </tr>
             <tr>
-                <td colspan="3">
+                <td colspan="2">
                     <div class="label">Transporter / Haulier</div>
                     <div class="value">
                         <?= $visit->containerOwner ? Html::encode($visit->containerOwner->owner_name) : Html::encode($visit->truck_owner_name_in) ?>
                     </div>
+                </td>
+                <td>
+                    <div class="label">Party Delivering Container</div>
+                    <div class="value"><?= Html::encode($visit->party_delivering_container) ?></div>
                 </td>
             </tr>
         </table>
@@ -274,7 +278,7 @@ if ($settings->site_logo) {
                 <td colspan="2" style="vertical-align: top; height: 70px;">
                     <div class="label">REMARKS:</div>
                     <div class="value" style="margin-top: 5px; font-family: monospace; white-space: pre-wrap;">
-                        <?= $visit->comments_in ? Html::encode($visit->comments_in) : 'N/A' ?>
+                        <?= ($survey && $survey->remarks) ? Html::encode($survey->remarks) : 'N/A' ?>
                     </div>
                 </td>
                 <td style="vertical-align: top;">
@@ -290,9 +294,7 @@ if ($settings->site_logo) {
 
     <script>
         window.onload = function() {
-            setTimeout(function() {
-                // window.print();
-            }, 500);
+            // setTimeout(function() { window.print(); }, 500);
         }
     </script>
 </body>

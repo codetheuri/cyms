@@ -42,6 +42,20 @@ $dateIn = Yii::$app->formatter->asDate($visit->date_in);
 $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '';
 ?>
 
+<div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+    <div class="d-flex align-items-center">
+        <h2 class="content-heading m-0 p-0 border-0">
+            <span class="text-muted fw-light me-2">Invoice:</span> 
+            <span class="fw-bold text-dark"><?= Html::encode($model->invoice_number) ?></span>
+        </h2>
+    </div>
+    <div>
+        <?= Html::a('<i class="fa fa-arrow-left me-1"></i> Back to List', ['index'], [
+            'class' => 'btn btn-lg btn-alt-secondary px-4 fw-bold'
+        ]) ?>
+    </div>
+</div>
+
 <div class="block block-rounded content-card mb-4 border-start border-5 border-<?= $badgeColor ?> shadow-sm">
     <div class="block-content block-content-full py-3">
         <div class="row align-items-center">
@@ -108,7 +122,6 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
                         </tr>
                     </thead>
                     <tbody>
-
                         <tr>
                             <td class="ps-4">
                                 <div class="fw-bold text-dark">Storage Charges</div>
@@ -399,15 +412,19 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
 
         <div class="d-grid mt-4">
             <?= Html::a(
-                'Print Invoice',
+                '<i class="fa fa-print me-2"></i> Print Invoice',
                 ['/dashboard/billing/generate-invoice', 'id' => $model->bill_id],
-                ['class' => 'btn btn-alt-primary btn-lg']
+                ['class' => 'btn btn-alt-primary btn-lg shadow-sm']
             ) ?>
         </div>
 
         <?php if ($model->balance <= 0.01 || $model->status === 'CREDIT'): ?>
-            <div class="d-grid mt-2">
-                <?= Html::a('<i class="fa fa-arrow-right me-2"></i> Proceed to Gate OUT', ['/dashboard/visit/out-index'], ['class' => 'btn btn-alt-secondary btn-lg']) ?>
+            <div class="d-grid mt-3">
+                <?= Html::a(
+                    '<i class="fa fa-truck-moving me-2"></i> Proceed to Gate OUT',
+                    ['/dashboard/visit/gate-out', 'id' => $visit->visit_id], // DIRECT LINK to Form
+                    ['class' => 'btn btn-success btn-lg fw-bold shadow']
+                ) ?>
             </div>
         <?php endif; ?>
 

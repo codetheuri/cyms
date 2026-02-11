@@ -1,5 +1,6 @@
 <?php
 use yii\helpers\Html;
+use yii\helpers\Url; // Needed for Url::to
 use helpers\widgets\ActiveForm;
 use dashboard\models\BillingRecords;
 
@@ -52,22 +53,24 @@ $hasComments = !empty($model->comments_in);
 <?php endif; ?>
 
 <div class="block block-rounded border-start border-5 border-<?= $statusColor ?> shadow-sm mb-4">
-    <div class="block-content block-content-full py-3">
+    <div class="block-content block-content-full py-4">
         <div class="row align-items-center">
             
             <div class="col-md-4 border-end">
                 <div class="fs-sm text-muted text-uppercase fw-bold mb-1">Releasing Container</div>
-                <div class="fs-3 fw-bold text-dark">
-                    <i class="fa fa-truck-loading me-2 text-secondary"></i><?= $model->container_number ?>
+                <div class="fs-2 fw-bold text-dark d-flex align-items-center">
+                    <i class="fa fa-truck-loading text-secondary me-2 opacity-50"></i>
+                    <?= $model->container_number ?>
                 </div>
-                <div class="badge bg-secondary mt-1">
-                    <?= $model->containerType->iso_code ?? 'Type N/A' ?>
+                <div class="d-flex align-items-center mt-1">
+                    <span class="badge bg-secondary me-2"><?= $model->containerType->iso_code ?? 'Type N/A' ?></span>
+                    <span class="fs-sm text-muted">Ticket: <strong><?= $model->ticket_no_in ?></strong></span>
                 </div>
             </div>
 
             <div class="col-md-4 border-end text-center">
                 <div class="fs-sm text-muted text-uppercase fw-bold mb-1">Stay Duration</div>
-                <div class="d-flex justify-content-center align-items-center fs-sm fw-bold">
+                <div class="d-flex justify-content-center align-items-center fs-sm fw-bold mb-1">
                     <span class="text-muted"><?= Yii::$app->formatter->asDate($model->date_in, 'php:d M') ?></span>
                     <i class="fa fa-long-arrow-alt-right mx-2 text-muted"></i>
                     <span class="text-primary">Now</span>
@@ -90,11 +93,18 @@ $hasComments = !empty($model->comments_in);
                 <div class="fs-2 text-<?= $statusColor ?>">
                     <i class="<?= $statusIcon ?>"></i>
                 </div>
-                <div class="fw-bold text-<?= $statusColor ?> fs-5">
+                <div class="fw-bold text-<?= $statusColor ?> fs-5 mb-2">
                     CLEARED VIA <?= $status ?>
                 </div>
+                
+                <?php if ($bill): ?>
+                    <a href="<?= Url::to(['/dashboard/billing/view', 'id' => $bill->bill_id]) ?>" target="_blank" class="btn btn-sm btn-alt-secondary rounded-pill px-3">
+                        <i class="fa fa-file-invoice-dollar me-1"></i> View Invoice
+                    </a>
+                <?php endif; ?>
+
                 <?php if ($status === 'CREDIT'): ?>
-                    <small class="text-muted">Auth: <?= $bill->authorized_by ?></small>
+                    <div class="fs-xs text-muted mt-2">Auth: <?= $bill->authorized_by ?></div>
                 <?php endif; ?>
             </div>
         </div>
@@ -109,7 +119,9 @@ $hasComments = !empty($model->comments_in);
                     <i class="fa fa-pen-alt me-2 text-muted"></i> Gate Out Details
                 </h3>
                 <div class="block-options">
-                    <?= Html::a('Cancel', ['out-index'], ['class' => 'btn btn-sm btn-alt-secondary']) ?>
+                     <a href="<?= Url::to(['out-index']) ?>" class="btn btn-sm btn-outline-secondary">
+                        <i class="fa fa-times me-1"></i> Cancel
+                    </a>
                 </div>
             </div>
             
@@ -208,13 +220,14 @@ $hasComments = !empty($model->comments_in);
 
                 <div class="pt-4 mt-4 border-top">
                     <div class="row align-items-center">
-                        <div class="col-md-8 text-muted fs-sm">
-                            By clicking release, you confirm that the container has physically left the yard. 
-                            The storage counter will stop at the selected Time Out.
+                        <div class="col-md-6">
+                            <a href="<?= Url::to(['out-index']) ?>" class="btn btn-lg btn-alt-secondary px-4">
+                                <i class="fa fa-times me-2"></i> Cancel
+                            </a>
                         </div>
-                        <div class="col-md-4 text-end">
+                        <div class="col-md-6 text-end">
                             <?= Html::submitButton('<i class="fa fa-truck-moving me-2"></i> RELEASE CONTAINER', [
-                                'class' => 'btn btn-lg btn-danger w-100 fw-bold shadow',
+                                'class' => 'btn btn-lg btn-danger px-5 fw-bold shadow',
                                 'data' => ['confirm' => 'Are you sure you want to gate out this container? This action is final.']
                             ]) ?>
                         </div>

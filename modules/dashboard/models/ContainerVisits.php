@@ -38,6 +38,7 @@ class ContainerVisits extends  BaseModel
             // --- GATE OUT SCENARIO ---
             [['date_out', 'time_out', 'vehicle_reg_no_out'], 'required', 'on' => self::SCENARIO_GATE_OUT],
             [['gross_weight', 'tare_weight', 'payload'], 'integer', 'min' => 0],
+            [['party_delivering_container'], 'string', 'max' => 100],
             // [['gross_weight', 'tare_weight', 'payload'], 'required'],
             [['departure_photo_file'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg', 'maxSize' => 5 * 1024 * 1024],
 

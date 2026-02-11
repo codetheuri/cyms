@@ -2,53 +2,63 @@
 
 use yii\helpers\Html;
 use helpers\grid\GridView;
+use yii\helpers\Url;
 
 $this->title = $model->owner_name;
 ?>
 
-<div class="block block-rounded content-card mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="content-heading border-0 m-0 text-muted fw-light">
+        Owner Profile
+    </h2>
+    <?= Html::a('<i class="fa fa-arrow-left me-1"></i> Back to Owners List', ['index'], [
+        'class' => 'btn btn-alt-secondary px-4 fw-bold'
+    ]) ?>
+</div>
 
+<div class="block block-rounded content-card mb-3">
     <div class="block-content block-content-full d-flex align-items-center justify-content-between">
+        
         <div>
-            <h3 class="fw-bold mb-1"><?= Html::encode($model->owner_name) ?></h3>
-            <div class="text-muted">
-                <i class="fa fa-phone me-1"></i> <?= $model->owner_contact ?>
-                <span class="mx-2">|</span>
-                <i class="fa fa-envelope me-1"></i> <?= $model->owner_email ?>
+            <h3 class="fw-bold mb-1 text-primary"><?= Html::encode($model->owner_name) ?></h3>
+            <div class="text-muted fs-sm">
+                <span class="me-3"><i class="fa fa-phone me-1"></i> <?= $model->owner_contact ?></span>
+                <span><i class="fa fa-envelope me-1"></i> <?= $model->owner_email ?></span>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-start gap-3">
+            
+            <div class="btn-group">
+                <button type="button" class="btn btn-sm btn-alt-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="fa fa-download me-1"></i> Export
+                </button>
+                <div class="dropdown-menu dropdown-menu-end">
+                    <?= Html::a(
+                        '<i class="fa fa-file-pdf me-2 text-danger"></i> Print / PDF',
+                        ['export', 'id' => $model->owner_id, 'type' => 'print'],
+                        ['class' => 'dropdown-item', 'target' => '_blank']
+                    ) ?>
+                    <?= Html::a(
+                        '<i class="fa fa-file-excel me-2 text-success"></i> Excel',
+                        ['export', 'id' => $model->owner_id, 'type' => 'excel'],
+                        ['class' => 'dropdown-item']
+                    ) ?>
+                </div>
             </div>
 
-        </div>
-<div class="block-options">
-    <div class="btn-group">
-        <button type="button" class="btn btn-sm btn-alt-secondary dropdown-toggle" data-bs-toggle="dropdown">
-            <i class="fa fa-download me-1"></i> Export Report
-        </button>
-        <div class="dropdown-menu dropdown-menu-end">
-            <?= Html::a(
-                '<i class="fa fa-file-pdf me-2 text-danger"></i> Print / PDF',
-                ['export', 'id' => $model->owner_id, 'type' => 'print'],
-                ['class' => 'dropdown-item', 'target' => '_blank']
-            ) ?>
-            <?= Html::a(
-                '<i class="fa fa-file-excel me-2 text-success"></i> Excel',
-                ['export', 'id' => $model->owner_id, 'type' => 'excel'],
-                ['class' => 'dropdown-item']
-            ) ?>
-        </div>
-    </div>
-    
-  
-</div>
-        <div class="text-end">
-
-            <button class="btn btn-alt-primary me-2">
-                <i class="fa fa-box me-1"></i> In Yard: <strong><?= $totalContainers ?></strong>
-            </button>
-            <button class="btn btn-alt-danger">
-                <i class="fa fa-money-bill-wave me-1"></i> Due: <strong><?= Yii::$app->formatter->asCurrency($totalDue, 'KES') ?></strong>
-            </button>
-            <div class="mt-2">
-                <?= Html::a('Edit Profile', ['update', 'id' => $model->owner_id], ['class' => 'btn btn-sm btn-secondary']) ?>
+            <div class="text-end">
+                <div class="mb-2">
+                    <button class="btn btn-sm btn-alt-primary me-1">
+                        <i class="fa fa-box me-1"></i> Yard: <strong><?= $totalContainers ?></strong>
+                    </button>
+                    <button class="btn btn-sm btn-alt-danger">
+                        <i class="fa fa-money-bill-wave me-1"></i> Due: <strong><?= Yii::$app->formatter->asCurrency($totalDue, 'KES') ?></strong>
+                    </button>
+                </div>
+                <div>
+                    <?= Html::a('<i class="fa fa-pen me-1"></i> Edit Profile', ['update', 'id' => $model->owner_id], ['class' => 'btn btn-sm btn-secondary w-100']) ?>
+                </div>
             </div>
         </div>
     </div>
@@ -84,12 +94,18 @@ $this->title = $model->owner_name;
                     'date_in:date',
                     [
                         'label' => 'Days',
+                        'contentOptions' => ['class' => 'fw-bold text-center'],
                         'value' => function ($m) {
-                            $days = new DateTime($m->date_in)->diff(new DateTime())->days . ' days';
-                            if ($days<=1) {
-                                return '1 day';
-                            }
-                            return $days;
+                            // 1. Get Timestamp of Entry
+                            $start = strtotime($m->date_in . ' ' . ($m->time_in ?: '00:00:00'));
+                            
+                            // 2. Calculate Difference
+                            $diff = time() - $start;
+                            
+                            // 3. Apply Logic: Floor + 1 (Part of a day = 1 Day)
+                            $days = ($diff < 0) ? 1 : (floor($diff / 86400) + 1);
+                            
+                            return $days . ' days';
                         }
                     ],
                     'status',
@@ -110,6 +126,7 @@ $this->title = $model->owner_name;
             <?= GridView::widget([
                 'dataProvider' => $dataProviderUnpaid,
                 'summary' => '',
+                'emptyText' => 'No unpaid bills found.',
                 'columns' => [
                     'invoice_number',
                     'visit.container_number',
@@ -123,7 +140,7 @@ $this->title = $model->owner_name;
                         'label' => 'Action',
                         'format' => 'raw',
                         'value' => function ($m) {
-                            return Html::a('Pay / Authorize Credit', ['/dashboard/billing/view', 'id' => $m->bill_id], ['class' => 'btn btn-sm btn-warning']);
+                            return Html::a('<i class="fa fa-credit-card me-1"></i> Pay / Credit', ['/dashboard/billing/view', 'id' => $m->bill_id], ['class' => 'btn btn-sm btn-warning']);
                         }
                     ]
                 ],
@@ -144,10 +161,6 @@ $this->title = $model->owner_name;
                     ],
                     [
                         'attribute' => 'total_paid',
-                        'format' => ['currency', 'KES'],
-                    ],
-                    [
-                        'attribute' => 'balance',
                         'format' => ['currency', 'KES'],
                     ],
                     [

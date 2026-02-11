@@ -108,15 +108,15 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
 
         <h5 class="text-primary border-bottom pb-2 mb-4 mt-4"><i class="fa fa-truck me-2"></i> Transport Details</h5>
         <div class="row">
-            
+
             <div class="col-md-6 mb-3">
                 <label class="form-label">Container Owner / Transporter</label>
                 <div class="input-group">
                     <?= $form->field($model, 'container_owner_id', ['options' => ['tag' => false]])->dropDownList(
-                        $owners, 
+                        $owners,
                         [
-                            'prompt' => 'Select Owner...', 
-                            'class' => 'form-select', 
+                            'prompt' => 'Select Owner...',
+                            'class' => 'form-select',
                             'id' => 'owner-dropdown' // Targeted by JS below
                         ]
                     )->label(false) ?>
@@ -130,7 +130,12 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
             <div class="col-md-6 mb-3">
                 <?= $form->field($model, 'truck_owner_contact_in')->textInput(['placeholder' => 'Driver Contact (Optional)']) ?>
             </div>
-
+            <div class="col-md-12 mb-3">
+                <?= $form->field($model, 'party_delivering_container')->textInput([
+                    'placeholder' => 'e.g. REGAL FREIGHT / FORWARDERS LTD',
+                    'class' => 'form-control text-uppercase'
+                ]) ?>
+            </div>
             <div class="col-md-4 mb-3">
                 <?= $form->field($model, 'vehicle_reg_no_in')->textInput(['class' => 'form-control text-uppercase']) ?>
             </div>
@@ -160,7 +165,7 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
                 <?= $form->field($model, 'document_files[]')->fileInput(['multiple' => true, 'accept' => 'image/*,application/pdf'])->label(false) ?>
             </div>
         </div>
-        
+
         <div class="block block-rounded border-start border-5 border-warning mb-3">
             <div class="block-header bg-warning-light">
                 <h3 class="block-title text-warning-dark fw-bold">
@@ -189,7 +194,9 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
 <div class="modal fade" id="addOwnerModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-body-light"><h5 class="modal-title">Add Owner</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header bg-body-light">
+                <h5 class="modal-title">Add Owner</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
             <div class="modal-body">
                 <form id="form-owner">
                     <div class="mb-3"><label>Name</label><input type="text" name="MasterContainerOwners[owner_name]" class="form-control" required></div>
@@ -204,7 +211,9 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
 <div class="modal fade" id="addLineModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-body-light"><h5 class="modal-title">Add Shipping Line</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header bg-body-light">
+                <h5 class="modal-title">Add Shipping Line</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
             <div class="modal-body">
                 <form id="form-line">
                     <div class="mb-3"><label>Code</label><input type="text" name="MasterShippingLines[line_code]" class="form-control" placeholder="e.g. MSC" required></div>
@@ -219,7 +228,9 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
 <div class="modal fade" id="addTypeModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-body-light"><h5 class="modal-title">Add Container Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header bg-body-light">
+                <h5 class="modal-title">Add Container Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
             <div class="modal-body">
                 <form id="form-type">
                     <div class="row">

@@ -41,6 +41,7 @@ class ContainerSurveys extends  BaseModel
             [['approval_status'], 'string'],
             [['surveyor_name'], 'string', 'max' => 100],
             [['bill_repairs'], 'boolean'],
+            [['remarks'], 'string'],
             [['survey_photo_path'], 'string'],
             [['survey_photo_file'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg', 'maxSize' => 5 * 1024 * 1024],
 
@@ -60,6 +61,8 @@ class ContainerSurveys extends  BaseModel
             'surveyor_name' => 'Surveyor Name',
             'approval_status' => 'Approval Status',
             'bill_repairs' => 'Authorize Repairs',
+            'remarks' => 'Remarks',
+
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
         ];

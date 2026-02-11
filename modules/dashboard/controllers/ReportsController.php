@@ -20,7 +20,7 @@ class ReportsController extends DashboardController
     public $permissions = [
         'dashboard-reports-view' => 'View Reports',
     ];
-
+   
     public function getViewPath()
     {
         return Yii::getAlias('@ui/views/cyms/reports');
@@ -54,6 +54,7 @@ class ReportsController extends DashboardController
     // ... (actionInward, actionOutward) ...
     public function actionInward($id)
     {
+        // $this->layout = 'main';
         Yii::$app->user->can('dashboard-container-owner-view');
         $visit = $this->findVisitModel($id);
         $survey = ContainerSurveys::findOne(['visit_id' => $id]);
@@ -104,7 +105,7 @@ class ReportsController extends DashboardController
         return $this->redirect(['index']);
     }
 
-    protected function prepareReportData($request)
+ protected function prepareReportData($request)
     {
         $type = $request->post('report_type');
         $dateFrom = $request->post('date_from');
@@ -115,39 +116,33 @@ class ReportsController extends DashboardController
         // Dates for Querying
         $strFrom = $dateFrom;
         $strTo = $dateTo;
-        $tsFrom = strtotime($dateFrom . ' 00:00:00');
+        $tsFrom = strtotime($dateFrom . ' 00:00:00'); 
         $tsTo = strtotime($dateTo . ' 23:59:59');
-
+        
         $title = "Report";
         $columns = [];
         $query = null;
 
-        // --- HELPER 1: Format Date + Time (e.g. 25 Jan 2026 14:30) ---
+        // --- HELPER 1: Format Date + Time ---
         $formatDateTime = function ($date, $time) {
             if (!$date) return '-';
-            $d = Yii::$app->formatter->asDate($date, 'php:d M Y');
+            $d = Yii::$app->formatter->asDate($date, 'php:d/m/Y');
             $t = $time ? date('H:i', strtotime($time)) : '00:00';
             return $d . ' ' . $t;
         };
 
-        // --- HELPER 2: Calculate Integer Days (1 min = 1 Day) ---
+        // --- HELPER 2: Calculate Integer Days ---
         $calcDays = function ($date, $time) {
             if (!$date) return 0;
-            // Combine Date+Time or default to midnight
             $start = strtotime($date . ' ' . ($time ?: '00:00:00'));
-            $now = time();
-
-            // Calculate difference
-            $diff = $now - $start;
-
-            // Logic: Floor + 1 (So 0.1 days becomes 1 Day)
+            $diff = time() - $start;
             return ($diff < 0) ? 1 : (floor($diff / 86400) + 1);
         };
 
         // ================= 1. GATE ACTIVITY =================
         if ($type === 'gate_moves') {
-            $query = ContainerVisits::find()->joinWith(['containerOwner', 'shippingLine']);
-            $query->andFilterWhere(['shipping_line_id' => $shippingLine]);
+            $query = ContainerVisits::find()->joinWith(['containerOwner', 'shippingLine', 'containerType']);
+            $query->andFilterWhere(['container_visits.shipping_line_id' => $shippingLine]);
 
             if ($moveType === 'in') {
                 $title = "Gate IN Report ($strFrom to $strTo)";
@@ -156,17 +151,19 @@ class ReportsController extends DashboardController
                 $columns = [
                     ['class' => 'yii\grid\SerialColumn'],
                     'container_number',
+                    'containerType.iso_code:text:Type', // Added Type
                     'shippingLine.line_code:text:Line',
                     [
                         'label' => 'Gate In Time',
-                        'value' => function ($m) use ($formatDateTime) {
-                            return $formatDateTime($m->date_in, $m->time_in);
-                        }
+                        'value' => function ($m) use ($formatDateTime) { return $formatDateTime($m->date_in, $m->time_in); }
                     ],
+                    'seal_number_in:text:Seal No', // Added Seal
                     'vehicle_reg_no_in:text:Truck',
-                    ['label' => 'Transporter', 'value' => function ($m) {
-                        return $m->containerOwner->owner_name ?? $m->truck_owner_name_in;
-                    }]
+                    'party_delivering_container:text:Party Delivering', // Added Party Delivering
+                    [
+                        'label' => 'Transporter',
+                        'value' => function ($m) { return $m->containerOwner->owner_name ?? $m->truck_owner_name_in; }
+                    ]
                 ];
             } elseif ($moveType === 'out') {
                 $title = "Gate OUT Report ($strFrom to $strTo)";
@@ -175,17 +172,18 @@ class ReportsController extends DashboardController
                 $columns = [
                     ['class' => 'yii\grid\SerialColumn'],
                     'container_number',
+                    'containerType.iso_code:text:Type',
                     'shippingLine.line_code:text:Line',
                     [
                         'label' => 'Gate Out Time',
-                        'value' => function ($m) use ($formatDateTime) {
-                            return $formatDateTime($m->date_out, $m->time_out);
-                        }
+                        'value' => function ($m) use ($formatDateTime) { return $formatDateTime($m->date_out, $m->time_out); }
                     ],
+                    'seal_number_out:text:Seal No',
                     'vehicle_reg_no_out:text:Truck',
                     'destination',
                 ];
             } else {
+                // ALL MOVES
                 $title = "Gate Activity (In & Out) - ($strFrom to $strTo)";
                 $query->andWhere(['or', ['between', 'date_in', $strFrom, $strTo], ['between', 'date_out', $strFrom, $strTo]])
                     ->orderBy(['created_at' => SORT_DESC]);
@@ -197,19 +195,13 @@ class ReportsController extends DashboardController
                     'status',
                     [
                         'label' => 'In',
-                        'value' => function ($m) use ($formatDateTime) {
-                            return $formatDateTime($m->date_in, $m->time_in);
-                        }
+                        'value' => function ($m) use ($formatDateTime) { return $formatDateTime($m->date_in, $m->time_in); }
                     ],
                     [
                         'label' => 'Out',
-                        'value' => function ($m) use ($formatDateTime) {
-                            return $formatDateTime($m->date_out, $m->time_out);
-                        }
+                        'value' => function ($m) use ($formatDateTime) { return $formatDateTime($m->date_out, $m->time_out); }
                     ],
-                    ['label' => 'Transporter', 'value' => function ($m) {
-                        return $m->containerOwner->owner_name ?? $m->truck_owner_name_in;
-                    }]
+                    ['label' => 'Transporter', 'value' => function ($m) { return $m->containerOwner->owner_name ?? $m->truck_owner_name_in; }]
                 ];
             }
         }
@@ -220,9 +212,9 @@ class ReportsController extends DashboardController
             $query = ContainerVisits::find()
                 ->where(['status' => ['IN_YARD', 'SURVEYED']])
                 ->orderBy(['date_in' => SORT_ASC])
-                ->joinWith(['shippingLine']);
+                ->joinWith(['shippingLine', 'containerType']);
 
-            $query->andFilterWhere(['shipping_line_id' => $shippingLine]);
+            $query->andFilterWhere(['container_visits.shipping_line_id' => $shippingLine]);
 
             if ($shippingLine) {
                 $lineName = MasterShippingLines::findOne($shippingLine)->line_code ?? '';
@@ -236,24 +228,18 @@ class ReportsController extends DashboardController
                 'containerType.iso_code:text:Type',
                 [
                     'label' => 'Date In',
-                    'value' => function ($m) use ($formatDateTime) {
-                        return $formatDateTime($m->date_in, $m->time_in);
-                    }
+                    'value' => function ($m) use ($formatDateTime) { return $formatDateTime($m->date_in, $m->time_in); }
                 ],
+                'party_delivering_container:text:Delivered By', // Added Party Delivering
                 [
                     'label' => 'Days',
                     'contentOptions' => ['style' => 'font-weight:bold; text-align:center;'],
-                    // FIX: Use the calcDays helper logic
-                    'value' => function ($m) use ($calcDays) {
-                        return $calcDays($m->date_in, $m->time_in);
-                    }
+                    'value' => function ($m) use ($calcDays) { return $calcDays($m->date_in, $m->time_in); }
                 ],
                 'status',
                 [
                     'label' => 'Condition',
-                    'value' => function ($m) {
-                        return $m->getContainerSurvey()->exists() ? $m->containerSurvey->approval_status : 'Pending';
-                    }
+                    'value' => function ($m) { return $m->getContainerSurvey()->exists() ? $m->containerSurvey->approval_status : 'Pending'; }
                 ]
             ];
         }
@@ -268,7 +254,7 @@ class ReportsController extends DashboardController
                 ->orderBy(['date_in' => SORT_ASC])
                 ->joinWith(['shippingLine']);
 
-            $query->andFilterWhere(['shipping_line_id' => $shippingLine]);
+            $query->andFilterWhere(['container_visits.shipping_line_id' => $shippingLine]);
 
             $columns = [
                 ['class' => 'yii\grid\SerialColumn'],
@@ -276,17 +262,12 @@ class ReportsController extends DashboardController
                 'shippingLine.line_code:text:Line',
                 [
                     'label' => 'Date In',
-                    'value' => function ($m) use ($formatDateTime) {
-                        return $formatDateTime($m->date_in, $m->time_in);
-                    }
+                    'value' => function ($m) use ($formatDateTime) { return $formatDateTime($m->date_in, $m->time_in); }
                 ],
                 [
                     'label' => 'Days Stayed',
                     'contentOptions' => ['style' => 'color: red; font-weight: bold; text-align:center;'],
-                    // FIX: Use the calcDays helper logic
-                    'value' => function ($m) use ($calcDays) {
-                        return $calcDays($m->date_in, $m->time_in);
-                    }
+                    'value' => function ($m) use ($calcDays) { return $calcDays($m->date_in, $m->time_in); }
                 ],
             ];
         }
@@ -317,6 +298,7 @@ class ReportsController extends DashboardController
                 ['class' => 'yii\grid\SerialColumn'],
                 'invoice_number',
                 'visit.container_number',
+                'visit.storage_days:text:Days',
                 ['attribute' => 'grand_total', 'format' => ['currency', 'KES'], 'contentOptions' => ['style' => 'text-align: right;']],
                 ['attribute' => 'balance', 'format' => ['currency', 'KES'], 'contentOptions' => ['style' => 'text-align: right; color: red;']],
                 'status'
@@ -330,9 +312,7 @@ class ReportsController extends DashboardController
 
             $columns = [
                 ['class' => 'yii\grid\SerialColumn'],
-                ['label' => 'Client', 'value' => function ($m) {
-                    return $m->visit->containerOwner->owner_name ?? $m->visit->truck_owner_name_in;
-                }],
+                ['label' => 'Client', 'value' => function ($m) { return $m->visit->containerOwner->owner_name ?? $m->visit->truck_owner_name_in; }],
                 'invoice_number',
                 'visit.container_number',
                 ['attribute' => 'balance', 'format' => ['currency', 'KES'], 'contentOptions' => ['style' => 'text-align: right; color: red; font-weight: bold;']],
@@ -363,7 +343,7 @@ class ReportsController extends DashboardController
         return [
             'dataProvider' => $dataProvider,
             'title' => $title,
-            'settings' => new General(), // Ensure this model exists
+            'settings' => new General(),
             'columns' => $columns,
             'type' => $type
         ];

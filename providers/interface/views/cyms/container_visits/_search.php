@@ -144,9 +144,7 @@ use Yii;
         box-shadow: 0 0 15px rgba(0, 204, 255, 0.5);
     }
 
-    /* =========================================
-       THE MAGIC: FOCUS STATE ("AI MODE")
-       ========================================= */
+  
     .ai-glow-container:focus-within .ai-glow-border {
         opacity: 1; /* Show the glow */
         animation: glowing 10s linear infinite; /* Start moving colors */

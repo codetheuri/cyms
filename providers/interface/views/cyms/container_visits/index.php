@@ -3,6 +3,7 @@
 use helpers\Html;
 use helpers\grid\GridView;
 use yii\helpers\Url;
+use dashboard\models\BillingRecords; // Import the model to check for bills
 
 /* @var yii\web\View $this */
 /* @var yii\data\ActiveDataProvider $dataProvider */
@@ -50,7 +51,6 @@ $this->title = 'Gate IN Records';
             </a>
         </div>
     ',
-            // 'filterModel' => $searchModel, // Uncomment if you want filters back
             'rowOptions' => function ($model) {
                 if (!empty($model->comments_in)) {
                     return ['class' => 'table-warning fw-bold border-start border-3 border-warning'];
@@ -67,7 +67,7 @@ $this->title = 'Gate IN Records';
                     'contentOptions' => ['class' => 'fs-xs text-muted font-monospace']
                 ],
 
-                // 2. CONTAINER (With Flag Indicator)
+                // 2. CONTAINER
                 [
                     'attribute' => 'container_number',
                     'contentOptions' => ['class' => 'fw-bold fs-5 text-primary'],
@@ -75,7 +75,6 @@ $this->title = 'Gate IN Records';
                     'value' => function ($model) {
                         $html = Html::encode($model->container_number);
                         if (!empty($model->comments_in)) {
-                            // Show a red flag if comments exist
                             $html .= ' <i class="fa fa-flag text-danger ms-1" data-bs-toggle="tooltip" title="' . Html::encode($model->comments_in) . '"></i>';
                         }
                         return $html;
@@ -100,7 +99,7 @@ $this->title = 'Gate IN Records';
                     }
                 ],
 
-                // 5. OWNER / TRUCK
+                // 5. OWNER
                 [
                     'label' => 'Owner',
                     'attribute' => 'truck_owner_name_in',
@@ -109,7 +108,7 @@ $this->title = 'Gate IN Records';
                     }
                 ],
 
-                // 6. DATE & TIME (Merged)
+                // 6. DATE & TIME
                 [
                     'label' => 'Date In',
                     'attribute' => 'date_in',
@@ -136,16 +135,7 @@ $this->title = 'Gate IN Records';
                     }
                 ],
 
-                // 'comments_in',
-                // [
-                //     'attribute' => 'comments_in',
-                //     'format' => 'raw',
-                //     'value' => function ($model) {
-                //         return \yii\helpers\StringHelper::truncateWords($model->comments_in, 10, "...");
-                //     },
-                // ],
-
-                // 8. ACTIONS (Cleaned Up)
+                // 8. ACTIONS
                 [
                     'class' => 'yii\grid\ActionColumn',
                     'header' => 'Actions',
@@ -161,7 +151,7 @@ $this->title = 'Gate IN Records';
                             ]);
                         },
 
-                        // QUICK COMMENT / FLAG (Modal)
+                        // FLAG
                         'flag' => function ($url, $model) {
                             return Html::customButton([
                                 'type' => 'modal',
@@ -169,7 +159,7 @@ $this->title = 'Gate IN Records';
                                 'modal' => ['title' => 'Edit Flags / Comments', 'size' => 'md'],
                                 'appearence' => [
                                     'icon' => empty($model->comments_in) ? 'fa fa-flag' : 'fa fa-flag text-danger',
-                                    'theme' => 'alt-secondary', // Light gray button
+                                    'theme' => 'alt-secondary',
                                     'title' => 'Add/Edit Flag',
                                     'data' => ['toggle' => 'tooltip']
                                 ]
@@ -198,11 +188,11 @@ $this->title = 'Gate IN Records';
                             }
                         },
 
-                        // DROPDOWN FOR "EXTRAS" (Survey, Prints)
+                        // DROPDOWN (Extras)
                         'dropdown' => function ($url, $model) {
                             $links = '';
 
-                            // Survey Link
+                            // 1. Survey
                             if ($model->status !== 'GATE_OUT') {
                                 $links .= '<li>' . Html::a(
                                     '<i class="fa fa-clipboard-check me-2"></i> Survey',
@@ -211,7 +201,7 @@ $this->title = 'Gate IN Records';
                                 ) . '</li>';
                             }
 
-                            // Edit Link (Full Edit)
+                            // 2. Full Edit
                             if ($model->status === 'IN_YARD') {
                                 $links .= '<li>' . Html::a(
                                     '<i class="fa fa-pen me-2"></i> Full Edit',
@@ -219,11 +209,22 @@ $this->title = 'Gate IN Records';
                                     ['class' => 'dropdown-item']
                                 ) . '</li>';
                             }
+                            
+                            // 3. Billing / Invoice (NEW ADDITION)
+                            // We check if a bill exists for this visit
+                            $bill = BillingRecords::findOne(['visit_id' => $model->visit_id]);
+                            if ($bill) {
+                                $links .= '<li>' . Html::a(
+                                    '<i class="fa fa-file-invoice-dollar me-2 text-success"></i> View Invoice',
+                                    ['/dashboard/billing/view', 'id' => $bill->bill_id],
+                                    ['class' => 'dropdown-item', 'data-pjax' => 0]
+                                ) . '</li>';
+                            }
 
                             // Divider
                             if ($links) $links .= '<li><hr class="dropdown-divider"></li>';
 
-                            // Print Inward
+                            // 4. Print Inward
                             if ($model->status === 'SURVEYED' || $model->status === 'GATE_OUT') {
                                 $links .= '<li>' . Html::a(
                                     '<i class="fa fa-file-import me-2"></i> Print Inward',
@@ -232,7 +233,7 @@ $this->title = 'Gate IN Records';
                                 ) . '</li>';
                             }
 
-                            // Print Outward
+                            // 5. Print Outward
                             if ($model->status === 'GATE_OUT') {
                                 $links .= '<li>' . Html::a(
                                     '<i class="fa fa-file-export me-2"></i> Print Outward',
