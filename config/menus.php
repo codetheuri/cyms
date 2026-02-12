@@ -13,7 +13,7 @@ $userMenu = [
     ['title' => 'Master Repair Codes', 'icon' => 'wrench', 'url' => '/dashboard/repair-code/index', 'permission'=>'dashboard-repair-code-list'],
     ['title' => 'Container Types', 'icon' => 'box', 'url' => '/dashboard/container-type/index', 'permission'=>'dashboard-container-type-list'],
     // ['title' => 'Shipping Lines', 'icon' => 'ship', 'url' => '/dashboard/shipping-line/index'],
-
+    ['title' => 'Help & Support', 'icon' => 'life-ring', 'url' => '/dashboard/support/index', 'permission'=>'dashboard-default-view'],
     ['title' => 'IAM & Admin', 'icon' => 'shield', 'permission'=>'dashboard-profile-list', 'submenus' => [
         ['title' => 'User Management', 'url' => 'profile/index'],
         ['title' => 'Manage Roles', 'url' => 'role/index'],

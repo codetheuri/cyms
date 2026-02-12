@@ -1,6 +1,6 @@
 <?php
 namespace dashboard\hooks;
-
+use yii\web\UploadedFile;
 use Yii;
 
 
@@ -64,6 +64,33 @@ class Mail extends \yii\symfonymailer\Mailer
 
         } catch (\Exception $e) {
       
+            return false;
+        }
+    }
+    public function sendSupportTicket($to, $subject, $htmlBody, $attachment = null)
+    {
+        try {
+            $senderEmail = Yii::$app->config->get('sender_email') ?: Yii::$app->config->get('smtp_user');
+            $senderName  = Yii::$app->name . ' Support';
+
+            $message = $this->compose()
+                ->setFrom([$senderEmail => $senderName])
+                ->setTo($to)
+                ->setSubject($subject)
+                ->setHtmlBody($htmlBody);
+
+            // Handle Attachment
+            if ($attachment instanceof UploadedFile) {
+                $message->attach($attachment->tempName, [
+                    'fileName' => $attachment->name,
+                    'contentType' => $attachment->type
+                ]);
+            }
+
+            return $message->send();
+
+        } catch (\Exception $e) {
+            Yii::error("Support Email Error: " . $e->getMessage());
             return false;
         }
     }

@@ -41,10 +41,7 @@ class ConfigWrapper
             'pageSize' => [10 => 10, 25 => 25, 50 => 50, 100 => 100],
             'pageSizeLimit' => 100,
             'defaultPageSize' => 25,
-            'adminEmail' => 'mutuavictor476@gmail.com',
-            'senderEmail' => 'mutuavictor476@gmail.com',
-            'senderName' => 'Victor',
-            'supportEmail' => 'support@example.com',
+            
 
         ];
     }
