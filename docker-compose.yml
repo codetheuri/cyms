@@ -1,8 +1,8 @@
 version: '3.8'
 services:
-  repair-flow:
+  cyms:
     build: .
-    container_name: repair-flow
+    container_name: cyms
     restart: always
     # REMOVED ports: "80:80" to avoid conflict with NPM
     volumes:
