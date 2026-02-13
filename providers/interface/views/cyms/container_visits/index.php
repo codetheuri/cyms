@@ -202,7 +202,7 @@ $this->title = 'Gate IN Records';
                             }
 
                             // 2. Full Edit
-                            if ($model->status === 'IN_YARD') {
+                            if ($model->status === 'IN_YARD' || $model->status === 'SURVEYED') {
                                 $links .= '<li>' . Html::a(
                                     '<i class="fa fa-pen me-2"></i> Full Edit',
                                     ['update', 'id' => $model->visit_id],
