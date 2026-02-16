@@ -340,43 +340,59 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
         <?php endif; ?>
 
         <?php if ($model->status !== 'PAID' && $model->status !== 'CREDIT'): ?>
+            
             <div class="block block-rounded content-card border-top border-5 border-warning mb-3">
                 <div class="block-header bg-body-light">
-                    <h3 class="block-title text-warning-dark"><i class="fa fa-file-contract me-2"></i> Credit Exit</h3>
+                    <h3 class="block-title text-warning-dark"><i class="fa fa-hand-holding-usd me-2"></i> Request Credit Exit</h3>
                 </div>
                 <div class="block-content block-content-full">
-                    <div class="alert alert-warning fs-xs py-2 mb-3">
-                        <i class="fa fa-exclamation-triangle me-1"></i> Requires Supervisor Agreement & ATL Number
-                    </div>
-                    <?php $form = ActiveForm::begin([
-                        'action' => ['authorize-credit', 'id' => $model->bill_id],
-                        'options' => ['enctype' => 'multipart/form-data']
-                    ]); ?>
+                    
+                    <?php if (($model->approval_status ?? 'NONE') === 'NONE' || ($model->approval_status ?? 'NONE') === 'REJECTED'): ?>
+                        
+                        <?php if (($model->approval_status ?? 'NONE') === 'REJECTED'): ?>
+                            <div class="alert alert-danger fs-sm mb-3">
+                                <strong><i class="fa fa-times-circle"></i> Previous Request Rejected:</strong><br>
+                                <?= Html::encode($model->rejection_reason) ?>
+                            </div>
+                        <?php endif; ?>
 
-                    <div class="row g-2 mb-2">
-                        <div class="col-md-6">
-                            <?= $form->field($model, 'authorized_by')->textInput([
-                                'placeholder' => 'Supervisor',
-                                'class' => 'form-control form-control-alt'
-                            ])->label('Authorized By') ?>
+                        <div class="alert alert-warning fs-xs py-2 mb-3">
+                            <i class="fa fa-info-circle me-1"></i> Submit a request to the Supervisor to release this container on credit.
                         </div>
-                        <div class="col-md-6">
-                            <?= $form->field($model, 'atl_number')->textInput([
-                                'placeholder' => 'ATL-001',
-                                'class' => 'form-control form-control-alt fw-bold',
-                                'required' => true
-                            ])->label('ATL No.') ?>
+
+                        <?php $form = ActiveForm::begin(['action' => ['request-credit', 'id' => $model->bill_id]]); ?>
+                            
+                            <div class="mb-3">
+                                <?= $form->field($model, 'requester_note')->textarea([
+                                    'rows' => 3,
+                                    'placeholder' => 'Reason for credit (e.g., Loyal client, Deposit paid)...',
+                                    'class' => 'form-control',
+                                    // Removed 'required' => true to allow empty notes
+                                ])->label('Reason for Request (Optional)') ?>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-warning w-100 fw-bold">
+                                <i class="fa fa-paper-plane me-1"></i> Send Request to Admin
+                            </button>
+                        <?php ActiveForm::end(); ?>
+
+                    <?php elseif ($model->approval_status === 'PENDING'): ?>
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-warning mb-3" role="status"></div>
+                            <h5 class="fw-bold text-dark">Waiting for Approval</h5>
+                            <p class="text-muted fs-sm mb-3">
+                                Request sent on <?= Yii::$app->formatter->asDatetime($model->requested_at) ?>.<br>
+                                Please contact your supervisor to approve.
+                            </p>
+                            
+                            <?= Html::a('<i class="fa fa-times me-1"></i> Cancel Request', ['cancel-request', 'id' => $model->bill_id], [
+                                'class' => 'btn btn-sm btn-outline-danger',
+                                'data-method' => 'post',
+                                'data-confirm' => 'Are you sure you want to withdraw this credit request?'
+                            ]) ?>
                         </div>
-                    </div>
+                    <?php endif; ?>
 
-                    <div class="mb-3">
-                        <?= $form->field($model, 'agreement_file')->fileInput(['required' => true, 'class' => 'form-control'])->label('Upload Signed Agreement') ?>
-                    </div>
-
-                    <button type="submit" class="btn btn-warning w-100 fw-bold">
-                        <i class="fa fa-check-double me-1"></i> Authorize & Release
-                    </button>
-                    <?php ActiveForm::end(); ?>
                 </div>
             </div>
 
@@ -385,14 +401,11 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
                 <div class="block-content block-content-full">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="text-info fw-bold mb-0"><i class="fa fa-info-circle me-1"></i> Authorized Credit Exit</h5>
-                        <button type="button" class="btn btn-sm btn-alt-info bg-white" data-bs-toggle="modal" data-bs-target="#modal-edit-credit">
-                            <i class="fa fa-pen me-1"></i> Edit Details
-                        </button>
                     </div>
 
                     <div class="row g-2 fs-sm mb-3">
                         <div class="col-6">
-                            <div class="text-muted text-uppercase fs-xs">Supervisor</div>
+                            <div class="text-muted text-uppercase fs-xs">Approved By</div>
                             <div class="fw-bold text-dark"><?= Html::encode($model->authorized_by) ?></div>
                         </div>
                         <div class="col-6">
@@ -400,12 +413,6 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
                             <div class="fw-bold text-dark"><?= Html::encode($model->atl_number) ?></div>
                         </div>
                     </div>
-
-                    <?php if ($model->credit_agreement_path): ?>
-                        <a href="<?= Yii::getAlias('@web') . '/' . $model->credit_agreement_path ?>" target="_blank" class="btn btn-sm btn-info w-100">
-                            <i class="fa fa-file-pdf me-1"></i> View Signed Agreement
-                        </a>
-                    <?php endif; ?>
                 </div>
             </div>
         <?php endif; ?>
@@ -422,7 +429,7 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
             <div class="d-grid mt-3">
                 <?= Html::a(
                     '<i class="fa fa-truck-moving me-2"></i> Proceed to Gate OUT',
-                    ['/dashboard/visit/gate-out', 'id' => $visit->visit_id], // DIRECT LINK to Form
+                    ['/dashboard/visit/gate-out', 'id' => $visit->visit_id], 
                     ['class' => 'btn btn-success btn-lg fw-bold shadow']
                 ) ?>
             </div>
@@ -501,43 +508,3 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
         </div>
     </div>
 </div>
-
-<?php if ($model->status === 'CREDIT'): ?>
-    <div class="modal fade" id="modal-edit-credit" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <?php $form = ActiveForm::begin(['action' => ['update-credit-details', 'id' => $model->bill_id]]); ?>
-                <div class="block block-rounded shadow-none mb-0">
-                    <div class="block-header block-header-default">
-                        <h3 class="block-title">Correct Authorization Details</h3>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="block-content fs-sm py-4">
-                        <div class="alert alert-warning py-2 mb-3">
-                            <small><i class="fa fa-exclamation-triangle me-1"></i> Use this to fix typos in the Authorization number or Supervisor name.</small>
-                        </div>
-
-                        <div class="mb-3">
-                            <?= $form->field($model, 'authorized_by')->textInput([
-                                'class' => 'form-control',
-                                'placeholder' => 'Supervisor Name'
-                            ])->label('Authorized By') ?>
-                        </div>
-
-                        <div class="mb-3">
-                            <?= $form->field($model, 'atl_number')->textInput([
-                                'class' => 'form-control fw-bold',
-                                'placeholder' => 'ATL-XXX'
-                            ])->label('ATL Number') ?>
-                        </div>
-                    </div>
-                    <div class="block-content block-content-full block-content-sm text-end border-top bg-body-light">
-                        <button type="button" class="btn btn-alt-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
-                    </div>
-                </div>
-                <?php ActiveForm::end(); ?>
-            </div>
-        </div>
-    </div>
-<?php endif; ?>
