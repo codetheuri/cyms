@@ -11,7 +11,7 @@ $userMenu = [
     ['title' => 'Billing & Finance', 'icon' => 'receipt', 'permission'=>'dashboard-billing-list', 'submenus' => [
         ['title' => 'All Invoices', 'url' => '/dashboard/billing/index'],
         // This links to the new Admin Approval Page we created
-        ['title' => 'Credit Approvals', 'url' => '/dashboard/billing/credit-requests'], 
+        ['title' => 'Credit Approvals', 'url' => '/dashboard/billing/credit-requests', 'permission'=>'dashboard-billing-delete'], 
     ]],
     ['title' => 'Clients / Owners', 'icon' => 'users', 'url' => '/dashboard/container-owner/index', 'permission'=>'dashboard-container-owner-list'],
     ['title'=> 'Reports', 'icon'=>'book', 'url'=>'/dashboard/reports/index', 'permission'=>'dashboard-reports-view'],
