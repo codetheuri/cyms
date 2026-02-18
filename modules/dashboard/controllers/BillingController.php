@@ -163,6 +163,7 @@ class BillingController extends DashboardController
             // REMOVED: if ($model->uploadAgreement()) ...
 
             $model->status = 'CREDIT';
+            
             // Note: atl_number and authorized_by are loaded via post()
 
             if ($model->save()) {

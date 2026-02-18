@@ -99,14 +99,7 @@ $this->title = 'Pending Credit Requests';
                         <div class="fs-sm text-muted">Reason: "<?= Html::encode($model->requester_note) ?>"</div>
                     </div>
                     
-                    <div class="mb-3">
-                        <?= $form->field($model, 'atl_number')->textInput([
-                            'required' => true, 
-                            'placeholder' => 'Enter ATL Number (e.g. ATL-001)',
-                            'class' => 'form-control form-control-lg fw-bold'
-                        ])->label('Issue ATL Number') ?>
-                        <div class="form-text fs-xs">This number authorizes the gate security to release the unit.</div>
-                    </div>
+               
                 </div>
                 <div class="modal-footer border-top-0">
                     <button type="button" class="btn btn-alt-secondary" data-bs-dismiss="modal">Cancel</button>

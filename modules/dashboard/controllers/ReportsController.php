@@ -105,7 +105,73 @@ class ReportsController extends DashboardController
         return $this->redirect(['index']);
     }
 
- protected function prepareReportData($request)
+    public function actionBackupDatabase()
+    {
+        // 1. Define File Paths
+        $dbName = Yii::$app->db->username; // Or parse dsn
+        // Note: Better to parse DSN, but for simplicity assuming config is standard
+        $dsn = Yii::$app->db->dsn;
+        preg_match('/dbname=([^;]*)/', $dsn, $matches);
+        $dbName = $matches[1];
+
+        $filename = 'backup_' . $dbName . '_' . date('Y-m-d_H-i-s') . '.sql';
+        $zipFilename = $filename . '.zip';
+        $savePath = Yii::getAlias('@runtime/') . $filename;
+        $zipPath = Yii::getAlias('@runtime/') . $zipFilename;
+
+        // 2. Get DB Credentials
+        $username = Yii::$app->db->username;
+        $password = Yii::$app->db->password;
+        $host = 'localhost'; // Usually localhost
+
+        // 3. Run mysqldump command
+        // NOTE: This requires mysqldump to be installed and accessible via shell
+        $command = "mysqldump --user={$username} --password={$password} --host={$host} {$dbName} > {$savePath}";
+        system($command, $output);
+
+        if (!file_exists($savePath) || filesize($savePath) == 0) {
+            Yii::$app->session->setFlash('error', 'Backup failed: Could not generate SQL dump.');
+            return $this->redirect(['index']);
+        }
+
+        // 4. Zip the file (to save space in email)
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE) === TRUE) {
+            $zip->addFile($savePath, $filename);
+            $zip->close();
+        }
+
+        // 5. Send via Email using your existing Hook
+        $emailTo = Yii::$app->config->get('admin_email');
+        $mailer = Yii::createObject(['class' => 'dashboard\hooks\Mail']);
+
+        // Read the ZIP content
+        $attachmentContent = file_get_contents($zipPath);
+
+        $sent = $mailer->sendReportAttachment(
+            $emailTo,
+            "System Database Backup - " . date('Y-m-d'),
+            "Attached is the full system database backup.",
+            $attachmentContent,
+            $zipFilename
+        );
+
+        // 6. Cleanup (Delete temp files)
+        @unlink($savePath);
+        @unlink($zipPath);
+
+        if ($sent) {
+            Yii::$app->session->setFlash('success', 'Database backup emailed successfully!');
+        } else {
+            Yii::$app->session->setFlash('error', 'Backup generated but email failed.');
+        }
+
+        return $this->redirect(['index']);
+    }
+
+
+
+    protected function prepareReportData($request)
     {
         $type = $request->post('report_type');
         $dateFrom = $request->post('date_from');
@@ -116,9 +182,9 @@ class ReportsController extends DashboardController
         // Dates for Querying
         $strFrom = $dateFrom;
         $strTo = $dateTo;
-        $tsFrom = strtotime($dateFrom . ' 00:00:00'); 
+        $tsFrom = strtotime($dateFrom . ' 00:00:00');
         $tsTo = strtotime($dateTo . ' 23:59:59');
-        
+
         $title = "Report";
         $columns = [];
         $query = null;
@@ -151,15 +217,15 @@ class ReportsController extends DashboardController
                 $columns = [
                     ['class' => 'yii\grid\SerialColumn'],
                     'container_number',
-                    'containerType.iso_code:text:Type', // Added Type
+                    'containerType.iso_code:text:Type',
                     'shippingLine.line_code:text:Line',
                     [
                         'label' => 'Gate In Time',
                         'value' => function ($m) use ($formatDateTime) { return $formatDateTime($m->date_in, $m->time_in); }
                     ],
-                    'seal_number_in:text:Seal No', // Added Seal
+                    'seal_number_in:text:Seal No',
                     'vehicle_reg_no_in:text:Truck',
-                    'party_delivering_container:text:Party Delivering', // Added Party Delivering
+                    'party_delivering_container:text:Party Delivering',
                     [
                         'label' => 'Transporter',
                         'value' => function ($m) { return $m->containerOwner->owner_name ?? $m->truck_owner_name_in; }
@@ -183,7 +249,6 @@ class ReportsController extends DashboardController
                     'destination',
                 ];
             } else {
-                // ALL MOVES
                 $title = "Gate Activity (In & Out) - ($strFrom to $strTo)";
                 $query->andWhere(['or', ['between', 'date_in', $strFrom, $strTo], ['between', 'date_out', $strFrom, $strTo]])
                     ->orderBy(['created_at' => SORT_DESC]);
@@ -230,7 +295,7 @@ class ReportsController extends DashboardController
                     'label' => 'Date In',
                     'value' => function ($m) use ($formatDateTime) { return $formatDateTime($m->date_in, $m->time_in); }
                 ],
-                'party_delivering_container:text:Delivered By', // Added Party Delivering
+                'party_delivering_container:text:Delivered By',
                 [
                     'label' => 'Days',
                     'contentOptions' => ['style' => 'font-weight:bold; text-align:center;'],
@@ -268,6 +333,46 @@ class ReportsController extends DashboardController
                     'label' => 'Days Stayed',
                     'contentOptions' => ['style' => 'color: red; font-weight: bold; text-align:center;'],
                     'value' => function ($m) use ($calcDays) { return $calcDays($m->date_in, $m->time_in); }
+                ],
+            ];
+        }
+
+        // ================= NEW: CREDIT RELEASE REPORT =================
+        elseif ($type === 'credit_containers') {
+            $title = "Containers Released on Credit ($strFrom to $strTo)";
+            
+            // Join tables to get owner details. Filter by 'CREDIT' status and date range on updated_at (Auth Date)
+            $query = BillingRecords::find()->joinWith(['visit.containerOwner', 'visit.shippingLine'])
+                ->where(['billing_records.status' => 'CREDIT'])
+                ->andWhere(['between', BillingRecords::tableName() . '.updated_at', $tsFrom, $tsTo])
+                ->orderBy(['updated_at' => SORT_DESC]);
+
+            if ($shippingLine) {
+                $query->andWhere(['container_visits.shipping_line_id' => $shippingLine]);
+            }
+
+            $columns = [
+                ['class' => 'yii\grid\SerialColumn'],
+                [
+                    'attribute' => 'updated_at',
+                    'label' => 'Auth Date',
+                    'format' => ['date', 'php:d M Y H:i']
+                ],
+                'visit.container_number:text:Container',
+                'invoice_number',
+                [
+                    'label' => 'Client / Owner',
+                    'value' => function ($m) { 
+                        return $m->visit->containerOwner->owner_name ?? $m->visit->truck_owner_name_in; 
+                    }
+                ],
+                'atl_number:text:ATL No.',
+                'authorized_by:text:Approved By',
+                [
+                    'attribute' => 'grand_total', 
+                    'label' => 'Amount',
+                    'format' => ['currency', 'KES'], 
+                    'contentOptions' => ['style' => 'text-align: right; font-weight: bold; color: #d35400;']
                 ],
             ];
         }
@@ -347,69 +452,6 @@ class ReportsController extends DashboardController
             'columns' => $columns,
             'type' => $type
         ];
-    }
-    public function actionBackupDatabase()
-    {
-        // 1. Define File Paths
-        $dbName = Yii::$app->db->username; // Or parse dsn
-        // Note: Better to parse DSN, but for simplicity assuming config is standard
-        $dsn = Yii::$app->db->dsn;
-        preg_match('/dbname=([^;]*)/', $dsn, $matches);
-        $dbName = $matches[1];
-
-        $filename = 'backup_' . $dbName . '_' . date('Y-m-d_H-i-s') . '.sql';
-        $zipFilename = $filename . '.zip';
-        $savePath = Yii::getAlias('@runtime/') . $filename;
-        $zipPath = Yii::getAlias('@runtime/') . $zipFilename;
-
-        // 2. Get DB Credentials
-        $username = Yii::$app->db->username;
-        $password = Yii::$app->db->password;
-        $host = 'localhost'; // Usually localhost
-
-        // 3. Run mysqldump command
-        // NOTE: This requires mysqldump to be installed and accessible via shell
-        $command = "mysqldump --user={$username} --password={$password} --host={$host} {$dbName} > {$savePath}";
-        system($command, $output);
-
-        if (!file_exists($savePath) || filesize($savePath) == 0) {
-            Yii::$app->session->setFlash('error', 'Backup failed: Could not generate SQL dump.');
-            return $this->redirect(['index']);
-        }
-
-        // 4. Zip the file (to save space in email)
-        $zip = new \ZipArchive();
-        if ($zip->open($zipPath, \ZipArchive::CREATE) === TRUE) {
-            $zip->addFile($savePath, $filename);
-            $zip->close();
-        }
-
-        // 5. Send via Email using your existing Hook
-        $emailTo = Yii::$app->config->get('admin_email');
-        $mailer = Yii::createObject(['class' => 'dashboard\hooks\Mail']);
-
-        // Read the ZIP content
-        $attachmentContent = file_get_contents($zipPath);
-
-        $sent = $mailer->sendReportAttachment(
-            $emailTo,
-            "System Database Backup - " . date('Y-m-d'),
-            "Attached is the full system database backup.",
-            $attachmentContent,
-            $zipFilename
-        );
-
-        // 6. Cleanup (Delete temp files)
-        @unlink($savePath);
-        @unlink($zipPath);
-
-        if ($sent) {
-            Yii::$app->session->setFlash('success', 'Database backup emailed successfully!');
-        } else {
-            Yii::$app->session->setFlash('error', 'Backup generated but email failed.');
-        }
-
-        return $this->redirect(['index']);
     }
     protected function findVisitModel($id)
     {

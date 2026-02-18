@@ -3,17 +3,23 @@
 use helpers\Html;
 use helpers\grid\GridView;
 use yii\helpers\Url;
-use dashboard\models\BillingRecords; // Import the model to check for bills
+use dashboard\models\BillingRecords;
 
 /* @var yii\web\View $this */
 /* @var yii\data\ActiveDataProvider $dataProvider */
 
-$this->title = 'Gate IN Records';
+// CHANGED: Title updated to reflect that this lists EVERYTHING
+$this->title = 'All Container Visits'; 
 ?>
 
 <div class="block block-rounded content-card">
     <div class="block-header block-header-default">
-        <h3 class="block-title fw-bold"><?= Html::encode($this->title) ?></h3>
+        <div>
+            <h3 class="block-title fw-bold"><?= Html::encode($this->title) ?></h3>
+            <p class="fs-sm text-muted mb-0">
+                Master list of all containers (In Yard, Surveyed, and Gated Out).
+            </p>
+        </div>
         <div class="block-options">
             <?= Html::customButton([
                 'type' => 'link',
@@ -22,7 +28,7 @@ $this->title = 'Gate IN Records';
                     'type' => 'iconText',
                     'size' => 'lg',
                     'icon' => 'fa fa-plus me-1',
-                    'text' => 'Gate IN Container',
+                    'text' => 'New Gate IN',
                     'theme' => 'primary',
                     'visible' => true,
                 ],
@@ -37,21 +43,21 @@ $this->title = 'Gate IN Records';
         <?= GridView::widget([
             'dataProvider' => $dataProvider,
             'emptyText' => '
-        <div class="ai-empty-state">
-            <div class="ai-empty-icon">
-                <i class="fa fa-robot fa-bounce" style="--fa-animation-duration: 3s;"></i>
-            </div>
-            <h3 class="ai-empty-title">I couldn\'t find that.</h3>
-            <p class="ai-empty-desc">
-                I searched through the container records, tickets, and trucks, <br>
-                but nothing matched your query.
-            </p>
-            <a href="' . Url::to(['index']) . '" class="btn btn-sm btn-alt-primary rounded-pill px-4 mt-3">
-                <i class="fa fa-undo me-1"></i> Clear Search & Show All
-            </a>
-        </div>
-    ',
+                <div class="ai-empty-state text-center py-5">
+                    <div class="ai-empty-icon mb-3">
+                        <i class="fa fa-folder-open fa-3x text-muted opacity-50"></i>
+                    </div>
+                    <h3 class="ai-empty-title fw-bold text-dark">No containers found.</h3>
+                    <p class="ai-empty-desc text-muted">
+                        We couldn\'t find any records matching your search.
+                    </p>
+                    <a href="' . Url::to(['index']) . '" class="btn btn-sm btn-alt-primary rounded-pill px-4 mt-2">
+                        <i class="fa fa-undo me-1"></i> Reset Search
+                    </a>
+                </div>
+            ',
             'rowOptions' => function ($model) {
+                // Highlight flagged rows
                 if (!empty($model->comments_in)) {
                     return ['class' => 'table-warning fw-bold border-start border-3 border-warning'];
                 }
@@ -188,11 +194,11 @@ $this->title = 'Gate IN Records';
                             }
                         },
 
-                        // DROPDOWN (Extras)
+                        // DROPDOWN (Enhanced with Billing Logic)
                         'dropdown' => function ($url, $model) {
                             $links = '';
 
-                            // 1. Survey
+                            // 1. Survey (Only if not out)
                             if ($model->status !== 'GATE_OUT') {
                                 $links .= '<li>' . Html::a(
                                     '<i class="fa fa-clipboard-check me-2"></i> Survey',
@@ -201,7 +207,7 @@ $this->title = 'Gate IN Records';
                                 ) . '</li>';
                             }
 
-                            // 2. Full Edit
+                            // 2. Full Edit (Only if in yard)
                             if ($model->status === 'IN_YARD' || $model->status === 'SURVEYED') {
                                 $links .= '<li>' . Html::a(
                                     '<i class="fa fa-pen me-2"></i> Full Edit',
@@ -210,8 +216,7 @@ $this->title = 'Gate IN Records';
                                 ) . '</li>';
                             }
                             
-                            // 3. Billing / Invoice (NEW ADDITION)
-                            // We check if a bill exists for this visit
+                            // 3. Billing / Invoice (Check if bill exists)
                             $bill = BillingRecords::findOne(['visit_id' => $model->visit_id]);
                             if ($bill) {
                                 $links .= '<li>' . Html::a(
@@ -224,16 +229,14 @@ $this->title = 'Gate IN Records';
                             // Divider
                             if ($links) $links .= '<li><hr class="dropdown-divider"></li>';
 
-                            // 4. Print Inward
-                            if ($model->status === 'SURVEYED' || $model->status === 'GATE_OUT') {
-                                $links .= '<li>' . Html::a(
-                                    '<i class="fa fa-file-import me-2"></i> Print Inward',
-                                    ['/dashboard/reports/inward', 'id' => $model->visit_id],
-                                    ['class' => 'dropdown-item', 'target' => '_blank']
-                                ) . '</li>';
-                            }
+                            // 4. Print Inward (Any status can reprint)
+                            $links .= '<li>' . Html::a(
+                                '<i class="fa fa-file-import me-2"></i> Print Inward',
+                                ['/dashboard/reports/inward', 'id' => $model->visit_id],
+                                ['class' => 'dropdown-item', 'target' => '_blank']
+                            ) . '</li>';
 
-                            // 5. Print Outward
+                            // 5. Print Outward (Only if Out)
                             if ($model->status === 'GATE_OUT') {
                                 $links .= '<li>' . Html::a(
                                     '<i class="fa fa-file-export me-2"></i> Print Outward',

@@ -1,0 +1,29 @@
+/* Position the badge on top of the bell */
+.badge-notification {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 0.7rem;
+    padding: 0.25em 0.5em;
+    border: 2px solid #fff; /* Makes it pop against the background */
+}
+
+/* Heartbeat Animation to grab attention */
+@keyframes pulse-red {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(220, 53, 69, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
+}
+
+.animate-pulse {
+    animation: pulse-red 2s infinite;
+}

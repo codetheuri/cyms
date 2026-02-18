@@ -92,50 +92,77 @@ class BillingRecords extends  BaseModel
         }
         return false;
     }
-    public function recalculateBalance()
+public function recalculateBalance()
     {
         $visit = $this->visit;
 
-        // 1. EXACT CALCULATION LOGIC (Keep this as we fixed it before)
+        // 1. CALCULATE STORAGE DAYS
         if ($visit && $visit->date_in) {
-            $startStr = $visit->date_in . ' ' . ($visit->time_in ?: '00:00:00');
-            $startTime = strtotime($startStr);
-
-            // if ($visit->status === 'GATE_OUT' && $visit->date_out) {
-            //     $endStr = $visit->date_out . ' ' . ($visit->time_out ?: '23:59:59');
-            //     $endTime = strtotime($endStr);
-            // } else {
-            //     $endTime = time();
-            // }
-
-            // $diffSeconds = $endTime - $startTime;
             $endTime = ($visit->status === 'GATE_OUT' && $visit->date_out)
                 ? strtotime($visit->date_out . ' ' . ($visit->time_out ?: '23:59:59'))
-                : time(); // Now
+                : time(); 
 
+            $startStr = $visit->date_in . ' ' . ($visit->time_in ?: '00:00:00');
+            $startTime = strtotime($startStr);
+            
             $diffSeconds = $endTime - $startTime;
-            if ($diffSeconds < 0) {
-                $days = 1; // Fallback for weird data
-            } else {
-                $days = floor($diffSeconds / 86400) + 1;
-            }
+            $days = ($diffSeconds < 0) ? 1 : (floor($diffSeconds / 86400) + 1);
 
             $this->storage_days = $days;
-            // $days = round($diffSeconds / 86400, 2);
-            // if ($days < 0) $days = 0;
-
-            // $this->storage_days = $days;
         }
 
-        // 2. GET RATE (Updated Logic)
-        if ($this->tariff_rate <= 0) {
-            if ($visit && $visit->containerType && $visit->containerType->daily_rate > 0) {
-                $this->tariff_rate = (float) $visit->containerType->daily_rate;
-            } else {
-                $this->tariff_rate = (float) Yii::$app->config->get('storage_rate_per_day');
+        // =========================================================
+        // 2. PRICING LOGIC
+        // =========================================================
+        
+        // CHECK: IS THIS THE "SWAPPING" LINE? (ID 9)
+        if ($visit && $visit->shipping_line_id == 9) {
+            
+            // --- OPTION A: SWAPPING (FIXED PRICE) ---
+            $this->tariff_rate = 0;       
+            // We do NOT add lift charges for swapping as you said "2000 nothing else"
+            $this->lift_charges = 0;      
+            
+            // Force the total to 2000
+            $this->storage_total = 2000;  
+            
+        } else {
+            
+            // --- OPTION B: STANDARD CONTAINER (CALCULATED) ---
+            
+            // 1. Get Rate (If not set)
+            if ($this->tariff_rate <= 0) {
+                $rateFound = false;
+
+                // Priority 1: Custom Client Rate
+                if ($visit->containerOwner) {
+                    $clientRate = \dashboard\models\ClientRates::findOne([
+                        'owner_id' => $visit->containerOwner->owner_id, 
+                        'container_type_id' => $visit->container_type_id
+                    ]);
+                    if ($clientRate && $clientRate->daily_rate > 0) {
+                        $this->tariff_rate = (float) $clientRate->daily_rate;
+                        $rateFound = true;
+                    }
+                }
+
+                // Priority 2: Container Type Default
+                if (!$rateFound && $visit->containerType && $visit->containerType->daily_rate > 0) {
+                    $this->tariff_rate = (float) $visit->containerType->daily_rate;
+                    $rateFound = true;
+                }
+
+                // Priority 3: Global System Fallback
+                if (!$rateFound) {
+                    $this->tariff_rate = (float) Yii::$app->config->get('storage_rate_per_day');
+                }
             }
+
+            // 2. Calculate Storage Total (Days * Rate)
+            $this->storage_total = (float)$this->storage_days * $this->tariff_rate;
         }
-        // 3. GET REPAIR COSTS
+
+        // 3. GET REPAIR COSTS (Applies to everyone)
         $survey = \dashboard\models\ContainerSurveys::findOne(['visit_id' => $this->visit_id]);
         if ($survey && $survey->bill_repairs) {
             $this->repair_total = (float) $survey->getSurveyDamages()->sum('total_cost');
@@ -143,21 +170,26 @@ class BillingRecords extends  BaseModel
             $this->repair_total = 0;
         }
 
-        // 4. CALCULATE TOTALS
-        $this->storage_total = (float)$this->storage_days * $this->tariff_rate;
+        // =========================================================
+        // 4. FINAL SUMMATION
+        // =========================================================
+        
+        // Ensure lift_charges is a float to prevent math errors
+        $lift = (float) $this->lift_charges;
 
-        $subTotal = $this->storage_total + $this->repair_total + $this->lift_charges;
+        // Subtotal = Storage + Repair + Lift
+        $subTotal = $this->storage_total + $this->repair_total + $lift;
 
         // Discount Logic
         $discount = (float)$this->discount_amount;
         if ($discount > $subTotal) $discount = $subTotal;
+        
         $this->grand_total = $subTotal - $discount;
 
-        // Payments
+        // 5. PAYMENTS & STATUS
         $this->total_paid = (float) $this->getPayments()->sum('amount');
         $this->balance = $this->grand_total - $this->total_paid;
 
-        // Status Update
         if ($this->status !== 'CREDIT') {
             if ($this->balance <= 0.01) {
                 $this->status = 'PAID';

@@ -13,14 +13,14 @@ $this->params['breadcrumbs'][] = $this->title;
 // --- DATA FETCHING ---
 $shippingLines = ArrayHelper::map(MasterShippingLines::find()->orderBy('line_code')->all(), 'line_id', 'line_code');
 
-// Stats Logic (Fixing the "Not Set" issue)
+// Stats Logic
 $today = date('Y-m-d');
 $movesToday = ContainerVisits::find()
     ->where(['date_in' => $today])
     ->orWhere(['date_out' => $today])
     ->count();
 
-// Force float and default to 0 to prevent formatter errors
+// Force float and default to 0
 $revenueMonth = (float) BillingPayments::find()
     ->where(['between', 'transaction_date', date('Y-m-01'), date('Y-m-t')])
     ->sum('amount') ?: 0.00;
@@ -69,6 +69,15 @@ $adminEmail = Yii::$app->config->get('admin_email');
                     <div class="p-3 bg-body-light fw-bold text-xs text-uppercase text-muted border-top">Finance</div>
 
                     <a href="javascript:void(0)" class="list-group-item list-group-item-action d-flex align-items-center p-3" 
+                       onclick="selectReport('credit_containers', this)" data-filters="dates,lines">
+                        <div class="btn btn-icon btn-sm btn-alt-warning rounded-circle me-3"><i class="fa fa-hand-holding-usd"></i></div>
+                        <div>
+                            <div class="fw-bold">Credit Releases</div>
+                            <div class="fs-xs text-muted">Containers released on credit</div>
+                        </div>
+                    </a>
+
+                    <a href="javascript:void(0)" class="list-group-item list-group-item-action d-flex align-items-center p-3" 
                        onclick="selectReport('payments', this)" data-filters="dates">
                         <div class="btn btn-icon btn-sm btn-alt-success rounded-circle me-3"><i class="fa fa-money-bill-wave"></i></div>
                         <div>
@@ -94,7 +103,8 @@ $adminEmail = Yii::$app->config->get('admin_email');
                             <div class="fs-xs text-muted">Unpaid Bills Summary</div>
                         </div>
                     </a>
-                     <a href="javascript:void(0)" class="list-group-item list-group-item-action d-flex align-items-center p-3" 
+                    
+                    <a href="javascript:void(0)" class="list-group-item list-group-item-action d-flex align-items-center p-3" 
                        onclick="selectReport('repairs', this)" data-filters="dates">
                         <div class="btn btn-icon btn-sm btn-alt-secondary rounded-circle me-3"><i class="fa fa-wrench"></i></div>
                         <div>
@@ -296,11 +306,8 @@ function selectReport(type, element) {
 
 // Initialize on Load (Highlight first item)
 document.addEventListener("DOMContentLoaded", function() {
-    // Manually trigger the logic for the default selection (Gate Moves)
     var defaultItem = document.querySelector('.active-report');
     if(defaultItem) {
-        // We don't need to call selectReport because the HTML is already set for Gate Moves by default,
-        // but let's ensure the filters are correct visually on load.
         selectReport('gate_moves', defaultItem);
     }
 });

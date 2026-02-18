@@ -16,6 +16,7 @@ class DashboardAsset extends AssetBundle
         ],
         'oneui/css/dashboard.css',
         'others/style.css',
+        'others/site.css',
     ];
     public $js = [
         'oneui/js/dashboard.js',

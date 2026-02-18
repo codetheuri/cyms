@@ -177,6 +177,30 @@ class ContainerOwnerController extends DashboardController
             ]);
         }
     }
+    public function actionAddRate($id)
+    {
+        $model = new \dashboard\models\ClientRates();
+        $model->owner_id = $id;
+        
+        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            Yii::$app->session->setFlash('success', 'Rate added successfully.');
+        } else {
+            Yii::$app->session->setFlash('error', 'Could not save rate. It might already exist.');
+        }
+        return $this->redirect(['view', 'id' => $id]);
+    }
+
+    public function actionDeleteRate($id)
+    {
+        $rate = \dashboard\models\ClientRates::findOne($id);
+        if ($rate) {
+            $ownerId = $rate->owner_id;
+            $rate->delete();
+            Yii::$app->session->setFlash('success', 'Rate removed.');
+            return $this->redirect(['view', 'id' => $ownerId]);
+        }
+        return $this->redirect(['index']);
+    }
     protected function findModel($id)
     {
         if (($model = MasterContainerOwners::findOne($id)) !== null) {
