@@ -40,48 +40,49 @@ class ContainerOwnerController extends DashboardController
     }
 
   
-    public function actionView($id)
+   public function actionView($id)
     {
         Yii::$app->user->can('dashboard-container-owner-view');
         $model = $this->findModel($id);
 
-      
+        // 1. IN YARD CONTAINERS
         $queryInYard = ContainerVisits::find()
             ->where(['container_owner_id' => $id])
             ->andWhere(['status' => ['IN_YARD', 'SURVEYED']]);
             
-        $dataProviderInYard = new ActiveDataProvider([
+        $dataProviderInYard = new \yii\data\ActiveDataProvider([
             'query' => $queryInYard,
             'pagination' => ['pageSize' => 10],
             'sort' => ['defaultOrder' => ['date_in' => SORT_DESC]],
         ]);
 
-      
+        // 2. UNPAID BILLS (Fix: Use andWhere)
         $queryUnpaid = BillingRecords::find()
-            ->joinWith(['visit'])
-            ->where(['container_visits.container_owner_id' => $id])
-           ->where(['>', 'billing_records.balance', 0]);
-            // ->andWhere(['billing_records.status' => ['UNPAID', 'PARTIAL']]);
+            ->joinWith(['visit']) // Join to check owner
+            ->where(['container_visits.container_owner_id' => $id]) // Filter by THIS Client
+            ->andWhere(['>', 'billing_records.balance', 0.01])      // AND check balance
+            ->andWhere(['billing_records.status' => ['UNPAID', 'PARTIAL', 'CREDIT']]); // Optional: Be specific
 
-        $dataProviderUnpaid = new ActiveDataProvider([
+        $dataProviderUnpaid = new \yii\data\ActiveDataProvider([
             'query' => $queryUnpaid,
             'pagination' => ['pageSize' => 10],
         ]);
 
-     
+        // 3. HISTORY (Fix: Use andWhere)
         $queryHistory = BillingRecords::find()
             ->joinWith(['visit'])
-            ->where(['container_visits.container_owner_id' => $id])
+            ->where(['container_visits.container_owner_id' => $id]) // Filter by THIS Client
             ->andWhere(['billing_records.status' => ['PAID', 'CREDIT']])
             ->orderBy(['updated_at' => SORT_DESC]);
 
-        $dataProviderHistory = new ActiveDataProvider([
+        $dataProviderHistory = new \yii\data\ActiveDataProvider([
             'query' => $queryHistory,
             'pagination' => ['pageSize' => 10],
         ]);
         
-       
-        $totalDue = $queryUnpaid->sum('balance') ?? 0;
+        // 4. CALCULATE TOTALS (Using the corrected queries)
+        // Note: sum() executes a DB query, so we clone to be safe, though not strictly required here
+        $totalDue = $queryUnpaid->sum('billing_records.balance') ?? 0;
         $totalContainers = $queryInYard->count();
 
         return $this->render('view', [
@@ -93,7 +94,6 @@ class ContainerOwnerController extends DashboardController
             'totalContainers' => $totalContainers,
         ]);
     }
-
     public function actionCreate()
     {  
         Yii::$app->user->can('dashboard-container-owner-create');
