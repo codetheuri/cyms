@@ -39,7 +39,6 @@ $this->title = 'Pending Credit Requests';
                 'label' => 'Requested By',
                 'format' => 'raw',
                 'value' => function($model) {
-                    // Safety check if relation is null
                     $username = $model->requester ? $model->requester->username : 'Unknown (ID: '.$model->requested_by.')';
                     $time = Yii::$app->formatter->asRelativeTime($model->requested_at);
                     return "<div>{$username}</div><small class='text-muted'>{$time}</small>";
@@ -86,24 +85,27 @@ $this->title = 'Pending Credit Requests';
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-success-light">
-                    <h5 class="modal-title text-success">Approve Credit for <?= $model->visit->container_number ?></h5>
+                    <h5 class="modal-title text-success">Approve Credit</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
+                
                 <?php $form = ActiveForm::begin(['action' => ['approve-credit', 'id' => $model->bill_id]]); ?>
-                <div class="modal-body">
-                    <div class="alert alert-success bg-success-light border-0 mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span class="fs-sm fw-bold text-uppercase text-muted">Total Due:</span>
-                            <span class="fw-bold text-dark"><?= Yii::$app->formatter->asCurrency($model->balance, 'KES') ?></span>
-                        </div>
-                        <div class="fs-sm text-muted">Reason: "<?= Html::encode($model->requester_note) ?>"</div>
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="fa fa-check-circle fa-4x text-success opacity-50"></i>
                     </div>
+                    <h4 class="fw-bold mb-2">Confirm Approval?</h4>
+                    <p class="text-muted mb-0">
+                        Container: <strong><?= $model->visit->container_number ?></strong><br>
+                        Amount Due: <span class="text-danger fw-bold"><?= Yii::$app->formatter->asCurrency($model->balance, 'KES') ?></span>
+                    </p>
                     
-               
+                    <?= $form->field($model, 'atl_number')->hiddenInput(['value' => 'AUTO-' . time()])->label(false) ?>
                 </div>
-                <div class="modal-footer border-top-0">
-                    <button type="button" class="btn btn-alt-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success fw-bold px-4">Confirm Approval</button>
+                
+                <div class="modal-footer justify-content-center border-top-0 pb-4">
+                    <button type="button" class="btn btn-alt-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success fw-bold px-5">Yes, Approve</button>
                 </div>
                 <?php ActiveForm::end(); ?>
             </div>
