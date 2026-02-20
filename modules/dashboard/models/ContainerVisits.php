@@ -66,7 +66,7 @@ class ContainerVisits extends  BaseModel
                 'arrival_photo_path'
             ], 'safe'],
 
-            [[ 'shipping_line_id'], 'integer'],
+            [['shipping_line_id'], 'integer'],
             [['storage_days'], 'number'],
             [['comments_in'], 'string'],
             [
@@ -75,9 +75,10 @@ class ContainerVisits extends  BaseModel
                 'pattern' => '/^[A-Z]{4}[0-9]{7}$/',
                 'message' => 'Invalid Format. Must be 4 letters followed by 7 digits (e.g., MSCU1234567).'
             ],
-          [
-                ['container_number'], 
-                'unique', 
+            [
+                ['container_number'],
+                'unique',
+                'on' => self::SCENARIO_GATE_IN,
                 'targetAttribute' => ['container_number'],
                 'filter' => function ($query) {
                     // Only block if the container exists AND hasn't left yet.
@@ -213,28 +214,28 @@ class ContainerVisits extends  BaseModel
             // ---------------------------------------------------------
             // 3. CALCULATE STORAGE DAYS
             // ---------------------------------------------------------
-         if ($this->scenario == self::SCENARIO_GATE_OUT && $this->date_in && $this->date_out) {
-            $startStr = $this->date_in . ' ' . ($this->time_in ?: '00:00:00');
-            $endStr   = $this->date_out . ' ' . ($this->time_out ?: '23:59:59');
+            if ($this->scenario == self::SCENARIO_GATE_OUT && $this->date_in && $this->date_out) {
+                $startStr = $this->date_in . ' ' . ($this->time_in ?: '00:00:00');
+                $endStr   = $this->date_out . ' ' . ($this->time_out ?: '23:59:59');
 
-            $start = strtotime($startStr);
-            $end   = strtotime($endStr);
-            
-            $diffSeconds = $end - $start;
+                $start = strtotime($startStr);
+                $end   = strtotime($endStr);
 
-            // Apply same logic: Part of a day is a full day
-            if ($diffSeconds < 0) {
-                 $days = 1;
-            } else {
-                 $days = floor($diffSeconds / 86400) + 1;
+                $diffSeconds = $end - $start;
+
+                // Apply same logic: Part of a day is a full day
+                if ($diffSeconds < 0) {
+                    $days = 1;
+                } else {
+                    $days = floor($diffSeconds / 86400) + 1;
+                }
+
+                $this->storage_days = $days;
             }
 
-            $this->storage_days = $days;
+            return true;
         }
-
-        return true;
-    }
-    return false;
+        return false;
     }
 
 
