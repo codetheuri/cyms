@@ -65,7 +65,8 @@ class ContainerVisits extends  BaseModel
                 'bl_number',
                 'arrival_photo_path'
             ], 'safe'],
-
+            [['date_in', 'time_in'], 'validateFutureDate', 'on' => self::SCENARIO_GATE_IN],
+            [['date_out', 'time_out'], 'validateFutureDate', 'on' => self::SCENARIO_GATE_OUT],
             [['shipping_line_id'], 'integer'],
             [['storage_days'], 'number'],
             [['comments_in'], 'string'],
@@ -95,7 +96,36 @@ class ContainerVisits extends  BaseModel
         ];
     }
 
+/**
+     * Custom Validator to prevent logging future dates/times.
+     */
+    public function validateFutureDate($attribute, $params)
+    {
+        // Don't run if there are already format errors
+        if (!$this->hasErrors()) {
+            
+            // Determine which date/time we are checking based on the scenario
+            if ($this->scenario === self::SCENARIO_GATE_IN) {
+                $dateString = $this->date_in . ' ' . ($this->time_in ?: '00:00:00');
+                $label = 'Gate IN';
+            } else {
+                $dateString = $this->date_out . ' ' . ($this->time_out ?: '00:00:00');
+                $label = 'Gate OUT';
+            }
 
+            // Convert the user's input into a timestamp
+            $inputTimestamp = strtotime($dateString);
+            $currentTimestamp = time();
+
+            // If the input is greater than the current server time, throw an error
+            if ($inputTimestamp > $currentTimestamp) {
+                // If it's a few seconds/minutes off due to slight laptop clock drift, you can add a buffer
+                // e.g., if ($inputTimestamp > ($currentTimestamp + 300)) for a 5-min grace period.
+                // But strictly speaking, block it:
+                $this->addError($attribute, "The {$label} Date & Time cannot be in the future.");
+            }
+        }
+    }
     public function uploadArrivalPhoto()
     {
         $this->arrival_photo_file = UploadedFile::getInstance($this, 'arrival_photo_file');

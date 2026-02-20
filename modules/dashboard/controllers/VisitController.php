@@ -93,7 +93,7 @@ class VisitController extends DashboardController
                     return $this->redirect(['index']);
                 }
             } else {
-                Yii::$app->session->setFlash('error', 'lease fix the errors belowP.');
+                Yii::$app->session->setFlash('error', 'lease fix the errors below!');
             }
         }
 
