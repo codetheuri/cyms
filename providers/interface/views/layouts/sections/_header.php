@@ -4,13 +4,13 @@ use yii\helpers\Url;
 use helpers\Html;
 
 // 1. Get Notification Count
-// (Checks for any billing records waiting for credit approval)
 $pendingCount = \dashboard\models\BillingRecords::find()
     ->where(['approval_status' => 'PENDING'])
     ->count();
 ?>
 <header id="page-header">
     <div class="content-header">
+        
         <div class="d-flex align-items-center">
             <button type="button" class="btn btn-sm btn-alt-secondary me-2 d-lg-none" data-toggle="layout" data-action="sidebar_toggle">
                 <i class="fa fa-fw fa-bars"></i>
@@ -18,7 +18,8 @@ $pendingCount = \dashboard\models\BillingRecords::find()
             <button type="button" class="btn btn-sm btn-alt-secondary d-md-none" data-toggle="layout" data-action="header_search_on">
                 <i class="fa fa-fw fa-search"></i>
             </button>
-            </div>
+        </div>
+        
         <div class="d-flex align-items-center">
             
             <div class="dropdown d-inline-block me-2">
@@ -71,6 +72,7 @@ $pendingCount = \dashboard\models\BillingRecords::find()
                     <?php endif; ?>
                 </div>
             </div>
+
             <div class="dropdown d-inline-block ms-2" style="background-color: #1a1a34;">
                 <button type="button" class="btn btn-sm btn-alt-secondary d-flex align-items-center"
                     id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="color: #ffffff;">
@@ -78,6 +80,7 @@ $pendingCount = \dashboard\models\BillingRecords::find()
                     <span class="d-none d-sm-inline-block ms-2"><?= Yii::$app->user->identity->username; ?></span>
                     <i class="fa fa-fw fa-angle-down d-none d-sm-inline-block opacity-50 ms-1 mt-1" style="color: #ffffff;"></i>
                 </button>
+                
                 <div class="dropdown-menu dropdown-menu-md dropdown-menu-end p-0 border-0"
                     aria-labelledby="page-header-user-dropdown">
                     <div class="p-2">
@@ -86,6 +89,8 @@ $pendingCount = \dashboard\models\BillingRecords::find()
                             <span class="fs-sm fw-medium" style="color: #1a1a34;">Log Out</span>
                         </a>
                     </div>
+                    
+                    <?php if (Yii::$app->user->can('dashboard-profile-update', true)): ?>
                     <div class="p-2">
                         <?= Html::customButton([
                             'type' => 'modal',
@@ -98,8 +103,10 @@ $pendingCount = \dashboard\models\BillingRecords::find()
                             'modal' => ['title' => 'change password']
                         ]) ?>
                     </div>
+                    <?php endif; ?>
+
                 </div>
             </div>
             </div>
-        </div>
-    </header>
+    </div>
+</header>

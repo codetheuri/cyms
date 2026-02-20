@@ -1,76 +1,40 @@
 <?php
-use yii\helpers\Html;
 use yii\widgets\ActiveForm;
-use yii\widgets\Pjax;
+use yii\helpers\Html;
+
+/* @var clone \auth\models\static\ChangePassword $model */
 ?>
-<?php Pjax::begin() ?>
-<div class="card mx-auto" style="max-width: 400px;">
-    <div class="card-body">
 
-        
-        <?php $form = ActiveForm::begin([
-            'options' => ['data-pjax' => true,'id' => 'change-password-form'],
-            'action' => ['/dashboard/iam/change-password'],
-            'enableAjaxValidation' => true,
-        ]); ?>
+<?php $form = ActiveForm::begin(['id' => 'self-change-password-form']); ?>
 
-        <?= $form->field($model, 'currentPassword', [
-            'options' => ['class' => 'form-group mb-3'],
-            'template' => "{label}\n{input}\n{error}",
-            'inputOptions' => ['class' => 'form-control']
-        ])->passwordInput()->label('Current Password') ?>
-
-        <?= $form->field($model, 'newPassword', [
-            'options' => ['class' => 'form-group mb-3'],
-            'template' => "{label}\n{input}\n{error}",
-            'inputOptions' => ['class' => 'form-control']
-        ])->passwordInput()->label('New Password') ?>
-
-        <?= $form->field($model, 'confirmPassword', [
-            'options' => ['class' => 'form-group mb-3'],
-            'template' => "{label}\n{input}\n{error}",
-            'inputOptions' => ['class' => 'form-control']
-        ])->passwordInput()->label('Confirm Password') ?>
-
-        <?= Html::submitButton('Update Password', [
-            'class' => 'btn btn-secondary w-100'
-        ]) ?>
-
-        <?php ActiveForm::end(); ?>
-    </div>
+<div class="alert alert-info fs-sm mb-4">
+    <i class="fa fa-info-circle me-1"></i> Update your account password. You will be logged out and required to log in again after saving.
 </div>
 
-<?php
-$script = <<<JS
-   $('#change-password-form').on('beforeSubmit', function(e) {
-    e.preventDefault();
-    var form = $(this);
-    $.ajax({
-        url: form.attr('action'),
-        type: 'POST',
-        data: form.serialize(),
-        success: function(response) {
-            if (response.success) {
-                alert('Password changed successfully.');
-                form[0].reset();
-            } else if (response.errors) {
-                $.each(response.errors, function(field, messages) {
-                    var input = form.find('[name="ChangePassword[' + field + ']"]');
-                    var errorContainer = input.closest('.form-group').find('.help-block');
-                    errorContainer.html(messages.join('<br>'));
-                });
-            } else {
-                alert('Failed to change password. Please try again.');
-            }
-        },
-        error: function() {
-            alert('An error occurred while processing your request.');
-        }
-    });
-    return false;
-});
+<div class="mb-3">
+    <?= $form->field($model, 'currentPassword')->passwordInput([
+        'class' => 'form-control form-control-lg', 
+        'placeholder' => 'Enter current password'
+    ])->label('Current Password', ['class' => 'fw-bold text-muted fs-sm text-uppercase']) ?>
+</div>
 
-JS;
-$this->registerJs($script);
-?>
-<?php Pjax::end() ?>
+<div class="mb-3">
+    <?= $form->field($model, 'newPassword')->passwordInput([
+        'class' => 'form-control form-control-lg', 
+        'placeholder' => 'Enter new password'
+    ])->label('New Password', ['class' => 'fw-bold text-muted fs-sm text-uppercase']) ?>
+</div>
+
+<div class="mb-4">
+    <?= $form->field($model, 'confirmPassword')->passwordInput([
+        'class' => 'form-control form-control-lg', 
+        'placeholder' => 'Confirm new password'
+    ])->label('Confirm Password', ['class' => 'fw-bold text-muted fs-sm text-uppercase']) ?>
+</div>
+
+<div class="text-end border-top pt-3">
+    <button type="button" class="btn btn-alt-secondary" data-bs-dismiss="modal">Cancel</button>
+    <?= Html::submitButton('<i class="fa fa-save me-1"></i> Update My Password', ['class' => 'btn btn-primary fw-bold px-4']) ?>
+</div>
+
+<?php ActiveForm::end(); ?>

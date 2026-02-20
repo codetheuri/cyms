@@ -63,18 +63,27 @@ $this->title = 'List of User Accounts';
             //'is_deleted',
             //'created_at',
             //'updated_at',
-            [
+          [
               'class' => \helpers\grid\ActionColumn::className(),
-              'template' => '{manage} {trash}',
-              'headerOptions' => ['width' => '10%'],
+              'template' => '{manage} {change_pwd} {trash}', // Added {change_pwd}
+              'headerOptions' => ['width' => '15%'],
               'contentOptions' => ['style' => 'text-align: center;'],
               'buttons' => [
                 'manage' => function ($url, $model, $key) {
                   return Html::customButton(['type' => 'modal', 'url' => Url::to(['assignment', 'id' => $key]), 'modal' => ['title' => 'Manage {' . $model->username . '} Roles', 'size' => 'lg'], 'appearence' => ['icon' => 'user-shield', 'theme' => 'success']]);
                 },
-                // 'update' => function ($url, $model, $key) {
-                //   return Html::customButton(['type' => 'modal', 'url' => Url::toRoute(['change-password', 'theme'=> 'primary', 'user_id' => $model->user_id]), 'modal' => ['title' => 'Update  User'], 'appearence' => ['icon' => 'edit', 'theme' => 'info']]);
-                // },
+                
+                // NEW: ADMIN PASSWORD RESET BUTTON
+             'change_pwd' => function ($url, $model, $key) {
+                  return Html::customButton([
+                      'type' => 'modal', 
+                      // FIX: Point to the new reset-password action in iam controller
+                      'url' => Url::toRoute(['/dashboard/iam/reset-password', 'id' => $model->user_id]), 
+                      'modal' => ['title' => 'Reset Password: ' . $model->username], 
+                      'appearence' => ['icon' => 'key', 'theme' => 'info', 'title' => 'Reset Password']
+                  ]);
+                },
+
                 'trash' => function ($url, $model, $key) {
                   return $model->is_deleted !== 1 ?
                     Html::customButton(['type' => 'link', 'url' => Url::toRoute(['trash', 'user_id' => $model->user_id]),  'appearence' => ['icon' => 'trash', 'theme' => 'danger', 'data' => ['message' => 'Do you want to delete this user?']]]) :
@@ -83,11 +92,12 @@ $this->title = 'List of User Accounts';
               ],
               'visibleButtons' => [
                 'manage' => function ($model) {
-                  return Yii::$app->user->can('dashboard-profile-assignment', true) && $model->is_deleted !== 1 ? true : false;
+                  return Yii::$app->user->can('dashboard-profile-assignment', true) && $model->is_deleted !== 1;
                 },
-                // 'update' => function ($model) {
-                //   return Yii::$app->user->can('dashboard-profile-update', true) && $model->is_deleted !== 1 ? true : false;
-                // },
+                // ENFORCE PERMISSION: Only admins can see the key button
+                'change_pwd' => function ($model) {
+                  return Yii::$app->user->can('dashboard-profile-update', true) && $model->is_deleted !== 1;
+                },
                 'trash' => function ($model) {
                   return $model->is_deleted !== 1 ?
                     Yii::$app->user->can('dashboard-profile-delete', true) :

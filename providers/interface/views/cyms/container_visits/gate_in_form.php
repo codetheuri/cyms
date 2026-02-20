@@ -38,10 +38,10 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
                 <?= $form->field($model, 'ticket_no_in')->textInput(['readonly' => true, 'class' => 'form-control bg-body-light']) ?>
             </div>
             <div class="col-md-4 mb-3">
-                <?= $form->field($model, 'date_in')->input('date', $readOnlyAttr) ?>
+                <?= $form->field($model, 'date_in')->input('date') ?>
             </div>
             <div class="col-md-4 mb-3">
-                <?= $form->field($model, 'time_in')->input('time', $readOnlyAttr) ?>
+                <?= $form->field($model, 'time_in')->input('time') ?>
             </div>
 
             <div class="col-md-6 mb-3">
