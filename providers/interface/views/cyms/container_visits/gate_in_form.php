@@ -12,7 +12,7 @@ use helpers\widgets\ActiveForm;
 
 $isNew = $model->isNewRecord;
 $this->title = $isNew ? 'New Gate IN Entry' : 'Update Gate IN Entry';
-$readOnlyAttr = ['readonly' => !$isNew];
+// $readOnlyAttr = ['readonly' => !$isNew];
 
 // Get current date/time for the HTML5 max attributes to prevent future selection visually
 $today = date('Y-m-d');
@@ -86,7 +86,7 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
                             'maxlength' => 11,
                             'oninput' => "this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')"
                         ],
-                        $readOnlyAttr
+                     
                     ))->label('Container Number <span class="text-danger">*</span>') ?>
                 </div>
             </div>

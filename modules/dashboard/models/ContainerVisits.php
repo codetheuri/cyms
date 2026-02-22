@@ -291,4 +291,32 @@ class ContainerVisits extends  BaseModel
         // Returns true if a survey exists and is APPROVED
         return $this->getContainerSurvey()->andWhere(['approval_status' => 'APPROVED'])->exists();
     }
+    /**
+     * Get DataProvider for active containers with flags/comments
+     */
+    public static function getFlaggedDataProvider()
+    {
+        $query = self::find()
+            ->where(['not', ['comments_in' => null]])
+            ->andWhere(['!=', 'comments_in', ''])
+            ->andWhere(['not in', 'status', ['GATE_OUT']]); // Only show active yard flags
+
+        return new \yii\data\ActiveDataProvider([
+            'query' => $query,
+            'sort' => ['defaultOrder' => ['created_at' => SORT_DESC]],
+            'pagination' => ['pageSize' => 15],
+        ]);
+    }
+
+    /**
+     * Get count of active flagged containers for the Tab Badge
+     */
+    public static function getFlaggedCount()
+    {
+        return self::find()
+            ->where(['not', ['comments_in' => null]])
+            ->andWhere(['!=', 'comments_in', ''])
+            ->andWhere(['not in', 'status', ['GATE_OUT']])
+            ->count();
+    }
 }
