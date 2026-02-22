@@ -372,7 +372,7 @@ public function actionGateOut($id)
 
     public function actionUpdate($id)
 {
-    Yii::$app->user->can('dashboard-visit-view');
+    Yii::$app->user->can('dashboard-visit-update');
     $model = $this->findModel($id);
     
     // Use Gate In scenario to validate fields like container number format
@@ -423,7 +423,7 @@ public function actionGateOut($id)
      */
     public function actionTrash($id)
     {
-        Yii::$app->user->can('dashboard-visit-view');
+        Yii::$app->user->can('dashboard-visit-delete');
         $model = $this->findModel($id);
         
         if ($model->is_deleted) {
@@ -448,7 +448,7 @@ public function actionGateOut($id)
      */
     public function actionForceDelete($id)
     {
-        Yii::$app->user->can('dashboard-visit-view');
+        Yii::$app->user->can('dashboard-visit-delete');
         $model = $this->findModel($id);
         
         try {

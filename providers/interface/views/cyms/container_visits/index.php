@@ -22,9 +22,11 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
         <p class="fs-sm text-muted mb-0">Manage all container entries, surveys, and exits.</p>
     </div>
     <div class="mt-3 mt-sm-0">
-        <?= Html::a('<i class="fa fa-plus me-1"></i> New Gate IN', ['gate-in'], [
-            'class' => 'btn btn-primary fw-bold px-4 py-2 shadow-sm'
-        ]) ?>
+        <?php if (Yii::$app->user->can('dashboard-visit-gate-in')): ?>
+            <?= Html::a('<i class="fa fa-plus me-1"></i> New Gate IN', ['gate-in'], [
+                'class' => 'btn btn-primary fw-bold px-4 py-2 shadow-sm'
+            ]) ?>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -120,6 +122,11 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                             'class' => 'yii\grid\ActionColumn',
                             'header' => 'Actions',
                             'template' => '<div class="btn-group">{view} {flag} {trash}</div> <div class="btn-group">{dropdown}</div>',
+                            'visibleButtons' => [
+                                // HIDES BUTTONS IF NOT ADMIN (or lacks permission)
+                                // 'flag'  => Yii::$app->user->can('dashboard-visit-update',true),
+                                'trash' => Yii::$app->user->can('dashboard-visit-delete',true),
+                            ],
                             'buttons' => [
                                 'view' => function ($url, $model) {
                                     return Html::a('<i class="fa fa-eye"></i>', ['view', 'id' => $model->visit_id], [
@@ -159,10 +166,12 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                                 },
                                 'dropdown' => function ($url, $model) {
                                     $links = '';
-                                    if ($model->status !== 'GATE_OUT') {
+                                    
+                                    // Protect Survey & Edit inside the dropdown
+                                    if (Yii::$app->user->can('dashboard-visit-survey',true) && $model->status !== 'GATE_OUT') {
                                         $links .= '<li>' . Html::a('<i class="fa fa-clipboard-check me-2"></i> Survey', ['survey', 'visit_id' => $model->visit_id], ['class' => 'dropdown-item']) . '</li>';
                                     }
-                                    if ($model->status === 'IN_YARD' || $model->status === 'SURVEYED') {
+                                    if (Yii::$app->user->can('dashboard-visit-update',true) && ($model->status === 'IN_YARD' || $model->status === 'SURVEYED')) {
                                         $links .= '<li>' . Html::a('<i class="fa fa-pen me-2"></i> Full Edit', ['update', 'id' => $model->visit_id], ['class' => 'dropdown-item']) . '</li>';
                                     }
                                     
@@ -238,7 +247,12 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                         [
                             'class' => 'yii\grid\ActionColumn',
                             'header' => 'Actions',
-                            'template' => '{view} {resolve}',
+                            'template' => '{view} {resolve} {trash}',
+                            'visibleButtons' => [
+                                // ONLY ADMINS can resolve the flag from this tab
+                                // 'resolve' => Yii::$app->user->can('dashboard-visit-update'), 
+                                'trash' => Yii::$app->user->can('dashboard-visit-delete',true),
+                            ],
                             'buttons' => [
                                 'view' => function ($url, $model) {
                                     return Html::a('<i class="fa fa-eye me-1"></i> View', ['view', 'id' => $model->visit_id], ['class' => 'btn btn-sm btn-alt-secondary me-1']);
@@ -250,7 +264,24 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                                         'modal' => ['title' => 'Update / Resolve Flag', 'size' => 'md'],
                                         'appearence' => ['icon' => 'edit', 'theme' => 'warning', 'text' => 'Update', 'type' => 'iconText', 'size' => 'sm']
                                     ]);
-                                }
+                                },
+                                   'trash' => function ($url, $model) {
+                                    if ($model->is_deleted !== 1) {
+                                        return Html::a('<i class="fa fa-trash"></i>', ['trash', 'id' => $model->visit_id], [
+                                            'class' => 'btn btn-sm btn-alt-danger',
+                                            'title' => 'Trash',
+                                            'data' => ['confirm' => 'Move to trash?', 'method' => 'post']
+                                        ]);
+                                    } else {
+                                        return Html::customButton([
+                                            'type' => 'modal',
+                                            'url' => Url::to(['restore-option', 'id' => $model->visit_id]),
+                                            'modal' => ['title' => 'Trash Options', 'size' => 'md'],
+                                            'appearence' => ['icon' => 'undo', 'theme' => 'warning', 'title' => 'Restore']
+                                        ]);
+                                    }
+                                },
+
                             ],
                             'contentOptions' => ['style' => 'width: 180px; text-align: right;'],
                         ]
@@ -268,7 +299,7 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
         border-bottom: 2px solid #e5e7eb;
     }
     .custom-tabs .nav-link {
-        background-color: #f3f4f6; /* Dim background for inactive */
+        background-color: #f3f4f6;
         color: #6b7280;
         border: none;
         border-bottom: 3px solid transparent;
@@ -278,16 +309,15 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
         background-color: #e5e7eb;
     }
     .custom-tabs .nav-link.active {
-        background-color: #ffffff; /* White background for active */
+        background-color: #ffffff;
         color: #111827;
-        border-bottom: 3px solid #0d6efd; /* Bold blue line for active */
+        border-bottom: 3px solid #0d6efd;
         box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
     }
     .custom-tabs #tab-flagged.active {
-        border-bottom: 3px solid #dc3545; /* Red line if warning tab is active */
+        border-bottom: 3px solid #dc3545;
     }
 
-    /* Pulse animation for the red badge */
     @keyframes pulse-red {
         0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
         70% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
