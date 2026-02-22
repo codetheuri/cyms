@@ -22,7 +22,7 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
         <p class="fs-sm text-muted mb-0">Manage all container entries, surveys, and exits.</p>
     </div>
     <div class="mt-3 mt-sm-0">
-        <?php if (Yii::$app->user->can('dashboard-visit-gate-in')): ?>
+        <?php if (Yii::$app->user->can('dashboard-visit-gate-in',true)): ?>
             <?= Html::a('<i class="fa fa-plus me-1"></i> New Gate IN', ['gate-in'], [
                 'class' => 'btn btn-primary fw-bold px-4 py-2 shadow-sm'
             ]) ?>
