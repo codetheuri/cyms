@@ -201,6 +201,78 @@ class ContainerOwnerController extends DashboardController
         }
         return $this->redirect(['index']);
     }
+ public function actionChangeCurrency($id)
+    {
+        $model = $this->findModel($id); 
+        
+        $oldCurrency = $model->billing_currency ?: 'KES';
+        $newCurrency = Yii::$app->request->post('billing_currency');
+        
+        if ($newCurrency && in_array($newCurrency, ['KES', 'USD']) && $oldCurrency !== $newCurrency) {
+            
+            $exRate = class_exists('\dashboard\hooks\Currency') 
+                ? \dashboard\hooks\Currency::getUsdToKesRate() 
+                : (float) Yii::$app->config->get('fallback_exchange_rate', 130.00);
+            
+            if ($exRate <= 0) $exRate = 130.00;
+
+            $transaction = Yii::$app->db->beginTransaction();
+            
+            try {
+                // 1. Update Profile
+                $model->billing_currency = $newCurrency;
+                if (!$model->save(false)) throw new \Exception('Failed to update client.');
+
+                // 2. Convert Custom Rates
+                $customRates = \dashboard\models\ClientRates::findAll(['owner_id' => $id]);
+                foreach ($customRates as $rate) {
+                    if ($newCurrency === 'USD' && $oldCurrency === 'KES') {
+                        $rate->daily_rate = round($rate->daily_rate / $exRate, 2);
+                    } elseif ($newCurrency === 'KES' && $oldCurrency === 'USD') {
+                        $rate->daily_rate = round($rate->daily_rate * $exRate, 2);
+                    }
+                    $rate->save(false);
+                }
+
+                // 3. CONVERT UNPAID BILLS (Including Discounts)
+                $visits = \dashboard\models\ContainerVisits::find()->select('visit_id')->where(['container_owner_id' => $id])->column();
+                
+                if (!empty($visits)) {
+                    $unpaidBills = \dashboard\models\BillingRecords::find()
+                        ->where(['visit_id' => $visits])
+                        ->andWhere(['in', 'status', ['UNPAID', 'PARTIAL']])
+                        ->all();
+                    
+                    foreach ($unpaidBills as $bill) {
+                        
+                        // Convert the Discount Amount mathematically
+                        if ($newCurrency === 'USD' && $bill->currency === 'KES') {
+                            $bill->discount_amount = round($bill->discount_amount / $exRate, 2);
+                        } elseif ($newCurrency === 'KES' && $bill->currency === 'USD') {
+                            $bill->discount_amount = round($bill->discount_amount * $exRate, 2);
+                        }
+                        
+                        // Force Recalculation from KES Master
+                        $bill->tariff_rate = 0; 
+                        $bill->lift_charges = 0; 
+                        $bill->currency = $newCurrency;
+                        
+                        $bill->save(false);
+                        $bill->recalculateBalance(); 
+                    }
+                }
+                
+                $transaction->commit();
+                Yii::$app->session->setFlash('success', "Client currency updated. All unpaid bills, rates, and discounts converted mathematically.");
+
+            } catch (\Exception $e) {
+                $transaction->rollBack();
+                Yii::$app->session->setFlash('error', 'Error updating currency: ' . $e->getMessage());
+            }
+        }
+        
+        return $this->redirect(['view', 'id' => $id]);
+    }
     protected function findModel($id)
     {
         if (($model = MasterContainerOwners::findOne($id)) !== null) {

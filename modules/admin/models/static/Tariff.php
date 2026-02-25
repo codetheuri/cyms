@@ -6,28 +6,45 @@ use Yii;
 
 class Tariff extends \yii\base\Model
 {
-    // --- TARIFF FIELDS ---
+    // --- BASE TARIFF FIELDS (KES) ---
     public $storage_rate_per_day;
     public $lift_on_charges;
     public $lift_off_charges;
-    public $currency_code;
-    public $tax_percentage; // VAT
+    public $currency_code; 
+    public $tax_percentage; 
+
+    // --- SECONDARY TARIFF FIELDS (USD) ---
+    public $usd_storage_rate_per_day;
+    public $usd_lift_on_charges;
+    public $usd_lift_off_charges;
+    
+    // --- NEW: FALLBACK EXCHANGE RATE ---
+    public $fallback_exchange_rate;
 
     const CATEGORY = 'TARIFF';
 
-    public function __construct()
+   public function __construct()
     {
-        // Initialize keys if they don't exist in DB
-        if (is_null(Yii::$app->config->get('storage_rate_per_day'))) {
+        // FIX: Check if one of the NEW keys is missing. 
+        // If missing, it triggers createKeys() which safely adds only the missing rows.
+        if (is_null(Yii::$app->config->get('fallback_exchange_rate'))) {
             $this->createKeys();
         }
 
-        // Hydrate from config (Load current values)
+        // Hydrate from config (Load current KES/Base values)
         $this->storage_rate_per_day = Yii::$app->config->get('storage_rate_per_day');
         $this->lift_on_charges      = Yii::$app->config->get('lift_on_charges');
         $this->lift_off_charges     = Yii::$app->config->get('lift_off_charges');
         $this->currency_code        = Yii::$app->config->get('currency_code');
         $this->tax_percentage       = Yii::$app->config->get('tax_percentage');
+
+        // Hydrate USD values
+        $this->usd_storage_rate_per_day = Yii::$app->config->get('usd_storage_rate_per_day');
+        $this->usd_lift_on_charges      = Yii::$app->config->get('usd_lift_on_charges');
+        $this->usd_lift_off_charges     = Yii::$app->config->get('usd_lift_off_charges');
+        
+        // Load fallback rate
+        $this->fallback_exchange_rate   = Yii::$app->config->get('fallback_exchange_rate');
 
         parent::__construct();
     }
@@ -35,15 +52,13 @@ class Tariff extends \yii\base\Model
     public function rules()
     {
         return [
-            // All fields are required for billing to work correctly
-            [['storage_rate_per_day', 'lift_on_charges', 'lift_off_charges', 'currency_code'], 'required'],
+            [['storage_rate_per_day', 'lift_on_charges', 'lift_off_charges', 'currency_code', 
+              'usd_storage_rate_per_day', 'usd_lift_on_charges', 'usd_lift_off_charges', 'fallback_exchange_rate'], 'required'],
             
-            // Numeric validation ensures calculations won't break
-            [['storage_rate_per_day', 'lift_on_charges', 'lift_off_charges', 'tax_percentage'], 'number', 'min' => 0],
+            [['storage_rate_per_day', 'lift_on_charges', 'lift_off_charges', 'tax_percentage',
+              'usd_storage_rate_per_day', 'usd_lift_on_charges', 'usd_lift_off_charges', 'fallback_exchange_rate'], 'number', 'min' => 0],
             
-            // Currency code format (e.g., KES, USD)
             [['currency_code'], 'string', 'length' => 3],
-            [['currency_code'], 'match', 'pattern' => '/^[A-Z]+$/', 'message' => 'Currency code must be 3 uppercase letters (e.g., KES).'],
         ];
     }
 
@@ -51,11 +66,19 @@ class Tariff extends \yii\base\Model
     {
         return Yii::$app->config->add(
             [
-                ['key' => 'storage_rate_per_day', 'default' => '1000', 'category' => self::CATEGORY, 'disposition' => 0, 'label' => 'Storage Rate (Per Day)'],
-                ['key' => 'lift_on_charges',      'default' => '1500', 'category' => self::CATEGORY, 'disposition' => 1, 'label' => 'Lift On Charge'],
-                ['key' => 'lift_off_charges',     'default' => '1500', 'category' => self::CATEGORY, 'disposition' => 2, 'label' => 'Lift Off Charge'],
-                ['key' => 'currency_code',        'default' => 'KES',  'category' => self::CATEGORY, 'disposition' => 3, 'label' => 'Currency Code'],
-                ['key' => 'tax_percentage',       'default' => '16',   'category' => self::CATEGORY, 'disposition' => 4, 'label' => 'VAT Percentage (%)'],
+                ['key' => 'currency_code',        'default' => 'KES',  'category' => self::CATEGORY, 'disposition' => 0, 'label' => 'Base Currency Code'],
+                
+                ['key' => 'fallback_exchange_rate', 'default' => '130.00', 'category' => self::CATEGORY, 'disposition' => 1, 'label' => 'Fallback USD/KES Rate'],
+                
+                ['key' => 'storage_rate_per_day', 'default' => '1000', 'category' => self::CATEGORY, 'disposition' => 2, 'label' => 'Storage Rate (Base)'],
+                ['key' => 'lift_on_charges',      'default' => '1500', 'category' => self::CATEGORY, 'disposition' => 3, 'label' => 'Lift On Charge (Base)'],
+                ['key' => 'lift_off_charges',     'default' => '1500', 'category' => self::CATEGORY, 'disposition' => 4, 'label' => 'Lift Off Charge (Base)'],
+                
+                ['key' => 'usd_storage_rate_per_day', 'default' => '10', 'category' => self::CATEGORY, 'disposition' => 5, 'label' => 'Storage Rate (USD)'],
+                ['key' => 'usd_lift_on_charges',      'default' => '15', 'category' => self::CATEGORY, 'disposition' => 6, 'label' => 'Lift On Charge (USD)'],
+                ['key' => 'usd_lift_off_charges',     'default' => '15', 'category' => self::CATEGORY, 'disposition' => 7, 'label' => 'Lift Off Charge (USD)'],
+                
+                ['key' => 'tax_percentage',       'default' => '16',   'category' => self::CATEGORY, 'disposition' => 8, 'label' => 'VAT Percentage (%)'],
             ]
         );
     }
@@ -63,23 +86,33 @@ class Tariff extends \yii\base\Model
     public function attributeLabels()
     {
         return [
-            'storage_rate_per_day' => 'Storage Rate (Per Day)',
-            'lift_on_charges'      => 'Lift On Charge (Loading)',
-            'lift_off_charges'     => 'Lift Off Charge (Offloading)',
-            'currency_code'        => 'Currency Code (e.g., KES)',
-            'tax_percentage'       => 'VAT Percentage',
+            'currency_code'            => 'Base Currency (e.g., KES)',
+            'fallback_exchange_rate'   => 'Fallback USD to KES Rate',
+            'storage_rate_per_day'     => 'Storage Rate (Base/Day)',
+            'lift_on_charges'          => 'Lift On Charge (Base)',
+            'lift_off_charges'         => 'Lift Off Charge (Base)',
+            'usd_storage_rate_per_day' => 'Storage Rate (USD/Day)',
+            'usd_lift_on_charges'      => 'Lift On Charge (USD)',
+            'usd_lift_off_charges'     => 'Lift Off Charge (USD)',
+            'tax_percentage'           => 'VAT Percentage',
         ];
     }
 
-    // Layout helper for the view
     public static function layout(): array
     {
         return [
-            'storage_rate_per_day' => 'col-lg-6 col-12',
-            'currency_code'        => 'col-lg-6 col-12',
-            'lift_on_charges'      => 'col-lg-6 col-12',
-            'lift_off_charges'     => 'col-lg-6 col-12',
-            'tax_percentage'       => 'col-lg-6 col-12',
+            'currency_code'            => 'col-lg-6 col-12 mb-3 border-bottom pb-2 text-primary fw-bold',
+            'fallback_exchange_rate'   => 'col-lg-6 col-12 mb-3 border-bottom pb-2 text-danger fw-bold',
+            
+            'storage_rate_per_day'     => 'col-lg-4 col-12',
+            'lift_on_charges'          => 'col-lg-4 col-12',
+            'lift_off_charges'         => 'col-lg-4 col-12',
+            
+            'usd_storage_rate_per_day' => 'col-lg-4 col-12 mt-3',
+            'usd_lift_on_charges'      => 'col-lg-4 col-12 mt-3',
+            'usd_lift_off_charges'     => 'col-lg-4 col-12 mt-3',
+            
+            'tax_percentage'           => 'col-lg-12 col-12 mt-4',
         ];
     }
 }

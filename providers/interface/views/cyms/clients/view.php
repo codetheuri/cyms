@@ -3,18 +3,22 @@
 use yii\helpers\Html;
 use helpers\grid\GridView;
 use yii\helpers\Url;
-use yii\widgets\ActiveForm; // Required for the Modal Form
+use yii\widgets\ActiveForm;
 
 /* @var $this yii\web\View */
 /* @var $model dashboard\models\ContainerOwners */
 
 $this->title = $model->owner_name;
+$curr = $model->billing_currency ?: 'KES';
+$isUsd = ($curr === 'USD');
 ?>
 
 <div class="bg-body-light border-bottom mb-4">
     <div class="content py-3">
         <div class="d-flex flex-column flex-sm-row justify-content-sm-between align-items-sm-center">
-            <h1 class="flex-grow-1 fs-3 fw-bold my-2 my-sm-3"><?= Html::encode($model->owner_name) ?></h1>
+            <h1 class="flex-grow-1 fs-3 fw-bold my-2 my-sm-3">
+                <?= Html::encode($model->owner_name) ?>
+            </h1>
             <nav class="flex-shrink-0 my-2 my-sm-0 ms-sm-3" aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item">Clients</li>
@@ -29,14 +33,24 @@ $this->title = $model->owner_name;
     <div class="block-content block-content-full bg-primary-dark rounded-top text-white">
         <div class="d-flex justify-content-between align-items-center p-2">
             <div>
-                <h2 class="text-white fw-bold mb-1"><?= Html::encode($model->owner_name) ?></h2>
+                <h2 class="text-white fw-bold mb-1">
+                    <?= Html::encode($model->owner_name) ?>
+                    <span class="badge bg-<?= $isUsd ? 'success' : 'primary' ?>-light text-<?= $isUsd ? 'success' : 'primary' ?> ms-2 fs-sm border border-<?= $isUsd ? 'success' : 'primary' ?> align-middle">
+                        <i class="fa fa-coins me-1"></i> <?= $curr ?> BILLING
+                    </span>
+                </h2>
                 <div class="text-white-75 fs-sm">
                     <span class="me-3"><i class="fa fa-phone me-1"></i> <?= $model->owner_contact ?></span>
                     <span><i class="fa fa-envelope me-1"></i> <?= $model->owner_email ?></span>
                 </div>
             </div>
             <div class="d-flex gap-2">
-                <?= Html::a('<i class="fa fa-pen me-1"></i> Edit Details', ['update', 'id' => $model->owner_id], ['class' => 'btn btn-sm btn-light fw-bold']) ?>
+                <?= Html::button('<i class="fa fa-exchange-alt me-1"></i> Change Currency', [
+                    'class' => 'btn btn-sm btn-alt-warning fw-bold text-dark',
+                    'data-bs-toggle' => 'modal',
+                    'data-bs-target' => '#modal-change-currency'
+                ]) ?>
+                <?= Html::a('<i class="fa fa-pen me-1"></i> Edit', ['update', 'id' => $model->owner_id], ['class' => 'btn btn-sm btn-light fw-bold']) ?>
                 <div class="dropdown">
                     <button type="button" class="btn btn-sm btn-alt-secondary bg-white dropdown-toggle" data-bs-toggle="dropdown">
                         <i class="fa fa-download"></i>
@@ -55,8 +69,15 @@ $this->title = $model->owner_name;
             <div class="fs-1 fw-bold text-primary"><?= $totalContainers ?></div>
             <div class="fs-sm fw-medium text-uppercase text-muted">Active Units</div>
         </div>
+        <?php
+        // Accurately calculate the total due by reading the correct column
+        $actualTotalDue = 0;
+        foreach ($dataProviderUnpaid->models as $bill) {
+            $actualTotalDue += $isUsd ? (float)$bill->foreign_balance : (float)$bill->balance;
+        }
+        ?>
         <div class="text-center border-start border-end px-5">
-            <div class="fs-1 fw-bold text-danger"><?= Yii::$app->formatter->asCurrency($totalDue, 'KES') ?></div>
+            <div class="fs-1 fw-bold text-danger"><?= ($isUsd ? '$' : 'KES ') . number_format($actualTotalDue, 2) ?></div>
             <div class="fs-sm fw-medium text-uppercase text-muted">Outstanding Balance</div>
         </div>
         <div class="text-center">
@@ -152,23 +173,25 @@ $this->title = $model->owner_name;
                     'invoice_number',
                     'visit.container_number',
                     'storage_days',
-                    [
-                        'attribute' => 'balance',
-                        'format' => ['currency', 'KES'],
+                   [
+                        'label' => 'Balance (' . $curr . ')',
+                        'format' => 'raw',
                         'contentOptions' => ['class' => 'text-danger fw-bold text-end'],
+                        'value' => function ($m) use ($isUsd) { 
+                            // Render USD column if USD, otherwise render KES column
+                            $amt = $isUsd ? $m->foreign_balance : $m->balance;
+                            $sym = $isUsd ? '$' : 'KES ';
+                            return $sym . number_format($amt, 2);
+                        }
                     ],
                     [
                         'label' => 'Action',
                         'format' => 'raw',
                         'contentOptions' => ['class' => 'text-center'],
-                        'value' => function ($m) use ($model) { // Note: pass $model to use owner_id
+                        'value' => function ($m) use ($model) {
                             return Html::a(
-                                'Pay Now',
-                                [
-                                    '/dashboard/billing/view',
-                                    'id' => $m->bill_id,
-                                    'return_client' => $model->owner_id // <--- NEW PARAMETER
-                                ],
+                                'Pay Now / Edit',
+                                ['/dashboard/billing/view', 'id' => $m->bill_id, 'return_client' => $model->owner_id],
                                 ['class' => 'btn btn-sm btn-primary px-3']
                             );
                         }
@@ -180,8 +203,8 @@ $this->title = $model->owner_name;
         <div class="tab-pane fade p-4" id="content-rates" role="tabpanel">
             <div class="d-flex justify-content-between align-items-center mb-3 bg-body-light p-3 rounded">
                 <div>
-                    <h4 class="mb-1 fw-bold text-dark">Negotiated Rates</h4>
-                    <p class="mb-0 fs-sm text-muted">Set specific daily rates for container types for this client.</p>
+                    <h4 class="mb-1 fw-bold text-dark">Negotiated Rates (<span class="text-primary"><?= $curr ?></span>)</h4>
+                    <p class="mb-0 fs-sm text-muted">Set specific daily rates for container types for this client in their local currency.</p>
                 </div>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-add-rate">
                     <i class="fa fa-plus-circle me-1"></i> Add New Rate
@@ -193,14 +216,18 @@ $this->title = $model->owner_name;
                     <thead class="bg-body-dark text-white">
                         <tr>
                             <th>Container Type</th>
-                            <th>Global Rate (Default)</th>
-                            <th>Client Rate (Special)</th>
+                            <th>Global Default (<?= $curr ?>)</th>
+                            <th>Client Rate (<?= $curr ?>)</th>
                             <th class="text-center" style="width: 100px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php
                         $rates = \dashboard\models\ClientRates::find()->where(['owner_id' => $model->owner_id])->all();
+
+                        // Pick correct global fallback based on client currency
+                        $globalFallback = $isUsd ? Yii::$app->config->get('usd_storage_rate_per_day') : Yii::$app->config->get('storage_rate_per_day');
+
                         if ($rates):
                             foreach ($rates as $rate):
                         ?>
@@ -211,10 +238,10 @@ $this->title = $model->owner_name;
                                         <span class="badge bg-secondary ms-1"><?= $rate->containerType->iso_code ?></span>
                                     </td>
                                     <td class="text-muted">
-                                        <?= number_format($rate->containerType->daily_rate ?? Yii::$app->config->get('storage_rate_per_day'), 2) ?>
+                                        <?= ($isUsd ? '$' : 'KES ') . number_format($rate->containerType->daily_rate ?? $globalFallback, 2) ?>
                                     </td>
                                     <td class="fw-bold text-success fs-5">
-                                        <?= number_format($rate->daily_rate, 2) ?>
+                                        <?= ($isUsd ? '$' : 'KES ') . number_format($rate->daily_rate, 2) ?>
                                     </td>
                                     <td class="text-center">
                                         <?= Html::a('<i class="fa fa-trash-alt"></i>', ['delete-rate', 'id' => $rate->rate_id], [
@@ -228,7 +255,7 @@ $this->title = $model->owner_name;
                             <?php endforeach;
                         else: ?>
                             <tr>
-                                <td colspan="4" class="text-center text-muted py-4">No custom rates defined. Standard rates apply.</td>
+                                <td colspan="4" class="text-center text-muted py-4">No custom rates defined. Standard <?= $curr ?> rates apply.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -247,7 +274,7 @@ $this->title = $model->owner_name;
                     'updated_at:date:Paid/Auth Date',
                     [
                         'attribute' => 'grand_total',
-                        'format' => ['currency', 'KES'],
+                        'format' => ['currency', 'KES'], // Note: Assuming internal historical reports stay strictly KES
                         'contentOptions' => ['class' => 'text-end'],
                     ],
                     [
@@ -271,6 +298,35 @@ $this->title = $model->owner_name;
             ]); ?>
         </div>
 
+    </div>
+</div>
+
+<div class="modal fade" id="modal-change-currency" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <?php $form = ActiveForm::begin(['action' => ['change-currency', 'id' => $model->owner_id]]); ?>
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fa fa-exchange-alt me-1"></i> Change Billing Currency</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning fs-sm mb-3">
+                    <i class="fa fa-exclamation-triangle me-1"></i> Changing the currency will affect how unpaid bills and future visits are calculated for this client.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Select Client Currency</label>
+                    <select name="billing_currency" class="form-select form-select-lg">
+                        <option value="KES" <?= $curr == 'KES' ? 'selected' : '' ?>>Kenyan Shilling (KES)</option>
+                        <option value="USD" <?= $curr == 'USD' ? 'selected' : '' ?>>US Dollar (USD)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-alt-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-warning fw-bold text-dark">Update Currency</button>
+            </div>
+            <?php ActiveForm::end(); ?>
+        </div>
     </div>
 </div>
 
@@ -302,7 +358,7 @@ $this->title = $model->owner_name;
                 <div class="mb-3">
                     <label class="form-label">Negotiated Daily Rate</label>
                     <div class="input-group input-group-lg">
-                        <span class="input-group-text fw-bold">KES</span>
+                        <span class="input-group-text fw-bold"><?= $curr ?></span>
                         <?= $form->field($rateModel, 'daily_rate', ['options' => ['tag' => false]])->textInput([
                             'type' => 'number',
                             'step' => '0.01',

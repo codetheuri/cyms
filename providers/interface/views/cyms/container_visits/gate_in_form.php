@@ -26,14 +26,14 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
 <div class="block block-rounded shadow-sm">
     <div class="block-header block-header-default bg-body-light border-bottom">
         <h3 class="block-title fw-bold">
-            <i class="fa <?= $isNew ? 'fa-truck-ramp-box text-success' : 'fa-pen text-primary' ?> me-2"></i> 
+            <i class="fa <?= $isNew ? 'fa-truck-ramp-box text-success' : 'fa-pen text-primary' ?> me-2"></i>
             <?= $this->title ?>
         </h3>
         <div class="block-options">
             <?= Html::a('<i class="fa fa-arrow-left me-1"></i> Back to List', ['index'], ['class' => 'btn btn-sm btn-alt-secondary fw-bold']) ?>
         </div>
     </div>
-    
+
     <div class="block-content block-content-full p-4">
 
         <?php if ($model->hasErrors()): ?>
@@ -57,23 +57,23 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
             <div class="row g-3">
                 <div class="col-md-3">
                     <?= $form->field($model, 'ticket_no_in')->textInput([
-                        'readonly' => true, 
+                        'readonly' => true,
                         'class' => 'form-control font-monospace bg-light',
                         'placeholder' => 'Auto-Generated'
                     ]) ?>
                 </div>
-                
+
                 <div class="col-md-3">
                     <?= $form->field($model, 'date_in')->textInput([
-                        'type' => 'date', 
+                        'type' => 'date',
                         'max' => $today, // Prevents selecting future dates
                         'class' => 'form-control fw-bold text-dark'
                     ])->label('Date IN <span class="text-danger">*</span>') ?>
                 </div>
-                
+
                 <div class="col-md-2">
                     <?= $form->field($model, 'time_in')->textInput([
-                        'type' => 'time', 
+                        'type' => 'time',
                         'class' => 'form-control fw-bold text-dark'
                     ])->label('Time IN <span class="text-danger">*</span>') ?>
                 </div>
@@ -86,7 +86,7 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
                             'maxlength' => 11,
                             'oninput' => "this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')"
                         ],
-                     
+
                     ))->label('Container Number <span class="text-danger">*</span>') ?>
                 </div>
             </div>
@@ -95,7 +95,7 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
         <div class="p-3 bg-body-extra-light rounded border mb-4">
             <h5 class="text-primary fw-bold border-bottom pb-2 mb-3"><i class="fa fa-boxes me-2"></i> Container Specs & Shipping</h5>
             <div class="row g-3">
-                
+
                 <div class="col-md-4">
                     <label class="form-label fw-bold">Type / Size <span class="text-danger">*</span></label>
                     <div class="input-group">
@@ -164,24 +164,24 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
                         'class' => 'form-control text-uppercase'
                     ]) ?>
                 </div>
-                
+
                 <div class="col-md-3">
                     <?= $form->field($model, 'vehicle_reg_no_in')->textInput([
-                        'class' => 'form-control text-uppercase fw-bold', 
+                        'class' => 'form-control text-uppercase fw-bold',
                         'placeholder' => 'KCA 123A'
                     ])->label('Truck Reg No. <span class="text-danger">*</span>') ?>
                 </div>
-                
+
                 <div class="col-md-3">
                     <?= $form->field($model, 'trailer_reg_no_in')->textInput([
-                        'class' => 'form-control text-uppercase', 
+                        'class' => 'form-control text-uppercase',
                         'placeholder' => 'ZC 4567'
                     ])->label('Trailer Reg No.') ?>
                 </div>
-                
+
                 <div class="col-md-2">
                     <?= $form->field($model, 'truck_type_in')->dropDownList(
-                        ['TR' => 'Tractor (TR)', 'TAST' => 'Trailer (TAST)'], 
+                        ['TR' => 'Tractor (TR)', 'TAST' => 'Trailer (TAST)'],
                         ['prompt' => 'Select...']
                     )->label('Truck Type') ?>
                 </div>
@@ -252,6 +252,13 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
                 <form id="form-owner">
                     <div class="mb-3"><label class="form-label">Name</label><input type="text" name="MasterContainerOwners[owner_name]" class="form-control form-control-lg" required></div>
                     <div class="mb-4"><label class="form-label">Contact</label><input type="text" name="MasterContainerOwners[owner_contact]" class="form-control form-control-lg"></div>
+                    <div class="mb-4">
+                        <label class="form-label">Billing Currency</label>
+                        <select name="MasterContainerOwners[billing_currency]" class="form-select form-select-lg">
+                            <option value="KES" selected>Kenyan Shilling (KES)</option>
+                            <option value="USD">US Dollar (USD)</option>
+                        </select>
+                    </div>
                     <button type="submit" class="btn btn-primary w-100 fw-bold">Save Owner</button>
                 </form>
             </div>

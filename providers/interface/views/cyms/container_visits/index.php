@@ -244,6 +244,26 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                                 return "<div class='fw-medium'>{$date}</div>";
                             }
                         ],
+                        // [
+                        //     'class'=> 'yii\grid\ActionColumn',
+                        //     'header' => 'Edit',
+                            
+                        //     'template'=> 'edit' ,
+                        //     'visibleButtons' => [
+                        //         'edit' => Yii::$app->user->can('dashboard-visit-update',true),
+                        //     ],
+                        //     'buttons' => [
+                        //         'edit' => function ($url, $model) {
+                        //             if($model->status === 'IN_YARD' || $model->status === 'SURVEYED') {
+                        //                 return Html::a('<i class="fa fa-pen me-1"></i> Edit',
+                        //                  ['update', 'id' => $model->visit_id], 
+                        //                  ['class' => 'btn btn-sm btn-alt-secondary']);
+                        //             }
+                        //         }
+                        //     ]
+
+
+                        // ],
                         [
                             'class' => 'yii\grid\ActionColumn',
                             'header' => 'Actions',

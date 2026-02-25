@@ -18,6 +18,7 @@ $userMenu = [
         ['title' => 'All Invoices', 'url' => '/dashboard/billing/index'],
         // This links to the new Admin Approval Page we created
        ['title' => 'Credit Approvals' . $creditLabel, 'url' => '/dashboard/billing/credit-requests'],
+       ['title' => 'Invoice Reversals', 'url' => '/dashboard/billing/reversals'],
     ]],
     ['title' => 'Clients / Owners', 'icon' => 'users', 'url' => '/dashboard/container-owner/index', 'permission'=>'dashboard-container-owner-list'],
     ['title'=> 'Reports', 'icon'=>'book', 'url'=>'/dashboard/reports/index', 'permission'=>'dashboard-reports-view'],
@@ -25,19 +26,15 @@ $userMenu = [
     ['title' => 'Container Types', 'icon' => 'box', 'url' => '/dashboard/container-type/index', 'permission'=>'dashboard-container-type-list'],
     // ['title' => 'Shipping Lines', 'icon' => 'ship', 'url' => '/dashboard/shipping-line/index'],
     ['title' => 'Help & Support', 'icon' => 'life-ring', 'url' => '/dashboard/support/index', 'permission'=>'dashboard-default-view'],
+    ['title'=>'Shipping Lines', 'icon'=>'ship', 'url'=>'/dashboard/shipping-line/index', 'permission'=>'dashboard-shipping-line-list'],
     ['title' => 'IAM & Admin', 'icon' => 'shield', 'permission'=>'dashboard-profile-list', 'submenus' => [
         ['title' => 'User Management', 'url' => 'profile/index'],
         ['title' => 'Manage Roles', 'url' => 'role/index'],
         ['title' => 'Manage Permissions', 'url' => 'permission/index'],
     ]],
-    ['title' => 'Settings', 'icon' => 'cog fa-spin','permission'=>'dashboard-settings-list', 'submenus' => [
-        ['title' => 'General Settings', 'url' => '/admin/settings/general-setting'],
-        ['title' => 'Email Settings', 'url' => '/admin/settings/email-setting'],
-        ['title' => 'Tariff & Billing', 'url' => '/admin/settings/tariff-setting'],
-        ['title' => 'Shipping Lines', 'url' => '/dashboard/shipping-line/index'],
-        // ['title' => 'Container Types', 'url' => '/dashboard/container-type/index'],
+    ['title' => 'Settings', 'icon' => 'cog fa-spin','permission'=>'dashboard-settings-list', 'url' => '/admin/settings/general-setting']
 
-    ]],
+
 
 ];
 return array_merge($userMenu);

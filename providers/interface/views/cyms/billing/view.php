@@ -10,26 +10,38 @@ use yii\helpers\Url;
 
 $this->title = 'Invoice #' . $model->invoice_number;
 $visit = $model->visit;
+$isSwapping = ($visit->shipping_line_id == 9);
 
-// --- 1. SETTINGS & LOGIC FOR LIFT SPLIT ---
-$settingLiftOn  = (float) Yii::$app->config->get('lift_on_charges');
-$settingLiftOff = (float) Yii::$app->config->get('lift_off_charges');
-$currentLift    = (float) ($model->lift_charges ?? 0);
+// --- 1. CURRENCY LOGIC ---
+$isUsd  = ($model->currency === 'USD');
+$curr   = $model->currency ?: 'KES';
+$sym    = $isUsd ? '$' : 'KES ';
+$flag   = $isUsd ? '🇺🇸' : '🇰🇪';
+$exRate = $model->exchange_rate > 0 ? $model->exchange_rate : 1.00;
 
-// Lift Logic
-$hasLiftOff = ($currentLift >= $settingLiftOff);
-$hasLiftOn = ($currentLift >= ($settingLiftOff + $settingLiftOn)) ||
-    (abs($currentLift - $settingLiftOn) < 0.01 && !$hasLiftOff);
+// --- 2. DISPLAY LOGIC (Converting from KES DB) ---
+$kesLiftOn  = (float) Yii::$app->config->get('lift_on_charges');
+$kesLiftOff = (float) Yii::$app->config->get('lift_off_charges');
 
-// --- 2. CALCULATE TOTALS ---
-$storage  = (float)$model->storage_total;
-$repair   = (float)$model->repair_total;
-$subTotal = $storage + $repair + $currentLift;
+$settingLiftOn  = $isUsd ? round($kesLiftOn / $exRate, 2) : $kesLiftOn;
+$settingLiftOff = $isUsd ? round($kesLiftOff / $exRate, 2) : $kesLiftOff;
 
-$discount = (float)$model->discount_amount;
-$grandTotal = $subTotal - $discount;
+$currentLiftKes = (float) ($model->lift_charges ?? 0);
+$displayLift = $isUsd ? ($currentLiftKes / $exRate) : $currentLiftKes;
 
-// Status Badge Logic
+$hasLiftOff = ($currentLiftKes > 0.01);
+$hasLiftOn = ($currentLiftKes > ($kesLiftOff + 0.1));
+
+$displayRate = $isUsd ? ($model->tariff_rate / $exRate) : $model->tariff_rate;
+$storage     = $isUsd ? ($model->storage_total / $exRate) : $model->storage_total;
+$repair      = $isUsd ? ($model->repair_total / $exRate) : $model->repair_total; 
+
+$subTotal    = $storage + $repair + $displayLift;
+
+$discount    = $isUsd ? ($model->discount_amount / $exRate) : $model->discount_amount;
+$grandTotal  = $isUsd ? $model->foreign_grand_total : $model->grand_total;
+$balance     = $isUsd ? $model->foreign_balance : $model->balance;
+
 $badgeColor = match ($model->status) {
     'PAID' => 'success',
     'PARTIAL' => 'warning',
@@ -37,12 +49,13 @@ $badgeColor = match ($model->status) {
     default => 'danger'
 };
 
-// Date/Time Helper
 $dateIn = Yii::$app->formatter->asDate($visit->date_in);
 $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '';
-
-// 3. CAPTURE RETURN PARAMETER
 $returnClientId = Yii::$app->request->get('return_client');
+
+// --- CONTAINER REMARKS / FLAGS LOGIC ---
+// Change 'remarks' below to whatever your actual column name is (e.g., 'comments', 'flag_reason')
+$containerFlagComment = $visit->comments_in ?? null; 
 ?>
 
 <div class="bg-body-light border-bottom mb-4">
@@ -50,6 +63,9 @@ $returnClientId = Yii::$app->request->get('return_client');
         <div class="d-flex flex-column flex-sm-row justify-content-sm-between align-items-sm-center">
             <h1 class="flex-grow-1 fs-3 fw-bold my-2 my-sm-3">
                 <i class="fa fa-file-invoice me-2 text-muted"></i> Invoice <span class="text-muted fw-light">#<?= Html::encode($model->invoice_number) ?></span>
+                <span class="badge bg-primary-light text-primary fs-sm ms-2 border border-primary">
+                    <span class="me-1 fs-6"><?= $flag ?></span> <?= $curr ?> BILLING
+                </span>
             </h1>
             <nav class="flex-shrink-0 my-2 my-sm-0 ms-sm-3">
                 <?php if ($returnClientId): ?>
@@ -68,6 +84,19 @@ $returnClientId = Yii::$app->request->get('return_client');
     </div>
 </div>
 
+<?php if (!empty($containerFlagComment)): ?>
+<div class="alert alert-warning d-flex align-items-center justify-content-between mb-4 shadow-sm border-start border-warning border-4" role="alert">
+    <div class="d-flex align-items-center">
+        <div class="item item-circle bg-warning text-white me-3 fs-3">
+            <i class="fa fa-exclamation-triangle"></i>
+        </div>
+        <div>
+            <h4 class="alert-heading fs-6 fw-bold mb-1 text-warning-dark text-uppercase">Container Flag / Comment</h4>
+            <p class="mb-0 fw-medium text-dark"><?= Html::encode($containerFlagComment) ?></p>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 <div class="row g-4 mb-4">
     <div class="col-md-6 col-xl-4">
         <div class="block block-rounded h-100 mb-0 shadow-sm border-start border-4 border-primary">
@@ -128,7 +157,7 @@ $returnClientId = Yii::$app->request->get('return_client');
     <div class="col-lg-7">
         <div class="block block-rounded h-100 shadow-sm">
             <div class="block-header block-header-default">
-                <h3 class="block-title fw-bold">Charges Breakdown</h3>
+                <h3 class="block-title fw-bold">Charges Breakdown <span class="badge bg-body-dark text-dark ms-2"><?= $curr ?></span></h3>
                 <div class="block-options">
                      <?= Html::a('<i class="fa fa-print"></i>',
                         ['/dashboard/billing/generate-invoice', 'id' => $model->bill_id],
@@ -143,8 +172,8 @@ $returnClientId = Yii::$app->request->get('return_client');
                         <tr class="text-uppercase fs-xs text-muted">
                             <th class="ps-4 py-3">Description</th>
                             <th class="text-center py-3">Qty</th>
-                            <th class="text-end py-3">Rate</th>
-                            <th class="text-end pe-4 py-3">Total</th>
+                            <th class="text-end py-3">Rate (<?= $curr ?>)</th>
+                            <th class="text-end pe-4 py-3">Total (<?= $curr ?>)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -157,9 +186,13 @@ $returnClientId = Yii::$app->request->get('return_client');
                                 <span class="badge bg-body text-dark border"><?= $model->storage_days ?></span>
                             </td>
                             <td class="text-end text-muted">
-                                <?= number_format($model->tariff_rate, 2) ?>
-                                <?php if ($model->status !== 'PAID'): ?>
-                                    <a href="#" data-bs-toggle="modal" data-bs-target="#modal-rate" class="fs-xs text-primary ms-1" title="Edit Rate"><i class="fa fa-pen"></i></a>
+                                <?php if ($isSwapping): ?>
+                                    <span class="badge bg-info-light text-info fw-bold"><i class="fa fa-lock me-1"></i> FIXED SWAP RATE</span>
+                                <?php else: ?>
+                                    <?= $sym . number_format($displayRate, 2) ?>
+                                    <?php if ($model->status !== 'PAID'): ?>
+                                        <a href="#" data-bs-toggle="modal" data-bs-target="#modal-rate" class="fs-xs text-primary ms-1" title="Edit Rate"><i class="fa fa-pen"></i></a>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                             </td>
                             <td class="text-end fw-bold pe-4 font-monospace"><?= number_format($storage, 2) ?></td>
@@ -173,31 +206,15 @@ $returnClientId = Yii::$app->request->get('return_client');
                             <td class="text-center">
                                 <?php if ($model->status !== 'PAID'): ?>
                                     <?php if ($hasLiftOff): ?>
-                                        <?= Html::a('<i class="fa fa-minus"></i>', 
-                                            ['toggle-lift-off', 'id' => $model->bill_id], 
-                                            [
-                                                'class' => 'btn btn-sm btn-alt-danger rounded-circle px-2', 
-                                                'title' => 'Remove Charge', 
-                                                'data-method'=>'post',
-                                                'data-params' => ['action' => 'remove']
-                                            ]
-                                        ) ?>
+                                        <?= Html::a('<i class="fa fa-minus"></i>', ['toggle-lift-off', 'id' => $model->bill_id], ['class' => 'btn btn-sm btn-alt-danger rounded-circle px-2', 'title' => 'Remove Charge', 'data-method'=>'post', 'data-params' => ['action' => 'remove']]) ?>
                                     <?php else: ?>
-                                        <?= Html::a('<i class="fa fa-plus"></i>', 
-                                            ['toggle-lift-off', 'id' => $model->bill_id], 
-                                            [
-                                                'class' => 'btn btn-sm btn-alt-success rounded-circle px-2', 
-                                                'title' => 'Add Charge', 
-                                                'data-method'=>'post',
-                                                'data-params' => ['action' => 'add']
-                                            ]
-                                        ) ?>
+                                        <?= Html::a('<i class="fa fa-plus"></i>', ['toggle-lift-off', 'id' => $model->bill_id], ['class' => 'btn btn-sm btn-alt-success rounded-circle px-2', 'title' => 'Add Charge', 'data-method'=>'post', 'data-params' => ['action' => 'add']]) ?>
                                     <?php endif; ?>
                                 <?php else: ?>
                                     <i class="fa <?= $hasLiftOff ? 'fa-check text-success' : 'fa-times text-muted' ?>"></i>
                                 <?php endif; ?>
                             </td>
-                            <td class="text-end text-muted"><?= number_format($settingLiftOff, 2) ?></td>
+                            <td class="text-end text-muted"><?= $sym . number_format($settingLiftOff, 2) ?></td>
                             <td class="text-end fw-bold pe-4 font-monospace"><?= ($hasLiftOff) ? number_format($settingLiftOff, 2) : '0.00' ?></td>
                         </tr>
 
@@ -209,31 +226,15 @@ $returnClientId = Yii::$app->request->get('return_client');
                             <td class="text-center">
                                 <?php if ($model->status !== 'PAID'): ?>
                                     <?php if ($hasLiftOn): ?>
-                                        <?= Html::a('<i class="fa fa-minus"></i>', 
-                                            ['toggle-lift-on', 'id' => $model->bill_id], 
-                                            [
-                                                'class' => 'btn btn-sm btn-alt-danger rounded-circle px-2', 
-                                                'title' => 'Remove Charge', 
-                                                'data-method'=>'post',
-                                                'data-params' => ['action' => 'remove']
-                                            ]
-                                        ) ?>
+                                        <?= Html::a('<i class="fa fa-minus"></i>', ['toggle-lift-on', 'id' => $model->bill_id], ['class' => 'btn btn-sm btn-alt-danger rounded-circle px-2', 'title' => 'Remove Charge', 'data-method'=>'post', 'data-params' => ['action' => 'remove']]) ?>
                                     <?php else: ?>
-                                        <?= Html::a('<i class="fa fa-plus"></i>', 
-                                            ['toggle-lift-on', 'id' => $model->bill_id], 
-                                            [
-                                                'class' => 'btn btn-sm btn-alt-success rounded-circle px-2', 
-                                                'title' => 'Add Charge', 
-                                                'data-method'=>'post',
-                                                'data-params' => ['action' => 'add']
-                                            ]
-                                        ) ?>
+                                        <?= Html::a('<i class="fa fa-plus"></i>', ['toggle-lift-on', 'id' => $model->bill_id], ['class' => 'btn btn-sm btn-alt-success rounded-circle px-2', 'title' => 'Add Charge', 'data-method'=>'post', 'data-params' => ['action' => 'add']]) ?>
                                     <?php endif; ?>
                                 <?php else: ?>
                                     <i class="fa <?= $hasLiftOn ? 'fa-check text-success' : 'fa-times text-muted' ?>"></i>
                                 <?php endif; ?>
                             </td>
-                            <td class="text-end text-muted"><?= number_format($settingLiftOn, 2) ?></td>
+                            <td class="text-end text-muted"><?= $sym . number_format($settingLiftOn, 2) ?></td>
                             <td class="text-end fw-bold pe-4 font-monospace"><?= ($hasLiftOn) ? number_format($settingLiftOn, 2) : '0.00' ?></td>
                         </tr>
 
@@ -277,9 +278,20 @@ $returnClientId = Yii::$app->request->get('return_client');
                         </tr>
                         
                         <tr class="bg-primary-dark text-white">
-                            <td colspan="3" class="text-end fs-5 fw-bold text-uppercase py-3">Grand Total</td>
-                            <td class="text-end fs-4 fw-bold py-3 pe-4 font-monospace"><?= number_format($grandTotal, 2) ?></td>
+                            <td colspan="3" class="text-end fs-5 fw-bold text-uppercase py-3">Grand Total (<?= $curr ?>)</td>
+                            <td class="text-end fs-4 fw-bold py-3 pe-4 font-monospace"><?= $sym . number_format($grandTotal, 2) ?></td>
                         </tr>
+
+                        <?php if ($isUsd): ?>
+                        <tr>
+                            <td colspan="4" class="text-end pb-3 pt-2 pe-4 bg-white border-top">
+                                <div class="fs-sm text-muted fst-italic">
+                                    Exchange Rate Applied: 1 USD = <?= number_format($exRate, 2) ?> KES<br>
+                                    <strong class="text-dark">Total in Local Currency: KES <?= number_format($model->grand_total, 2) ?></strong>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endif; ?>
                     </tfoot>
                 </table>
 
@@ -301,13 +313,19 @@ $returnClientId = Yii::$app->request->get('return_client');
                                             <span class="badge bg-gray-light text-dark border"><?= $payment->method ?></span>
                                             <span class="text-muted ms-1 fs-xs"><?= $payment->reference ?></span>
                                         </td>
-                                        <td class="text-end fw-bold text-success font-monospace"><?= number_format($payment->amount, 2) ?></td>
+                                        <td class="text-end fw-bold text-success font-monospace">
+                                            <?php 
+                                            // Show payment in the billing currency
+                                            $paidAmt = $isUsd ? ($payment->amount / $exRate) : $payment->amount;
+                                            echo $sym . number_format($paidAmt, 2);
+                                            ?>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                             <tr class="bg-body-light">
                                 <td colspan="2" class="text-end fw-bold">Balance Remaining:</td>
-                                <td class="text-end fw-bold text-danger font-monospace"><?= number_format($model->balance, 2) ?></td>
+                                <td class="text-end fw-bold text-danger font-monospace fs-5"><?= $sym . number_format($balance, 2) ?></td>
                             </tr>
                         </tbody>
                     </table>
@@ -318,7 +336,7 @@ $returnClientId = Yii::$app->request->get('return_client');
 
     <div class="col-lg-5">
 
-        <?php if ($model->balance > 0.01 && $model->status !== 'PAID'): ?>
+        <?php if ($balance > 0.01 && $model->status !== 'PAID'): ?>
             <div class="block block-rounded shadow-sm border-top border-5 border-success mb-3">
                 <div class="block-header bg-body-light">
                     <h3 class="block-title fw-bold text-success"><i class="fa fa-cash-register me-2"></i> Receive Payment</h3>
@@ -327,14 +345,19 @@ $returnClientId = Yii::$app->request->get('return_client');
                     <?php $form = ActiveForm::begin(['action' => ['payment', 'id' => $model->bill_id, 'return_client' => $returnClientId]]); ?>
 
                     <div class="mb-3">
-                        <label class="form-label text-muted fs-sm text-uppercase">Amount to Pay</label>
+                        <label class="form-label text-muted fs-sm text-uppercase">Amount to Pay (in KES)</label>
                         <div class="input-group input-group-lg">
                             <span class="input-group-text bg-success text-white fw-bold border-success">KES</span>
                             <?= $form->field($paymentModel, 'amount', ['options' => ['tag' => false]])->textInput([
-                                'type' => 'number', 'step' => '0.01', 'max' => $model->balance, 'value' => $model->balance,
+                                'type' => 'number', 'step' => '0.01', 'max' => $model->balance, 'value' => $model->balance, 
                                 'class' => 'form-control fw-bold border-success'
                             ])->label(false) ?>
                         </div>
+                        <?php if ($isUsd): ?>
+                            <div class="form-text text-success fw-medium fs-sm mt-1">
+                                <i class="fa fa-info-circle me-1"></i> Cashbook entries are recorded in KES. To clear the <?= $sym . number_format($balance, 2) ?> balance, the required payment is <strong>KES <?= number_format($model->balance, 2) ?></strong>.
+                            </div>
+                        <?php endif; ?>
                     </div>
 
                     <div class="row g-2 mb-3">
@@ -435,7 +458,7 @@ $returnClientId = Yii::$app->request->get('return_client');
         <?php endif; ?>
 
         <div class="row g-2">
-            <?php if ($model->balance <= 0.01 || $model->status === 'CREDIT'): ?>
+            <?php if ($balance <= 0.01 || $model->status === 'CREDIT'): ?>
                 <div class="col-12">
                     <?= Html::a('<i class="fa fa-truck-moving me-2"></i> Proceed to Gate OUT',
                         ['/dashboard/visit/gate-out', 'id' => $visit->visit_id], 
@@ -457,8 +480,12 @@ $returnClientId = Yii::$app->request->get('return_client');
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="alert alert-info py-2 fs-sm">Maximum discount allowed: <strong><?= number_format($subTotal, 2) ?></strong></div>
-                <?= $form->field($model, 'discount_amount')->textInput(['type' => 'number', 'step' => '0.01', 'class' => 'form-control form-control-lg'])->label('Amount to Waive (KES)') ?>
+                <div class="alert alert-info py-2 fs-sm">Maximum discount allowed: <strong><?= number_format($subTotal, 2) ?> <?= $curr ?></strong></div>
+                <?php 
+                    $formDiscount = $isUsd ? round($model->discount_amount / $exRate, 2) : $model->discount_amount;
+                    $model->discount_amount = $formDiscount; 
+                ?>
+                <?= $form->field($model, 'discount_amount')->textInput(['type' => 'number', 'step' => '0.01', 'class' => 'form-control form-control-lg'])->label("Amount to Waive ({$curr})") ?>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-alt-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -479,7 +506,11 @@ $returnClientId = Yii::$app->request->get('return_client');
             </div>
             <div class="modal-body">
                 <div class="alert alert-warning py-2 fs-sm mb-3"><i class="fa fa-exclamation-triangle me-1"></i> This will recalculate the entire storage bill for <?= $model->storage_days ?> days.</div>
-                <?= $form->field($model, 'tariff_rate')->textInput(['type' => 'number', 'step' => '0.01', 'class' => 'form-control form-control-lg'])->label('Daily Rate (KES)') ?>
+                <?php 
+                    $formRate = $isUsd ? round($model->tariff_rate / $exRate, 2) : $model->tariff_rate;
+                    $model->tariff_rate = $formRate; 
+                ?>
+                <?= $form->field($model, 'tariff_rate')->textInput(['type' => 'number', 'step' => '0.01', 'class' => 'form-control form-control-lg'])->label("Daily Rate ({$curr})") ?>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-alt-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -491,7 +522,6 @@ $returnClientId = Yii::$app->request->get('return_client');
 </div>
 
 <style>
-    /* Simple Pulse Animation for Gate Out Button */
     @keyframes pulse-green {
         0% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7); }
         70% { box-shadow: 0 0 0 10px rgba(25, 135, 84, 0); }

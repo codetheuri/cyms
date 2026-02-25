@@ -16,7 +16,7 @@ use yii\widgets\ActiveForm;
         <div class="col-md-6 mb-3">
             <?= $form->field($model, 'owner_name')->textInput(['maxlength' => true, 'placeholder' => 'e.g. Maersk Logistics']) ?>
         </div>
-        
+
         <div class="col-md-6 mb-3">
             <?= $form->field($model, 'owner_email')->textInput(['maxlength' => true, 'placeholder' => 'contact@company.com']) ?>
         </div>
@@ -24,6 +24,13 @@ use yii\widgets\ActiveForm;
         <div class="col-md-6 mb-3">
             <?= $form->field($model, 'owner_contact')->textInput(['maxlength' => true, 'placeholder' => '+254 7...']) ?>
         </div>
+        <div class="col-md-6 mb-3">
+            <?= $form->field($model, 'billing_currency')->dropDownList([
+                'KES' => 'Kenyan Shilling (KES)',
+                'USD' => 'US Dollar (USD)',
+            ], ['prompt' => 'Select Billing Currency']) ?>
+        </div>
+    
     </div>
 
     <div class="form-group pt-3 border-top">

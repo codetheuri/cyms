@@ -4,54 +4,73 @@ namespace dashboard\models;
 
 use yii\behaviors\TimestampBehavior;
 use yii\web\UploadedFile;
-use DateTime;
 use Yii;
 use auth\models\User;
 
-class BillingRecords extends  BaseModel
+class BillingRecords extends BaseModel
 {
     public $agreement_file;
+
     public static function tableName()
     {
         return '{{%billing_records}}';
     }
+
     public function behaviors()
     {
         return [
             TimestampBehavior::class,
         ];
     }
+
     public function rules()
     {
         return [
-            [['visit_id', ], 'required'],
-            [['visit_id', 'created_at', 'updated_at'], 'integer'],
-            [['tariff_rate', 'storage_total', 'repair_total', 'lift_charges', 'grand_total', 'total_paid', 'balance', 'discount_amount'], 'number'],
-            [['status'], 'string'],
-            [['invoice_number'], 'string', 'max' => 50],
+            [['visit_id'], 'required'],
+            [['visit_id', 'created_at', 'updated_at', 'requested_by', 'requested_at'], 'integer'],
+            [
+                [
+                    'tariff_rate',
+                    'storage_total',
+                    'repair_total',
+                    'lift_charges',
+                    'grand_total',
+                    'total_paid',
+                    'balance',
+                    'discount_amount',
+                    'exchange_rate',
+                    'foreign_grand_total',
+                    'foreign_balance' // <-- NEW COLUMNS
+                ],
+                'number'
+            ],
+            [['status', 'approval_status', 'requester_note', 'rejection_reason', 'authorized_by'], 'string'],
+            [['invoice_number', 'atl_number'], 'string', 'max' => 50],
+            [['currency'], 'string', 'max' => 3], // <-- NEW COLUMN
             [['visit_id'], 'unique'],
-            [['storage_days'], 'number',],
-            [['atl_number'], 'string', 'max' => 50],
+            [['storage_days'], 'number'],
             [['discount_amount'], 'number', 'min' => 0],
-            [['approval_status', 'requester_note', 'rejection_reason','authorized_by'], 'string'],
             [['requester_note'], 'safe'],
-            [['requested_by', 'requested_at'], 'integer'],
             [['discount_amount'], 'validateDiscount'],
-            [['agreement_file'], 'file', 'skipOnEmpty' => true, 'extensions' => 'pdf, jpg, png,jpeg', 'maxSize' => 5 * 1024 * 1024],
+            [['agreement_file'], 'file', 'skipOnEmpty' => true, 'extensions' => 'pdf, jpg, png, jpeg', 'maxSize' => 5 * 1024 * 1024],
         ];
     }
+
     public function attributeLabels()
     {
         return [
-
             'atl_number' => 'ATL Number (Auth to Leave)',
             'authorized_by' => 'Supervisor Name',
+            'currency' => 'Billing Currency',
+            'exchange_rate' => 'USD/KES Exchange Rate',
         ];
     }
+
     public function getRequester()
     {
         return $this->hasOne(User::class, ['user_id' => 'requested_by']);
     }
+
     public function getPayments()
     {
         return $this->hasMany(BillingPayments::class, ['bill_id' => 'bill_id']);
@@ -61,10 +80,12 @@ class BillingRecords extends  BaseModel
     {
         return $this->hasOne(ContainerVisits::class, ['visit_id' => 'visit_id']);
     }
+
     public function getBill()
     {
         return $this->hasOne(BillingRecords::class, ['bill_id' => 'bill_id']);
     }
+
     public function beforeSave($insert)
     {
         if (parent::beforeSave($insert)) {
@@ -75,7 +96,6 @@ class BillingRecords extends  BaseModel
         }
         return false;
     }
-
 
     public function uploadAgreement()
     {
@@ -92,108 +112,119 @@ class BillingRecords extends  BaseModel
         }
         return false;
     }
-public function recalculateBalance()
+
+  public function validateDiscount($attribute, $params)
+    {
+        if (!$this->hasErrors()) {
+            // Everything is calculated strictly in KES
+            $subTotalKes = ($this->storage_days * $this->tariff_rate) + $this->repair_total + $this->lift_charges;
+
+            if ($this->$attribute > $subTotalKes) {
+                $exRate = $this->exchange_rate > 0 ? $this->exchange_rate : 1.00;
+                $displayTotal = ($this->currency === 'USD') ? ($subTotalKes / $exRate) : $subTotalKes;
+                
+                $this->addError($attribute, 'Discount cannot exceed the Total Bill (' . number_format($displayTotal, 2) . ' ' . $this->currency . ').');
+            }
+        }
+    }
+
+    public function recalculateBalance()
     {
         $visit = $this->visit;
+        if (!$visit) return false;
 
-        // 1. CALCULATE STORAGE DAYS
-        if ($visit && $visit->date_in) {
+        $clientCurrency = $visit->containerOwner ? $visit->containerOwner->billing_currency : 'KES';
+        $this->currency = $clientCurrency; 
+
+        // =========================================================
+        // 1. EXCHANGE RATE
+        // =========================================================
+        if (in_array($this->status, ['PAID', 'CREDIT', 'GATE_OUT']) && $this->exchange_rate > 1) {
+            // Keep locked rate
+        } else {
+            $this->exchange_rate = class_exists('\dashboard\hooks\Currency') 
+                ? \dashboard\hooks\Currency::getUsdToKesRate() 
+                : (float) Yii::$app->config->get('fallback_exchange_rate', 130.00); 
+            if ($this->exchange_rate <= 0) $this->exchange_rate = 130.00;
+        }
+
+        // =========================================================
+        // 2. CALCULATE STORAGE DAYS
+        // =========================================================
+        if ($visit->date_in) {
             $endTime = ($visit->status === 'GATE_OUT' && $visit->date_out)
                 ? strtotime($visit->date_out . ' ' . ($visit->time_out ?: '23:59:59'))
                 : time(); 
 
             $startStr = $visit->date_in . ' ' . ($visit->time_in ?: '00:00:00');
-            $startTime = strtotime($startStr);
-            
-            $diffSeconds = $endTime - $startTime;
-            $days = ($diffSeconds < 0) ? 1 : (floor($diffSeconds / 86400) + 1);
-
-            $this->storage_days = $days;
+            $diffSeconds = $endTime - strtotime($startStr);
+            $this->storage_days = ($diffSeconds < 0) ? 1 : (floor($diffSeconds / 86400) + 1);
         }
 
         // =========================================================
-        // 2. PRICING LOGIC
+        // 3. PRICING LOGIC (STRICTLY KES SOURCE OF TRUTH)
         // =========================================================
-        
-        // CHECK: IS THIS THE "SWAPPING" LINE? (ID 9)
-        if ($visit && $visit->shipping_line_id == 9) {
-            
-            // --- OPTION A: SWAPPING (FIXED PRICE) ---
+        if ($visit->shipping_line_id == 9) {
             $this->tariff_rate = 0;       
-            // We do NOT add lift charges for swapping as you said "2000 nothing else"
             $this->lift_charges = 0;      
-            
-            // Force the total to 2000
-            $this->storage_total = 2000;  
-            
+            $this->storage_total = 2000; // Flat KES
         } else {
-            
-            // --- OPTION B: STANDARD CONTAINER (CALCULATED) ---
-            
-            // 1. Get Rate (If not set)
+            // If tariff rate is missing, fetch the KES Master
             if ($this->tariff_rate <= 0) {
-                $rateFound = false;
-
-                // Priority 1: Custom Client Rate
+                $baseKesRate = (float) Yii::$app->config->get('storage_rate_per_day');
+                
                 if ($visit->containerOwner) {
-                    $clientRate = \dashboard\models\ClientRates::findOne([
-                        'owner_id' => $visit->containerOwner->owner_id, 
-                        'container_type_id' => $visit->container_type_id
-                    ]);
-                    if ($clientRate && $clientRate->daily_rate > 0) {
-                        $this->tariff_rate = (float) $clientRate->daily_rate;
-                        $rateFound = true;
-                    }
+                    $clientRate = \dashboard\models\ClientRates::findOne(['owner_id' => $visit->containerOwner->owner_id, 'container_type_id' => $visit->container_type_id]);
+                    if ($clientRate && $clientRate->daily_rate > 0) $baseKesRate = (float) $clientRate->daily_rate;
+                } elseif ($visit->containerType && $visit->containerType->daily_rate > 0) {
+                    $baseKesRate = (float) $visit->containerType->daily_rate;
                 }
-
-                // Priority 2: Container Type Default
-                if (!$rateFound && $visit->containerType && $visit->containerType->daily_rate > 0) {
-                    $this->tariff_rate = (float) $visit->containerType->daily_rate;
-                    $rateFound = true;
-                }
-
-                // Priority 3: Global System Fallback
-                if (!$rateFound) {
-                    $this->tariff_rate = (float) Yii::$app->config->get('storage_rate_per_day');
-                }
+                
+                // ALWAYS STORE KES IN DATABASE!
+                $this->tariff_rate = $baseKesRate; 
             }
-
-            // 2. Calculate Storage Total (Days * Rate)
-            $this->storage_total = (float)$this->storage_days * $this->tariff_rate;
+            $this->storage_total = $this->storage_days * $this->tariff_rate;
         }
-
-        // 3. GET REPAIR COSTS (Applies to everyone)
+        
+        // =========================================================
+        // 4. REPAIR COSTS
+        // =========================================================
         $survey = \dashboard\models\ContainerSurveys::findOne(['visit_id' => $this->visit_id]);
-        if ($survey && $survey->bill_repairs) {
-            $this->repair_total = (float) $survey->getSurveyDamages()->sum('total_cost');
-        } else {
-            $this->repair_total = 0;
+        $this->repair_total = ($survey && $survey->bill_repairs) ? (float) $survey->getSurveyDamages()->sum('total_cost') : 0;
+
+        // =========================================================
+        // 5. SUBTOTALS & DISCOUNT (KES)
+        // =========================================================
+        $subTotalKes = $this->storage_total + $this->repair_total + $this->lift_charges;
+        
+        if ($this->discount_amount > $subTotalKes) {
+            $this->discount_amount = $subTotalKes; // Cap discount
         }
 
         // =========================================================
-        // 4. FINAL SUMMATION
+        // 6. TOTALS & BALANCES (WITH ROUNDING TO NEAREST 10)
         // =========================================================
+        $calculatedGrandTotalKes = $subTotalKes - $this->discount_amount;
         
-        // Ensure lift_charges is a float to prevent math errors
-        $lift = (float) $this->lift_charges;
-
-        // Subtotal = Storage + Repair + Lift
-        $subTotal = $this->storage_total + $this->repair_total + $lift;
-
-        // Discount Logic
-        $discount = (float)$this->discount_amount;
-        if ($discount > $subTotal) $discount = $subTotal;
+        // Round KES to nearest 10 (e.g., 16484.46 becomes 16480, 16486 becomes 16490)
+        $this->grand_total = round($calculatedGrandTotalKes, -1);
         
-        $this->grand_total = $subTotal - $discount;
+        // Convert to USD specifically for the foreign column
+        $this->foreign_grand_total = ($this->currency === 'USD') ? round($this->grand_total / $this->exchange_rate, 2) : 0;
 
-        // 5. PAYMENTS & STATUS
-        $this->total_paid = (float) $this->getPayments()->sum('amount');
+        $this->total_paid = (float) $this->getPayments()->sum('amount'); 
         $this->balance = $this->grand_total - $this->total_paid;
+        
+        $this->foreign_balance = ($this->currency === 'USD') ? round($this->balance / $this->exchange_rate, 2) : 0;
 
+        // =========================================================
+        // 7. STATUS 
+        // =========================================================
         if ($this->status !== 'CREDIT') {
             if ($this->balance <= 0.01) {
                 $this->status = 'PAID';
                 $this->balance = 0;
+                if ($this->currency === 'USD') $this->foreign_balance = 0;
             } elseif ($this->total_paid > 0) {
                 $this->status = 'PARTIAL';
             } else {
@@ -203,118 +234,4 @@ public function recalculateBalance()
 
         return $this->save(false);
     }
-    // public function recalculateBalance()
-    //     {
-    //         $visit = $this->visit;
-
-    //         // --- FIX 1: AUTO-CALCULATE DAYS INSIDE MODEL ---
-    //         if ($visit && $visit->date_in) {
-    //             $start = new DateTime($visit->date_in);
-
-    //             // If container has left, use date_out. If still in yard, use NOW.
-    //             if ($visit->status === 'GATE_OUT' && $visit->date_out) {
-    //                 $end = new DateTime($visit->date_out);
-    //             } else {
-    //                 $end = new DateTime(); // Now
-    //             }
-
-    //             $days = $start->diff($end)->days;
-
-    //             // Logic: Even if it's 2 hours, charge for 1 day.
-    //             if ($days < 1) $days = 1;
-
-    //             $this->storage_days = $days;
-    //         }
-    //         // -----------------------------------------------
-
-    //         // 2. GET RATE
-    //         if ($visit && $visit->containerType) {
-    //             $this->tariff_rate = (float) $visit->containerType->daily_rate;
-    //         } else {
-    //             $this->tariff_rate = (float) Yii::$app->config->get('storage_rate_per_day');
-    //         }
-
-    //         // 3. GET REPAIR COSTS
-    //         $survey = ContainerSurveys::findOne(['visit_id' => $this->visit_id]);
-    //         if ($survey && $survey->bill_repairs) {
-    //             $this->repair_total = (float) $survey->getSurveyDamages()->sum('total_cost');
-    //         } else {
-    //             $this->repair_total = 0;
-    //         }
-
-    //         // 4. CALCULATE TOTALS
-    //         $this->storage_total = (float)$this->storage_days * $this->tariff_rate;
-    //         $subTotal = $this->storage_total + $this->repair_total;
-
-    //         // Discount
-    //         $discount = (float)$this->discount_amount;
-    //         if ($discount > $subTotal) $discount = $subTotal;
-
-    //         $this->grand_total = $subTotal - $discount;
-
-    //         // 5. PAYMENTS & BALANCE
-    //         $this->total_paid = (float) $this->getPayments()->sum('amount');
-    //         $this->balance = $this->grand_total - $this->total_paid;
-
-    //         // 6. STATUS UPDATE
-    //         if ($this->status !== 'CREDIT') {
-    //             if ($this->balance <= 0.01) {
-    //                 $this->status = 'PAID';
-    //                 $this->balance = 0;
-    //             } elseif ($this->total_paid > 0) {
-    //                 $this->status = 'PARTIAL';
-    //             } else {
-    //                 $this->status = 'UNPAID';
-    //             }
-    //         }
-
-    //         return $this->save(false);
-    //     }
-
-    public function validateDiscount($attribute, $params)
-    {
-        if (!$this->hasErrors()) {
-            // Calculate Subtotal (Storage + Repair + Lift)
-            $subTotal = ($this->storage_days * $this->tariff_rate) + $this->repair_total + $this->lift_charges;
-
-            if ($this->$attribute > $subTotal) {
-                $this->addError($attribute, 'Discount cannot be more than the Total Bill (' . number_format($subTotal, 2) . ').');
-            }
-        }
-    }
-    // public function recalculateBalance()
-    // {
-
-    //     $survey = ContainerSurveys::findOne(['visit_id' => $this->visit_id]);
-    //     if ($survey) {
-
-    //         $this->repair_total = (float) $survey->getSurveyDamages()->sum('total_cost');
-    //     } else {
-    //         $this->repair_total = 0;
-    //     }
-
-    //     $this->storage_total = (float)$this->storage_days * (float)$this->tariff_rate;
-    //     $this->grand_total   = $this->storage_total + $this->repair_total + (float)$this->lift_charges;
-
-
-    //     $this->total_paid = (float) $this->getPayments()->sum('amount');
-
-
-    //     $this->balance = $this->grand_total - $this->total_paid;
-
-
-    //     if ($this->status !== 'CREDIT') {
-
-    //         if ($this->balance <= 0.01) {
-    //             $this->status = 'PAID';
-    //             $this->balance = 0;
-    //         } elseif ($this->total_paid > 0) {
-    //             $this->status = 'PARTIAL';
-    //         } else {
-    //             $this->status = 'UNPAID';
-    //         }
-    //     }
-
-    //     return $this->save(false);
-    // }
 }

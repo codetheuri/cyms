@@ -44,21 +44,19 @@ class BillingController extends DashboardController
             'dataProvider' => $dataProvider,
         ]);
     }
-
     public function actionCreate()
     {
         Yii::$app->user->can('dashboard-billing-create');
         $model = new BillingRecords();
 
         if ($model->load(Yii::$app->request->post())) {
-
-            $model->tariff_rate = Yii::$app->config->get('storage_rate_per_day') ?? 0;
-            $liftOn = Yii::$app->config->get('lift_on_charges') ?? 0;
-            $liftOff = Yii::$app->config->get('lift_off_charges') ?? 0;
-            $model->lift_charges = $liftOn + $liftOff;
-
             $visit = ContainerVisits::findOne($model->visit_id);
             if ($visit) {
+                // ALWAYS save the Lift Charges strictly in KES Master Cost
+                $kesLiftOn  = (float) Yii::$app->config->get('lift_on_charges');
+                $kesLiftOff = (float) Yii::$app->config->get('lift_off_charges');
+                $model->lift_charges = $kesLiftOn + $kesLiftOff;
+
                 $startStr = $visit->date_in . ' ' . ($visit->time_in ?: '00:00:00');
                 $diffSeconds = time() - strtotime($startStr);
                 $model->storage_days = ($diffSeconds < 0) ? 1 : (floor($diffSeconds / 86400) + 1);
@@ -70,7 +68,6 @@ class BillingController extends DashboardController
             }
         }
     }
-
     public function actionUpdate($bill_id)
     {
         Yii::$app->user->can('dashboard-billing-update');
@@ -88,13 +85,21 @@ class BillingController extends DashboardController
             'model' => $model,
         ]);
     }
-
     public function actionView($id)
     {
         Yii::$app->user->can('dashboard-billing-view');
         $model = $this->findModel($id);
 
         $visit = $model->visit;
+        $clientCurrency = $visit->containerOwner ? $visit->containerOwner->billing_currency : 'KES';
+
+        // NO MORE MATH CONVERSIONS HERE! Database stays pure KES.
+        if ($model->currency !== $clientCurrency && !empty($model->currency)) {
+            $model->currency = $clientCurrency;
+            $model->save(false);
+            Yii::$app->session->setFlash('info', 'Currency presentation updated to ' . $clientCurrency . '.');
+        }
+
         if ($visit->status !== 'GATE_OUT') {
             $model->recalculateBalance();
         }
@@ -108,7 +113,6 @@ class BillingController extends DashboardController
             'paymentModel' => $paymentModel,
         ]);
     }
-
     public function actionPayment($id)
     {
         Yii::$app->user->can('dashboard-billing-update');
@@ -117,12 +121,18 @@ class BillingController extends DashboardController
 
         if ($payment->load(Yii::$app->request->post())) {
             if ($payment->save()) {
+                // Ensure the master bill reflects the payment immediately
+                $model = $this->findModel($id);
+                $model->recalculateBalance();
+
                 Yii::$app->session->setFlash('success', 'Payment Recorded Successfully.');
             } else {
                 Yii::$app->session->setFlash('error', 'Failed to record payment.');
             }
         }
-        return $this->redirect(['view', 'id' => $id]);
+
+        $returnClientId = Yii::$app->request->get('return_client');
+        return $this->redirect(['view', 'id' => $id, 'return_client' => $returnClientId]);
     }
 
     /**
@@ -137,12 +147,10 @@ class BillingController extends DashboardController
             $model->requested_by = Yii::$app->user->id;
             $model->requested_at = time();
 
-            // Removed file logic here. Just save the note and status.
             if ($model->save()) {
                 Yii::$app->session->setFlash('success', 'Credit request sent to Admin for approval.');
                 return $this->redirect(['view', 'id' => $model->bill_id]);
             } else {
-                // DEBUG: This will show you exactly why it failed
                 $errors = json_encode($model->getErrors());
                 Yii::$app->session->setFlash('error', 'Validation Error: ' . $errors);
             }
@@ -152,7 +160,7 @@ class BillingController extends DashboardController
     }
 
     /**
-     * SUPERVISOR: Authorize Credit (Old Action, Updated to remove file requirement)
+     * SUPERVISOR: Authorize Credit
      */
     public function actionAuthorizeCredit($id)
     {
@@ -160,11 +168,7 @@ class BillingController extends DashboardController
         $model = $this->findModel($id);
 
         if ($model->load(Yii::$app->request->post())) {
-            // REMOVED: if ($model->uploadAgreement()) ...
-
             $model->status = 'CREDIT';
-            
-            // Note: atl_number and authorized_by are loaded via post()
 
             if ($model->save()) {
                 Yii::$app->session->setFlash('success', 'Credit Authorized with ATL #' . $model->atl_number);
@@ -178,8 +182,7 @@ class BillingController extends DashboardController
     // ADMIN: List Pending Requests
     public function actionCreditRequests()
     {
-        // Ensure only admins/supervisors can see this
-        Yii::$app->user->can('dashboard-billing-delete'); // Using delete permission as a proxy for admin access
+        Yii::$app->user->can('dashboard-billing-delete');
 
         $dataProvider = new \yii\data\ActiveDataProvider([
             'query' => \dashboard\models\BillingRecords::find()
@@ -190,17 +193,14 @@ class BillingController extends DashboardController
         return $this->render('credit_requests', ['dataProvider' => $dataProvider]);
     }
 
-    // ADMIN: Approve Request (From Dashboard)
+    // ADMIN: Approve Request
     public function actionApproveCredit($id)
     {
         $model = $this->findModel($id);
 
-        // We reuse the 'authorize-credit' logic but populate from Admin input
         if ($model->load(Yii::$app->request->post())) {
             $model->status = 'CREDIT';
             $model->approval_status = 'APPROVED';
-
-
             $model->authorized_by = Yii::$app->user->identity->username;
 
             if ($model->save()) {
@@ -237,19 +237,28 @@ class BillingController extends DashboardController
         $model = $this->findModel($id);
 
         if ($model->load(Yii::$app->request->post())) {
+            // If the user typed a USD amount in the form, convert it BACK to KES before saving!
+            if ($model->currency === 'USD') {
+                $exRate = class_exists('\dashboard\hooks\Currency') ? \dashboard\hooks\Currency::getUsdToKesRate() : 130.00;
+                $model->discount_amount = $model->discount_amount * $exRate;
+            }
             if ($model->recalculateBalance()) {
                 Yii::$app->session->setFlash('success', 'Discount updated successfully.');
             }
         }
         return $this->redirect(['view', 'id' => $id]);
     }
-
     public function actionUpdateRate($id)
     {
         Yii::$app->user->can('dashboard-billing-update');
         $model = $this->findModel($id);
 
         if ($model->load(Yii::$app->request->post())) {
+            // If the user typed a USD rate in the form, convert it BACK to KES before saving!
+            if ($model->currency === 'USD') {
+                $exRate = class_exists('\dashboard\hooks\Currency') ? \dashboard\hooks\Currency::getUsdToKesRate() : 130.00;
+                $model->tariff_rate = $model->tariff_rate * $exRate;
+            }
             if ($model->recalculateBalance()) {
                 Yii::$app->session->setFlash('success', 'Daily Rate updated successfully.');
             }
@@ -261,18 +270,20 @@ class BillingController extends DashboardController
     {
         Yii::$app->user->can('dashboard-billing-update');
         $model = $this->findModel($id);
-        $cost = (float) Yii::$app->config->get('lift_on_charges');
+
+        $kesCost = (float) Yii::$app->config->get('lift_on_charges');
         $action = Yii::$app->request->post('action');
 
         if ($action === 'add') {
-            $model->lift_charges += $cost;
+            $model->lift_charges += $kesCost; // ALWAYS ADD KES
             Yii::$app->session->setFlash('success', 'Lift On Charge Added.');
         } else {
-            $model->lift_charges -= $cost;
+            $model->lift_charges -= $kesCost;
             if ($model->lift_charges < 0) $model->lift_charges = 0;
             Yii::$app->session->setFlash('warning', 'Lift On Charge Removed.');
         }
 
+        $model->save(false);
         $model->recalculateBalance();
         return $this->redirect(['view', 'id' => $id]);
     }
@@ -281,22 +292,23 @@ class BillingController extends DashboardController
     {
         Yii::$app->user->can('dashboard-billing-update');
         $model = $this->findModel($id);
-        $cost = (float) Yii::$app->config->get('lift_off_charges');
+
+        $kesCost = (float) Yii::$app->config->get('lift_off_charges');
         $action = Yii::$app->request->post('action');
 
         if ($action === 'add') {
-            $model->lift_charges += $cost;
+            $model->lift_charges += $kesCost; // ALWAYS ADD KES
             Yii::$app->session->setFlash('success', 'Lift Off Charge Added.');
         } else {
-            $model->lift_charges -= $cost;
+            $model->lift_charges -= $kesCost;
             if ($model->lift_charges < 0) $model->lift_charges = 0;
             Yii::$app->session->setFlash('warning', 'Lift Off Charge Removed.');
         }
 
+        $model->save(false);
         $model->recalculateBalance();
         return $this->redirect(['view', 'id' => $id]);
     }
-
     public function actionUpdateCreditDetails($id)
     {
         Yii::$app->user->can('dashboard-billing-update');
@@ -359,17 +371,17 @@ class BillingController extends DashboardController
         if (ob_get_length()) ob_end_clean();
         return $pdf->render();
     }
+
     public function actionCancelRequest($id)
     {
         $model = $this->findModel($id);
 
-        // Reset status to allow re-submission
         $model->approval_status = 'NONE';
-        $model->requester_note = null; // Optional: Clear the note or keep it history
+        $model->requester_note = null;
         $model->requested_by = null;
         $model->requested_at = null;
 
-        if ($model->save(false)) { // Save(false) to skip validation since we are resetting
+        if ($model->save(false)) {
             Yii::$app->session->setFlash('info', 'Credit request withdrawn.');
         } else {
             Yii::$app->session->setFlash('error', 'Failed to withdraw request.');
@@ -377,6 +389,7 @@ class BillingController extends DashboardController
 
         return $this->redirect(['view', 'id' => $model->bill_id]);
     }
+
     protected function findModel($bill_id)
     {
         if (($model = BillingRecords::findOne(['bill_id' => $bill_id])) !== null) {
