@@ -228,7 +228,7 @@ class m251118_095245_cyms_tables extends Migration
 
             'amount' => $this->decimal(10, 2)->notNull(),
             'transaction_date' => $this->date()->notNull(),
-            'method' => "ENUM('CASH', 'MPESA', 'BANK', 'CHEQUE', 'CREDIT') NOT NULL DEFAULT 'CASH'",
+            'method' => "ENUM('CASH', 'MPESA', 'BANK', 'CHEQUE', 'CREDIT','REVERSAL') NOT NULL DEFAULT 'CASH'",
             'reference' => $this->string(100), // Mpesa Code, Cheque No, etc.
 
             'is_deleted' => $this->boolean()->notNull()->defaultValue(0),
