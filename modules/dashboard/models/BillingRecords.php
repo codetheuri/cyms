@@ -85,7 +85,11 @@ class BillingRecords extends BaseModel
     {
         return $this->hasOne(BillingRecords::class, ['bill_id' => 'bill_id']);
     }
-
+    public function getReversals()
+    {
+        return $this->hasMany(BillingReversals::class, ['bill_id' => 'bill_id'])
+            ->orderBy(['created_at' => SORT_DESC]);
+    }
     public function beforeSave($insert)
     {
         if (parent::beforeSave($insert)) {
@@ -113,7 +117,7 @@ class BillingRecords extends BaseModel
         return false;
     }
 
-  public function validateDiscount($attribute, $params)
+    public function validateDiscount($attribute, $params)
     {
         if (!$this->hasErrors()) {
             // Everything is calculated strictly in KES
@@ -122,7 +126,7 @@ class BillingRecords extends BaseModel
             if ($this->$attribute > $subTotalKes) {
                 $exRate = $this->exchange_rate > 0 ? $this->exchange_rate : 1.00;
                 $displayTotal = ($this->currency === 'USD') ? ($subTotalKes / $exRate) : $subTotalKes;
-                
+
                 $this->addError($attribute, 'Discount cannot exceed the Total Bill (' . number_format($displayTotal, 2) . ' ' . $this->currency . ').');
             }
         }
@@ -134,7 +138,7 @@ class BillingRecords extends BaseModel
         if (!$visit) return false;
 
         $clientCurrency = $visit->containerOwner ? $visit->containerOwner->billing_currency : 'KES';
-        $this->currency = $clientCurrency; 
+        $this->currency = $clientCurrency;
 
         // =========================================================
         // 1. EXCHANGE RATE
@@ -142,9 +146,9 @@ class BillingRecords extends BaseModel
         if (in_array($this->status, ['PAID', 'CREDIT', 'GATE_OUT']) && $this->exchange_rate > 1) {
             // Keep locked rate
         } else {
-            $this->exchange_rate = class_exists('\dashboard\hooks\Currency') 
-                ? \dashboard\hooks\Currency::getUsdToKesRate() 
-                : (float) Yii::$app->config->get('fallback_exchange_rate', 130.00); 
+            $this->exchange_rate = class_exists('\dashboard\hooks\Currency')
+                ? \dashboard\hooks\Currency::getUsdToKesRate()
+                : (float) Yii::$app->config->get('fallback_exchange_rate', 130.00);
             if ($this->exchange_rate <= 0) $this->exchange_rate = 130.00;
         }
 
@@ -154,7 +158,7 @@ class BillingRecords extends BaseModel
         if ($visit->date_in) {
             $endTime = ($visit->status === 'GATE_OUT' && $visit->date_out)
                 ? strtotime($visit->date_out . ' ' . ($visit->time_out ?: '23:59:59'))
-                : time(); 
+                : time();
 
             $startStr = $visit->date_in . ' ' . ($visit->time_in ?: '00:00:00');
             $diffSeconds = $endTime - strtotime($startStr);
@@ -165,27 +169,27 @@ class BillingRecords extends BaseModel
         // 3. PRICING LOGIC (STRICTLY KES SOURCE OF TRUTH)
         // =========================================================
         if ($visit->shipping_line_id == 9) {
-            $this->tariff_rate = 0;       
-            $this->lift_charges = 0;      
+            $this->tariff_rate = 0;
+            $this->lift_charges = 0;
             $this->storage_total = 2000; // Flat KES
         } else {
             // If tariff rate is missing, fetch the KES Master
             if ($this->tariff_rate <= 0) {
                 $baseKesRate = (float) Yii::$app->config->get('storage_rate_per_day');
-                
+
                 if ($visit->containerOwner) {
                     $clientRate = \dashboard\models\ClientRates::findOne(['owner_id' => $visit->containerOwner->owner_id, 'container_type_id' => $visit->container_type_id]);
                     if ($clientRate && $clientRate->daily_rate > 0) $baseKesRate = (float) $clientRate->daily_rate;
                 } elseif ($visit->containerType && $visit->containerType->daily_rate > 0) {
                     $baseKesRate = (float) $visit->containerType->daily_rate;
                 }
-                
+
                 // ALWAYS STORE KES IN DATABASE!
-                $this->tariff_rate = $baseKesRate; 
+                $this->tariff_rate = $baseKesRate;
             }
             $this->storage_total = $this->storage_days * $this->tariff_rate;
         }
-        
+
         // =========================================================
         // 4. REPAIR COSTS
         // =========================================================
@@ -196,7 +200,7 @@ class BillingRecords extends BaseModel
         // 5. SUBTOTALS & DISCOUNT (KES)
         // =========================================================
         $subTotalKes = $this->storage_total + $this->repair_total + $this->lift_charges;
-        
+
         if ($this->discount_amount > $subTotalKes) {
             $this->discount_amount = $subTotalKes; // Cap discount
         }
@@ -205,16 +209,16 @@ class BillingRecords extends BaseModel
         // 6. TOTALS & BALANCES (WITH ROUNDING TO NEAREST 10)
         // =========================================================
         $calculatedGrandTotalKes = $subTotalKes - $this->discount_amount;
-        
+
         // Round KES to nearest 10 (e.g., 16484.46 becomes 16480, 16486 becomes 16490)
         $this->grand_total = round($calculatedGrandTotalKes, -1);
-        
+
         // Convert to USD specifically for the foreign column
         $this->foreign_grand_total = ($this->currency === 'USD') ? round($this->grand_total / $this->exchange_rate, 2) : 0;
 
-        $this->total_paid = (float) $this->getPayments()->sum('amount'); 
+        $this->total_paid = (float) $this->getPayments()->sum('amount');
         $this->balance = $this->grand_total - $this->total_paid;
-        
+
         $this->foreign_balance = ($this->currency === 'USD') ? round($this->balance / $this->exchange_rate, 2) : 0;
 
         // =========================================================

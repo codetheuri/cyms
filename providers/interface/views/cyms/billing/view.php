@@ -54,7 +54,6 @@ $timeIn = $visit->time_in ? date('H:i', strtotime($visit->time_in)) . ' hrs' : '
 $returnClientId = Yii::$app->request->get('return_client');
 
 // --- CONTAINER REMARKS / FLAGS LOGIC ---
-// Change 'remarks' below to whatever your actual column name is (e.g., 'comments', 'flag_reason')
 $containerFlagComment = $visit->comments_in ?? null; 
 ?>
 
@@ -97,6 +96,7 @@ $containerFlagComment = $visit->comments_in ?? null;
     </div>
 </div>
 <?php endif; ?>
+
 <div class="row g-4 mb-4">
     <div class="col-md-6 col-xl-4">
         <div class="block block-rounded h-100 mb-0 shadow-sm border-start border-4 border-primary">
@@ -159,6 +159,11 @@ $containerFlagComment = $visit->comments_in ?? null;
             <div class="block-header block-header-default">
                 <h3 class="block-title fw-bold">Charges Breakdown <span class="badge bg-body-dark text-dark ms-2"><?= $curr ?></span></h3>
                 <div class="block-options">
+                    <?php if (in_array($model->status, ['PAID', 'CREDIT']) && $visit->status === 'GATE_OUT'): ?>
+                        <button type="button" class="btn btn-sm btn-alt-danger me-2" data-bs-toggle="modal" data-bs-target="#modal-reverse">
+                            <i class="fa fa-undo"></i> Reverse & Rebill
+                        </button>
+                    <?php endif; ?>
                      <?= Html::a('<i class="fa fa-print"></i>',
                         ['/dashboard/billing/generate-invoice', 'id' => $model->bill_id],
                         ['class' => 'btn btn-sm btn-alt-secondary', 'title'=>'Print Invoice']
@@ -310,10 +315,14 @@ $containerFlagComment = $visit->comments_in ?? null;
                                     <tr>
                                         <td><i class="fa fa-calendar me-2 text-muted"></i><?= Yii::$app->formatter->asDate($payment->transaction_date) ?></td>
                                         <td class="text-center">
-                                            <span class="badge bg-gray-light text-dark border"><?= $payment->method ?></span>
-                                            <span class="text-muted ms-1 fs-xs"><?= $payment->reference ?></span>
+                                            <?php if ($payment->method === 'REVERSAL'): ?>
+                                                <span class="badge bg-danger-light text-danger border-danger">REVERSAL</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-gray-light text-dark border"><?= Html::encode($payment->method) ?></span>
+                                            <?php endif; ?>
+                                            <span class="text-muted ms-1 fs-xs"><?= Html::encode($payment->reference) ?></span>
                                         </td>
-                                        <td class="text-end fw-bold text-success font-monospace">
+                                        <td class="text-end fw-bold <?= $payment->amount < 0 ? 'text-danger' : 'text-success' ?> font-monospace">
                                             <?php 
                                             // Show payment in the billing currency
                                             $paidAmt = $isUsd ? ($payment->amount / $exRate) : $payment->amount;
@@ -468,6 +477,70 @@ $containerFlagComment = $visit->comments_in ?? null;
             <?php endif; ?>
         </div>
 
+    </div>
+</div>
+
+<?php if (!empty($model->reversals)): ?>
+<div class="block block-rounded border border-danger shadow-sm mt-4">
+    <div class="block-header bg-danger-light">
+        <h3 class="block-title text-danger fw-bold"><i class="fa fa-shield-alt me-2"></i> Audit Trail: Reversals & Modifications</h3>
+    </div>
+    <div class="block-content p-0">
+        <table class="table table-sm table-striped mb-0 fs-sm">
+            <thead class="bg-body-light text-muted">
+                <tr>
+                    <th class="ps-3">Date</th>
+                    <th>Voided Invoice #</th>
+                    <th>Original Total</th>
+                    <th>Reason for Reversal</th>
+                    <th>Authorized By</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($model->reversals as $rev): ?>
+                    <tr>
+                        <td class="ps-3"><?= Yii::$app->formatter->asDatetime($rev->created_at) ?></td>
+                        <td class="fw-bold text-decoration-line-through text-muted"><?= Html::encode($rev->old_invoice_number) ?></td>
+                        <td class="font-monospace fw-bold">
+                            <?php 
+                                $dispAmt = ($rev->old_currency === 'USD') ? ($rev->old_grand_total / $exRate) : $rev->old_grand_total;
+                                $dispSym = ($rev->old_currency === 'USD') ? '$' : 'KES ';
+                                echo $dispSym . number_format($dispAmt, 2);
+                            ?>
+                        </td>
+                        <td class="text-danger fst-italic"><?= Html::encode($rev->reversal_reason) ?></td>
+                        <td><span class="badge bg-dark"><?= Html::encode($rev->reverser->username ?? 'Admin') ?></span></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+<?php endif; ?>
+
+<div class="modal fade" id="modal-reverse" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <?php $form = ActiveForm::begin(['action' => ['/dashboard/billing-reversal/process', 'id' => $model->bill_id]]); ?>
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title text-white"><i class="fa fa-exclamation-triangle me-1"></i> Reverse & Rebill Invoice</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger py-2 fs-sm mb-3">
+                    <strong>Warning:</strong> This container has already left the yard. Reversing this invoice will mark the old document as voided, generate a new invoice number, and unlock the billing rates. This action is permanently logged in the audit trail.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-dark fw-bold">Reason for Reversal <span class="text-danger">*</span></label>
+                    <textarea name="reversal_reason" class="form-control form-control-alt border-danger" rows="3" placeholder="e.g., Forgot to bill lift charges, Client requested discount..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer bg-body-light">
+                <button type="button" class="btn btn-alt-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger fw-bold"><i class="fa fa-undo me-1"></i> Confirm Reversal</button>
+            </div>
+            <?php ActiveForm::end(); ?>
+        </div>
     </div>
 </div>
 
