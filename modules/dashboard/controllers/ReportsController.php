@@ -20,7 +20,7 @@ class ReportsController extends DashboardController
     public $permissions = [
         'dashboard-reports-view' => 'View Reports',
     ];
-   
+
     public function getViewPath()
     {
         return Yii::getAlias('@ui/views/cyms/reports');
@@ -221,14 +221,18 @@ class ReportsController extends DashboardController
                     'shippingLine.line_code:text:Line',
                     [
                         'label' => 'Gate In Time',
-                        'value' => function ($m) use ($formatDateTime) { return $formatDateTime($m->date_in, $m->time_in); }
+                        'value' => function ($m) use ($formatDateTime) {
+                            return $formatDateTime($m->date_in, $m->time_in);
+                        }
                     ],
                     'seal_number_in:text:Seal No',
                     'vehicle_reg_no_in:text:Truck',
                     'party_delivering_container:text:Party Delivering',
                     [
                         'label' => 'Transporter',
-                        'value' => function ($m) { return $m->containerOwner->owner_name ?? $m->truck_owner_name_in; }
+                        'value' => function ($m) {
+                            return $m->containerOwner->owner_name ?? $m->truck_owner_name_in;
+                        }
                     ]
                 ];
             } elseif ($moveType === 'out') {
@@ -242,10 +246,19 @@ class ReportsController extends DashboardController
                     'shippingLine.line_code:text:Line',
                     [
                         'label' => 'Gate Out Time',
-                        'value' => function ($m) use ($formatDateTime) { return $formatDateTime($m->date_out, $m->time_out); }
+                        'value' => function ($m) use ($formatDateTime) {
+                            return $formatDateTime($m->date_out, $m->time_out);
+                        }
                     ],
                     'seal_number_out:text:Seal No',
                     'vehicle_reg_no_out:text:Truck',
+                    'trailer_reg_no_out:text:Trailer',
+                    [
+                        'label' => 'Gate In Time',
+                        'value' => function ($m) use ($formatDateTime) {
+                            return $formatDateTime($m->date_in, $m->time_in);
+                        }
+                    ],
                     'destination',
                 ];
             } else {
@@ -260,13 +273,19 @@ class ReportsController extends DashboardController
                     'status',
                     [
                         'label' => 'In',
-                        'value' => function ($m) use ($formatDateTime) { return $formatDateTime($m->date_in, $m->time_in); }
+                        'value' => function ($m) use ($formatDateTime) {
+                            return $formatDateTime($m->date_in, $m->time_in);
+                        }
                     ],
                     [
                         'label' => 'Out',
-                        'value' => function ($m) use ($formatDateTime) { return $formatDateTime($m->date_out, $m->time_out); }
+                        'value' => function ($m) use ($formatDateTime) {
+                            return $formatDateTime($m->date_out, $m->time_out);
+                        }
                     ],
-                    ['label' => 'Transporter', 'value' => function ($m) { return $m->containerOwner->owner_name ?? $m->truck_owner_name_in; }]
+                    ['label' => 'Transporter', 'value' => function ($m) {
+                        return $m->containerOwner->owner_name ?? $m->truck_owner_name_in;
+                    }]
                 ];
             }
         }
@@ -293,18 +312,24 @@ class ReportsController extends DashboardController
                 'containerType.iso_code:text:Type',
                 [
                     'label' => 'Date In',
-                    'value' => function ($m) use ($formatDateTime) { return $formatDateTime($m->date_in, $m->time_in); }
+                    'value' => function ($m) use ($formatDateTime) {
+                        return $formatDateTime($m->date_in, $m->time_in);
+                    }
                 ],
                 'party_delivering_container:text:Delivered By',
                 [
                     'label' => 'Days',
                     'contentOptions' => ['style' => 'font-weight:bold; text-align:center;'],
-                    'value' => function ($m) use ($calcDays) { return $calcDays($m->date_in, $m->time_in); }
+                    'value' => function ($m) use ($calcDays) {
+                        return $calcDays($m->date_in, $m->time_in);
+                    }
                 ],
                 'status',
                 [
                     'label' => 'Condition',
-                    'value' => function ($m) { return $m->getContainerSurvey()->exists() ? $m->containerSurvey->approval_status : 'Pending'; }
+                    'value' => function ($m) {
+                        return $m->getContainerSurvey()->exists() ? $m->containerSurvey->approval_status : 'Pending';
+                    }
                 ]
             ];
         }
@@ -327,12 +352,16 @@ class ReportsController extends DashboardController
                 'shippingLine.line_code:text:Line',
                 [
                     'label' => 'Date In',
-                    'value' => function ($m) use ($formatDateTime) { return $formatDateTime($m->date_in, $m->time_in); }
+                    'value' => function ($m) use ($formatDateTime) {
+                        return $formatDateTime($m->date_in, $m->time_in);
+                    }
                 ],
                 [
                     'label' => 'Days Stayed',
                     'contentOptions' => ['style' => 'color: red; font-weight: bold; text-align:center;'],
-                    'value' => function ($m) use ($calcDays) { return $calcDays($m->date_in, $m->time_in); }
+                    'value' => function ($m) use ($calcDays) {
+                        return $calcDays($m->date_in, $m->time_in);
+                    }
                 ],
             ];
         }
@@ -340,7 +369,7 @@ class ReportsController extends DashboardController
         // ================= NEW: CREDIT RELEASE REPORT =================
         elseif ($type === 'credit_containers') {
             $title = "Containers Released on Credit ($strFrom to $strTo)";
-            
+
             // Join tables to get owner details. Filter by 'CREDIT' status and date range on updated_at (Auth Date)
             $query = BillingRecords::find()->joinWith(['visit.containerOwner', 'visit.shippingLine'])
                 ->where(['billing_records.status' => 'CREDIT'])
@@ -362,16 +391,16 @@ class ReportsController extends DashboardController
                 'invoice_number',
                 [
                     'label' => 'Client / Owner',
-                    'value' => function ($m) { 
-                        return $m->visit->containerOwner->owner_name ?? $m->visit->truck_owner_name_in; 
+                    'value' => function ($m) {
+                        return $m->visit->containerOwner->owner_name ?? $m->visit->truck_owner_name_in;
                     }
                 ],
                 'atl_number:text:ATL No.',
                 'authorized_by:text:Approved By',
                 [
-                    'attribute' => 'grand_total', 
+                    'attribute' => 'grand_total',
                     'label' => 'Amount',
-                    'format' => ['currency', 'KES'], 
+                    'format' => ['currency', 'KES'],
                     'contentOptions' => ['style' => 'text-align: right; font-weight: bold; color: #d35400;']
                 ],
             ];
@@ -417,7 +446,9 @@ class ReportsController extends DashboardController
 
             $columns = [
                 ['class' => 'yii\grid\SerialColumn'],
-                ['label' => 'Client', 'value' => function ($m) { return $m->visit->containerOwner->owner_name ?? $m->visit->truck_owner_name_in; }],
+                ['label' => 'Client', 'value' => function ($m) {
+                    return $m->visit->containerOwner->owner_name ?? $m->visit->truck_owner_name_in;
+                }],
                 'invoice_number',
                 'visit.container_number',
                 ['attribute' => 'balance', 'format' => ['currency', 'KES'], 'contentOptions' => ['style' => 'text-align: right; color: red; font-weight: bold;']],

@@ -4,7 +4,7 @@ use helpers\Html;
 use helpers\grid\GridView;
 use yii\helpers\Url;
 use dashboard\models\BillingRecords;
-use dashboard\models\ContainerVisits; 
+use dashboard\models\ContainerVisits;
 
 /* @var yii\web\View $this */
 /* @var yii\data\ActiveDataProvider $dataProvider */
@@ -22,7 +22,7 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
         <p class="fs-sm text-muted mb-0">Manage all container entries, surveys, and exits.</p>
     </div>
     <div class="mt-3 mt-sm-0">
-        <?php if (Yii::$app->user->can('dashboard-visit-gate-in',true)): ?>
+        <?php if (Yii::$app->user->can('dashboard-visit-gate-in', true)): ?>
             <?= Html::a('<i class="fa fa-plus me-1"></i> New Gate IN', ['gate-in'], [
                 'class' => 'btn btn-primary fw-bold px-4 py-2 shadow-sm'
             ]) ?>
@@ -31,7 +31,7 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
 </div>
 
 <div class="block block-rounded shadow-sm">
-    
+
     <ul class="nav nav-tabs nav-tabs-block nav-justified custom-tabs" role="tablist">
         <li class="nav-item">
             <button class="nav-link active fw-bold py-3 fs-5" id="tab-all" data-bs-toggle="tab" data-bs-target="#content-all" role="tab">
@@ -81,7 +81,8 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                             'contentOptions' => ['class' => 'fw-bold fs-5 text-primary'],
                             'format' => 'raw',
                             'value' => function ($model) {
-                                $html = Html::encode($model->container_number);
+                                $val = $model->is_truck_only ? '<span class="badge bg-secondary">Truck Only</span>' : Html::encode($model->container_number);
+                                $html = $val;
                                 if (!empty($model->comments_in)) {
                                     $html .= ' <i class="fa fa-flag text-danger ms-1" data-bs-toggle="tooltip" title="' . Html::encode($model->comments_in) . '"></i>';
                                 }
@@ -90,11 +91,15 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                         ],
                         [
                             'label' => 'Type',
-                            'value' => function ($model) { return $model->containerType ? $model->containerType->iso_code : '-'; }
+                            'value' => function ($model) {
+                                return $model->containerType ? $model->containerType->iso_code : '-';
+                            }
                         ],
                         [
                             'label' => 'Line',
-                            'value' => function ($model) { return $model->shippingLine ? $model->shippingLine->line_code : '-'; }
+                            'value' => function ($model) {
+                                return $model->shippingLine ? $model->shippingLine->line_code : '-';
+                            }
                         ],
                         [
                             'label' => 'Date In',
@@ -125,7 +130,7 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                             'visibleButtons' => [
                                 // HIDES BUTTONS IF NOT ADMIN (or lacks permission)
                                 // 'flag'  => Yii::$app->user->can('dashboard-visit-update',true),
-                                'trash' => Yii::$app->user->can('dashboard-visit-delete',true),
+                                'trash' => Yii::$app->user->can('dashboard-visit-delete', true),
                             ],
                             'buttons' => [
                                 'view' => function ($url, $model) {
@@ -166,23 +171,25 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                                 },
                                 'dropdown' => function ($url, $model) {
                                     $links = '';
-                                    
+
                                     // Protect Survey & Edit inside the dropdown
-                                    if (Yii::$app->user->can('dashboard-visit-survey',true) && $model->status !== 'GATE_OUT') {
+                                    if (!$model->is_truck_only && Yii::$app->user->can('dashboard-visit-survey', true) && $model->status !== 'GATE_OUT') {
                                         $links .= '<li>' . Html::a('<i class="fa fa-clipboard-check me-2"></i> Survey', ['survey', 'visit_id' => $model->visit_id], ['class' => 'dropdown-item']) . '</li>';
                                     }
-                                    if (Yii::$app->user->can('dashboard-visit-update',true) && ($model->status === 'IN_YARD' || $model->status === 'SURVEYED')) {
+                                    if (Yii::$app->user->can('dashboard-visit-update', true) && ($model->status === 'IN_YARD' || $model->status === 'SURVEYED')) {
                                         $links .= '<li>' . Html::a('<i class="fa fa-pen me-2"></i> Full Edit', ['update', 'id' => $model->visit_id], ['class' => 'dropdown-item']) . '</li>';
                                     }
-                                    
-                                    $bill = BillingRecords::findOne(['visit_id' => $model->visit_id]);
-                                    if ($bill) {
-                                        $links .= '<li>' . Html::a('<i class="fa fa-file-invoice-dollar me-2 text-success"></i> View Invoice', ['/dashboard/billing/view', 'id' => $bill->bill_id], ['class' => 'dropdown-item', 'data-pjax' => 0]) . '</li>';
+
+                                    if (!$model->is_truck_only) {
+                                        $bill = BillingRecords::findOne(['visit_id' => $model->visit_id]);
+                                        if ($bill) {
+                                            $links .= '<li>' . Html::a('<i class="fa fa-file-invoice-dollar me-2 text-success"></i> View Invoice', ['/dashboard/billing/view', 'id' => $bill->bill_id], ['class' => 'dropdown-item', 'data-pjax' => 0]) . '</li>';
+                                        }
                                     }
 
                                     $links .= '<li><hr class="dropdown-divider"></li>';
                                     $links .= '<li>' . Html::a('<i class="fa fa-file-import me-2"></i> Print Inward', ['/dashboard/reports/inward', 'id' => $model->visit_id], ['class' => 'dropdown-item', 'target' => '_blank']) . '</li>';
-                                    
+
                                     if ($model->status === 'GATE_OUT') {
                                         $links .= '<li>' . Html::a('<i class="fa fa-file-export me-2"></i> Print Outward', ['/dashboard/reports/outward', 'id' => $model->visit_id], ['class' => 'dropdown-item', 'target' => '_blank']) . '</li>';
                                     }
@@ -210,7 +217,7 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                     <p class="mb-0 text-muted fs-sm">Containers currently in the yard with special instructions or warnings.</p>
                 </div>
             </div>
-            
+
             <div class="table-responsive">
                 <?= GridView::widget([
                     'dataProvider' => ContainerVisits::getFlaggedDataProvider(),
@@ -224,7 +231,8 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                             'format' => 'raw',
                             'contentOptions' => ['class' => 'fw-bold fs-5 text-primary', 'style' => 'width: 200px;'],
                             'value' => function ($model) {
-                                return Html::encode($model->container_number) . "<br><span class='fs-xs font-monospace text-muted'>{$model->ticket_no_in}</span>";
+                                $cnum = $model->is_truck_only ? '<span class="badge bg-secondary">Truck Only</span>' : Html::encode($model->container_number);
+                                return $cnum . "<br><span class='fs-xs font-monospace text-muted'>{$model->ticket_no_in}</span>";
                             }
                         ],
                         [
@@ -239,7 +247,7 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                             'label' => 'Arrival',
                             'format' => 'raw',
                             'contentOptions' => ['style' => 'width: 150px;'],
-                            'value' => function ($model) { 
+                            'value' => function ($model) {
                                 $date = Yii::$app->formatter->asDate($model->date_in, 'php:d M Y');
                                 return "<div class='fw-medium'>{$date}</div>";
                             }
@@ -247,7 +255,7 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                         // [
                         //     'class'=> 'yii\grid\ActionColumn',
                         //     'header' => 'Edit',
-                            
+
                         //     'template'=> 'edit' ,
                         //     'visibleButtons' => [
                         //         'edit' => Yii::$app->user->can('dashboard-visit-update',true),
@@ -271,7 +279,7 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                             'visibleButtons' => [
                                 // ONLY ADMINS can resolve the flag from this tab
                                 // 'resolve' => Yii::$app->user->can('dashboard-visit-update'), 
-                                'trash' => Yii::$app->user->can('dashboard-visit-delete',true),
+                                'trash' => Yii::$app->user->can('dashboard-visit-delete', true),
                             ],
                             'buttons' => [
                                 'view' => function ($url, $model) {
@@ -285,7 +293,7 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                                         'appearence' => ['icon' => 'edit', 'theme' => 'warning', 'text' => 'Update', 'type' => 'iconText', 'size' => 'sm']
                                     ]);
                                 },
-                                   'trash' => function ($url, $model) {
+                                'trash' => function ($url, $model) {
                                     if ($model->is_deleted !== 1) {
                                         return Html::a('<i class="fa fa-trash"></i>', ['trash', 'id' => $model->visit_id], [
                                             'class' => 'btn btn-sm btn-alt-danger',
@@ -318,6 +326,7 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
     .custom-tabs {
         border-bottom: 2px solid #e5e7eb;
     }
+
     .custom-tabs .nav-link {
         background-color: #f3f4f6;
         color: #6b7280;
@@ -325,23 +334,37 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
         border-bottom: 3px solid transparent;
         transition: all 0.2s ease-in-out;
     }
+
     .custom-tabs .nav-link:hover {
         background-color: #e5e7eb;
     }
+
     .custom-tabs .nav-link.active {
         background-color: #ffffff;
         color: #111827;
         border-bottom: 3px solid #0d6efd;
         box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
     }
+
     .custom-tabs #tab-flagged.active {
         border-bottom: 3px solid #dc3545;
     }
 
     @keyframes pulse-red {
-        0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        0% {
+            box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+        }
+
+        70% {
+            box-shadow: 0 0 0 6px rgba(220, 38, 38, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+        }
     }
-    .animate-pulse { animation: pulse-red 2s infinite; }
+
+    .animate-pulse {
+        animation: pulse-red 2s infinite;
+    }
 </style>

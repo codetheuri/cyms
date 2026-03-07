@@ -29,14 +29,31 @@ class ContainerVisits extends  BaseModel
     public function rules()
     {
         return [
+            // --- TRUCK ONLY FLAG ---
+            [['is_truck_only'], 'boolean'],
+            [['is_truck_only'], 'default', 'value' => 0],
+            [['is_truck_only'], 'safe'],
+
             // --- CORE REQUIRED FIELDS ---
-            [['container_number'], 'required'],
+            [['container_number'], 'required', 'when' => function ($model) {
+                return !$model->is_truck_only;
+            }, 'whenClient' => "function (attribute, value) {
+                return $('#containervisits-is_truck_only').length === 0 || !$('#containervisits-is_truck_only').is(':checked');
+            }"],
 
             // --- GATE IN SCENARIO ---
-            [['date_in', 'time_in', 'vehicle_reg_no_in', 'driver_name_in', 'shipping_line_id', 'container_owner_id', 'container_type_id'], 'required', 'on' => self::SCENARIO_GATE_IN],
+            [['date_in', 'time_in', 'vehicle_reg_no_in', 'driver_name_in'], 'required', 'on' => self::SCENARIO_GATE_IN],
+            [['shipping_line_id', 'container_owner_id', 'container_type_id'], 'required', 'on' => self::SCENARIO_GATE_IN, 'when' => function ($model) {
+                return !$model->is_truck_only;
+            }, 'whenClient' => "function (attribute, value) {
+                return $('#containervisits-is_truck_only').length === 0 || !$('#containervisits-is_truck_only').is(':checked');
+            }"],
 
             // --- GATE OUT SCENARIO ---
-            [['date_out', 'time_out', 'vehicle_reg_no_out'], 'required', 'on' => self::SCENARIO_GATE_OUT],
+            [['date_out', 'time_out'], 'required', 'on' => self::SCENARIO_GATE_OUT],
+            [['vehicle_reg_no_out'], 'required', 'on' => self::SCENARIO_GATE_OUT, 'when' => function ($model) {
+                return !$model->is_truck_only;
+            }],
             [['gross_weight', 'tare_weight', 'payload'], 'integer', 'min' => 0],
             [['party_delivering_container'], 'string', 'max' => 100],
             // [['gross_weight', 'tare_weight', 'payload'], 'required'],
@@ -74,7 +91,8 @@ class ContainerVisits extends  BaseModel
                 ['container_number'],
                 'match',
                 'pattern' => '/^[A-Z]{4}[0-9]{7}$/',
-                'message' => 'Invalid Format. Must be 4 letters followed by 7 digits (e.g., MSCU1234567).'
+                'message' => 'Invalid Format. Must be 4 letters followed by 7 digits (e.g., MSCU1234567).',
+                'skipOnEmpty' => true,
             ],
             [
                 ['container_number'],
@@ -96,14 +114,14 @@ class ContainerVisits extends  BaseModel
         ];
     }
 
-/**
+    /**
      * Custom Validator to prevent logging future dates/times.
      */
     public function validateFutureDate($attribute, $params)
     {
         // Don't run if there are already format errors
         if (!$this->hasErrors()) {
-            
+
             // Determine which date/time we are checking based on the scenario
             if ($this->scenario === self::SCENARIO_GATE_IN) {
                 $dateString = $this->date_in . ' ' . ($this->time_in ?: '00:00:00');

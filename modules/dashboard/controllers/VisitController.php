@@ -39,7 +39,7 @@ class VisitController extends DashboardController
     public function actionIndex()
 
     {
-       Yii::$app->user->can('dashboard-visit-list');
+        Yii::$app->user->can('dashboard-visit-list');
         $searchModel = new ContainerVisitsSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
@@ -57,7 +57,7 @@ class VisitController extends DashboardController
         $model = new ContainerVisits();
         $model->scenario = ContainerVisits::SCENARIO_GATE_IN;
 
-       
+
 
         $model->date_in = date('Y-m-d');
         $model->time_in = date('H:i');
@@ -75,25 +75,30 @@ class VisitController extends DashboardController
                 if ($model->save(false)) {
 
                     $model->uploadDocuments();
-                    $bill = new BillingRecords();
-                    $bill->visit_id = $model->visit_id;
+
+                    if (!$model->is_truck_only) {
+                        $bill = new BillingRecords();
+                        $bill->visit_id = $model->visit_id;
 
 
-                    $bill->tariff_rate = Yii::$app->config->get('storage_rate_per_day') ?? 0;
-                    $liftOn = Yii::$app->config->get('lift_on_charges') ?? 0;
-                    $liftOff = Yii::$app->config->get('lift_off_charges') ?? 0;
-                    $bill->lift_charges = $liftOn + $liftOff;
+                        $bill->tariff_rate = Yii::$app->config->get('storage_rate_per_day') ?? 0;
+                        $liftOn = Yii::$app->config->get('lift_on_charges') ?? 0;
+                        $liftOff = Yii::$app->config->get('lift_off_charges') ?? 0;
+                        $bill->lift_charges = $liftOn + $liftOff;
 
 
-                    $bill->storage_days = 0;
-                    $bill->repair_total = 0;
-                    $bill->recalculateBalance();
+                        $bill->storage_days = 0;
+                        $bill->repair_total = 0;
+                        $bill->recalculateBalance();
 
-                    Yii::$app->session->setFlash('success', 'Container Gated IN & Invoice Generated.');
+                        Yii::$app->session->setFlash('success', 'Container Gated IN & Invoice Generated.');
+                    } else {
+                        Yii::$app->session->setFlash('success', 'Truck LOGGED IN successfully.');
+                    }
                     return $this->redirect(['index']);
                 }
             } else {
-                Yii::$app->session->setFlash('error', 'lease fix the errors below!');
+                Yii::$app->session->setFlash('error', 'Please fix the errors below!');
             }
         }
 
@@ -121,9 +126,17 @@ class VisitController extends DashboardController
         $queryParams = Yii::$app->request->queryParams;
 
 
-        $queryParams['ContainerVisitsSearch']['status'] = ['SURVEYED'];
+        // DO NOT restrict via simple $queryParams override, otherwise our custom query below is overridden
+        // $queryParams['ContainerVisitsSearch']['status'] = ['SURVEYED'];
 
         $dataProvider = $searchModel->search($queryParams);
+
+        // Custom Logic: Pending exits are fully surveyed containers OR basic trucks that just logged in.
+        $dataProvider->query->andWhere([
+            'OR',
+            ['status' => 'SURVEYED'],
+            ['and', ['status' => 'IN_YARD'], ['is_truck_only' => 1]]
+        ]);
 
         return $this->render('out_index', [
             'searchModel' => $searchModel,
@@ -138,6 +151,11 @@ class VisitController extends DashboardController
     {
         Yii::$app->user->can('dashboard-visit-survey');
         $visit = $this->findModel($visit_id);
+
+        if ($visit->is_truck_only) {
+            Yii::$app->session->setFlash('error', 'Truck Only units do not require container surveys.');
+            return $this->redirect(['index']);
+        }
 
         // 1. Find/Create Survey
         $survey = ContainerSurveys::findOne(['visit_id' => $visit_id]);
@@ -178,7 +196,7 @@ class VisitController extends DashboardController
                 $visit->save(false);
             }
 
-          
+
 
             // Handle Dynamic Model Loading
             $oldDamagesIDs = ArrayHelper::map($damages, 'damage_id', 'damage_id');
@@ -189,11 +207,11 @@ class VisitController extends DashboardController
             $valid = Model::validateMultiple($damages) && $valid;
 
             if ($valid) {
-                  // 2. HANDLE PHOTO
-            $photoPath = $survey->uploadSurveyPhoto();
-            if ($photoPath) {
-                $survey->survey_photo_path = $photoPath;
-            }
+                // 2. HANDLE PHOTO
+                $photoPath = $survey->uploadSurveyPhoto();
+                if ($photoPath) {
+                    $survey->survey_photo_path = $photoPath;
+                }
                 $transaction = \Yii::$app->db->beginTransaction();
                 try {
                     if ($survey->save(false)) {
@@ -267,88 +285,100 @@ class VisitController extends DashboardController
             'currentSlotId' => $currentSlotId, // Pass current selection
         ]);
     }
-public function actionGateOut($id)
-{
-    Yii::$app->user->can('dashboard-visit-gate-out');
-    $model = $this->findModel($id);
+    public function actionGateOut($id)
+    {
+        Yii::$app->user->can('dashboard-visit-gate-out');
+        $model = $this->findModel($id);
 
-    // --- 1. BILLING CHECK ---
-    $bill = \dashboard\models\BillingRecords::findOne(['visit_id' => $id]);
+        // --- 1. BILLING CHECK ---
+        $bill = null;
+        if (!$model->is_truck_only) {
+            $bill = \dashboard\models\BillingRecords::findOne(['visit_id' => $id]);
 
-    if (!$bill) {
-        $bill = new \dashboard\models\BillingRecords();
-        $bill->visit_id = $id;
-        $bill->tariff_rate = Yii::$app->config->get('storage_rate_per_day') ?? 0;
-        $liftOff = Yii::$app->config->get('lift_off_charges') ?? 0;
-        $bill->lift_charges = $liftOff;
-        $bill->save(false);
-    }
-
-    // Recalculate to ensure current status is up to date
-    $bill->recalculateBalance();
-
-    // Check Payment Status
-    $isPaid = ($bill->status === 'PAID' || $bill->status === 'CREDIT' || $bill->balance <= 0.01);
-
-    if (!$isPaid) {
-        Yii::$app->session->setFlash('error', 'Container cannot be released. Outstanding Balance: ' . number_format($bill->balance, 2));
-        return $this->redirect(['/dashboard/billing/view', 'id' => $bill->bill_id]);
-    }
-
-    // --- 2. GATE OUT LOGIC ---
-    $model->scenario = ContainerVisits::SCENARIO_GATE_OUT;
-
-    // Default to NOW, but allow user to change it in form
-    if (empty($model->date_out)) {
-        $model->date_out = date('Y-m-d');
-        $model->time_out = date('H:i');
-    }
-
-    if ($model->load(Yii::$app->request->post())) {
-        
-        // Handle File Upload
-        $model->departure_photo_file = \yii\web\UploadedFile::getInstance($model, 'departure_photo_file');
-
-        if ($model->validate()) {
-            
-            // Upload Photo
-            $photoPath = $model->uploadDeparturePhoto();
-            if ($photoPath) {
-                $model->departure_photo_path = $photoPath;
+            if (!$bill) {
+                $bill = new \dashboard\models\BillingRecords();
+                $bill->visit_id = $id;
+                $bill->tariff_rate = Yii::$app->config->get('storage_rate_per_day') ?? 0;
+                $liftOff = Yii::$app->config->get('lift_off_charges') ?? 0;
+                $bill->lift_charges = $liftOff;
+                $bill->save(false);
             }
-            
-            $model->status = 'GATE_OUT';
 
-            if ($model->save(false)) {
-                
-                // --- FREEZE BILLING ---
-                // Now that we have saved the Date Out (even if backdated),
-                // we call recalculateBalance() one last time.
-                // The Bill Model will see status='GATE_OUT' and calculate days 
-                // based on the specific Date Out we just saved.
-                if ($bill) {
-                    $bill->recalculateBalance();
-                }
-                
-                // Clear Yard Slot
-                $slot = \dashboard\models\YardSlots::findOne(['current_visit_id' => $id]);
-                if ($slot) {
-                    $slot->unpark();
-                }
+            // Recalculate to ensure current status is up to date
+            $bill->recalculateBalance();
 
-                Yii::$app->session->setFlash('success', 'Container Released Successfully.');
-                return $this->redirect(['out-index']);
+            // Check Payment Status
+            $isPaid = ($bill->status === 'PAID' || $bill->status === 'CREDIT' || $bill->balance <= 0.01);
+
+            if (!$isPaid) {
+                Yii::$app->session->setFlash('error', 'Container cannot be released. Outstanding Balance: ' . number_format($bill->balance, 2));
+                return $this->redirect(['/dashboard/billing/view', 'id' => $bill->bill_id]);
             }
-        } else {
-            $errors = implode('<br>', \yii\helpers\ArrayHelper::getColumn($model->getErrors(), 0));
-            Yii::$app->session->setFlash('error', 'Validation Error: ' . $errors);
         }
-    }
 
-    return $this->render('gate_out_form', [
-        'model' => $model,
-    ]);
-}
+        // --- 2. GATE OUT LOGIC ---
+        $model->scenario = ContainerVisits::SCENARIO_GATE_OUT;
+
+        // Prefill data for Truck Only units automatically.
+        if ($model->is_truck_only) {
+            if (empty($model->vehicle_reg_no_out)) $model->vehicle_reg_no_out = $model->vehicle_reg_no_in;
+            if (empty($model->trailer_reg_no_out)) $model->trailer_reg_no_out = $model->trailer_reg_no_in;
+            if (empty($model->truck_type_out)) $model->truck_type_out = $model->truck_type_in;
+            if (empty($model->driver_name_out)) $model->driver_name_out = $model->driver_name_in;
+            if (empty($model->driver_id_out)) $model->driver_id_out = $model->driver_id_in;
+        }
+
+        // Default to NOW, but allow user to change it in form
+        if (empty($model->date_out)) {
+            $model->date_out = date('Y-m-d');
+            $model->time_out = date('H:i');
+        }
+
+        if ($model->load(Yii::$app->request->post())) {
+
+            // Handle File Upload
+            $model->departure_photo_file = \yii\web\UploadedFile::getInstance($model, 'departure_photo_file');
+
+            if ($model->validate()) {
+
+                // Upload Photo
+                $photoPath = $model->uploadDeparturePhoto();
+                if ($photoPath) {
+                    $model->departure_photo_path = $photoPath;
+                }
+
+                $model->status = 'GATE_OUT';
+
+                if ($model->save(false)) {
+
+                    // --- FREEZE BILLING ---
+                    // Now that we have saved the Date Out (even if backdated),
+                    // we call recalculateBalance() one last time.
+                    // The Bill Model will see status='GATE_OUT' and calculate days 
+                    // based on the specific Date Out we just saved.
+                    if (!$model->is_truck_only && isset($bill) && $bill) {
+                        $bill->recalculateBalance();
+                    }
+
+                    // Clear Yard Slot
+                    $slot = \dashboard\models\YardSlots::findOne(['current_visit_id' => $id]);
+                    if ($slot) {
+                        $slot->unpark();
+                    }
+
+                    Yii::$app->session->setFlash('success', 'Container Released Successfully.');
+                    return $this->redirect(['out-index']);
+                }
+            } else {
+                $errors = implode('<br>', \yii\helpers\ArrayHelper::getColumn($model->getErrors(), 0));
+                Yii::$app->session->setFlash('error', 'Validation Error: ' . $errors);
+            }
+        }
+
+        return $this->render('gate_out_form', [
+            'model' => $model,
+        ]);
+    }
     public function actionAjaxCreateOwner()
 
     {
@@ -368,55 +398,55 @@ public function actionGateOut($id)
             'model' => $this->findModel($id),
         ]);
     }
- 
+
 
     public function actionUpdate($id)
-{
-    Yii::$app->user->can('dashboard-visit-update');
-    $model = $this->findModel($id);
-    
-    // Use Gate In scenario to validate fields like container number format
-    $model->scenario = ContainerVisits::SCENARIO_GATE_IN;
+    {
+        Yii::$app->user->can('dashboard-visit-update');
+        $model = $this->findModel($id);
 
-    if ($model->load(Yii::$app->request->post())) {
-        
-        // Handle Photo Update if they upload a new one
-        $model->arrival_photo_file = UploadedFile::getInstance($model, 'arrival_photo_file');
-        if ($model->arrival_photo_file) {
-            $path = $model->uploadArrivalPhoto();
-            if ($path) {
-                $model->arrival_photo_path = $path;
+        // Use Gate In scenario to validate fields like container number format
+        $model->scenario = ContainerVisits::SCENARIO_GATE_IN;
+
+        if ($model->load(Yii::$app->request->post())) {
+
+            // Handle Photo Update if they upload a new one
+            $model->arrival_photo_file = UploadedFile::getInstance($model, 'arrival_photo_file');
+            if ($model->arrival_photo_file) {
+                $path = $model->uploadArrivalPhoto();
+                if ($path) {
+                    $model->arrival_photo_path = $path;
+                }
+            }
+
+            if ($model->save()) {
+                // CRITICAL: If dates changed, recalculate the Bill
+                $bill = BillingRecords::findOne(['visit_id' => $model->visit_id]);
+                if ($bill) {
+                    $bill->recalculateBalance();
+                }
+
+                Yii::$app->session->setFlash('success', 'Visit details updated successfully.');
+                return $this->redirect(['view', 'id' => $model->visit_id]);
             }
         }
 
-        if ($model->save()) {
-            // CRITICAL: If dates changed, recalculate the Bill
-            $bill = BillingRecords::findOne(['visit_id' => $model->visit_id]);
-            if ($bill) {
-                $bill->recalculateBalance(); 
-            }
+        // Prepare Dropdowns (Required for gate_in_form to work)
+        $shippingLines = ArrayHelper::map(MasterShippingLines::find()->all(), 'line_id', 'line_name');
+        $owners = ArrayHelper::map(MasterContainerOwners::find()->all(), 'owner_id', 'owner_name');
+        $types = ArrayHelper::map(MasterContainerTypes::find()->all(), 'type_id', function ($m) {
+            return $m->size . "' " . $m->type_group . ' (' . $m->iso_code . ')';
+        });
 
-            Yii::$app->session->setFlash('success', 'Visit details updated successfully.');
-            return $this->redirect(['view', 'id' => $model->visit_id]);
-        }
+        // --- THE FIX IS HERE ---
+        // Point to 'gate_in_form' instead of 'update'
+        return $this->render('gate_in_form', [
+            'model' => $model,
+            'shippingLines' => $shippingLines, // Must pass these!
+            'owners' => $owners,
+            'types' => $types,
+        ]);
     }
-
-    // Prepare Dropdowns (Required for gate_in_form to work)
-    $shippingLines = ArrayHelper::map(MasterShippingLines::find()->all(), 'line_id', 'line_name');
-    $owners = ArrayHelper::map(MasterContainerOwners::find()->all(), 'owner_id', 'owner_name');
-    $types = ArrayHelper::map(MasterContainerTypes::find()->all(), 'type_id', function ($m) {
-        return $m->size . "' " . $m->type_group . ' (' . $m->iso_code . ')';
-    });
-
-    // --- THE FIX IS HERE ---
-    // Point to 'gate_in_form' instead of 'update'
-    return $this->render('gate_in_form', [
-        'model' => $model,
-        'shippingLines' => $shippingLines, // Must pass these!
-        'owners' => $owners,
-        'types' => $types,
-    ]);
-}
 
     /**
      * ACTION: Soft Delete / Restore (Toggle)
@@ -425,7 +455,7 @@ public function actionGateOut($id)
     {
         Yii::$app->user->can('dashboard-visit-delete');
         $model = $this->findModel($id);
-        
+
         if ($model->is_deleted) {
             // Restore
             $model->restore(); // Assuming your BaseModel has restore() logic handling is_deleted=0
@@ -435,10 +465,10 @@ public function actionGateOut($id)
             $model->delete(); // Assuming your BaseModel treats delete() as soft delete if softDelete behavior is attached
             // OR if you do it manually:
             // $model->is_deleted = 1; $model->save(false);
-            
+
             Yii::$app->session->setFlash('warning', 'Record moved to trash.');
         }
-        
+
         return $this->redirect(Yii::$app->request->referrer ?: ['index']);
     }
 
@@ -450,16 +480,15 @@ public function actionGateOut($id)
     {
         Yii::$app->user->can('dashboard-visit-delete');
         $model = $this->findModel($id);
-        
+
         try {
             // Force Delete logic (Physically remove row)
             // If your BaseModel uses SoftDeleteBehavior, you might need $model->forceDelete();
             // If not using behavior, standard $model->delete() on a soft-deleted record typically still just updates flag.
             // To physically delete in Yii2 manually:
-             $model->forceDelete();
-            
+            $model->forceDelete();
+
             Yii::$app->session->setFlash('success', 'Record permanently deleted.');
-            
         } catch (\Exception $e) {
             // Check for Foreign Key Constraints
             if ($e->getCode() == 23000 || strpos($e->getMessage(), '1451') !== false) {
@@ -487,13 +516,13 @@ public function actionGateOut($id)
     public function actionAjaxComment($id)
     {
         $model = $this->findModel($id);
-        
+
         // If form submitted
         if ($model->load(Yii::$app->request->post())) {
             // Save only the comments field (skip other validations for speed)
             // We use updateAttributes to be precise and safe
             $model->updateAttributes(['comments_in' => $model->comments_in]);
-            
+
             Yii::$app->session->setFlash('success', 'Flags/Comments updated.');
             return $this->redirect(['index']);
         }

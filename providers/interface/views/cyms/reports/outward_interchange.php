@@ -20,7 +20,7 @@ if ($settings->site_logo) {
 
 <head>
     <meta charset="UTF-8">
-    <title>Outward Interchange - <?= Html::encode($visit->container_number) ?></title>
+    <title>Outward Interchange - <?= Html::encode($visit->is_truck_only ? 'TRUCK ONLY' : $visit->container_number) ?></title>
     <style>
         /* RESET & BASICS */
         body {
@@ -170,7 +170,7 @@ if ($settings->site_logo) {
                         Email: <?= Html::encode($settings->email_address) ?>
                     </div>
                     <div style="font-size: 14px; font-weight: bold; margin-top: 10px; text-decoration: underline;">
-                        Container Interchange - Outward
+                        <?= $visit->is_truck_only ? 'Logistics / Unit' : 'Container' ?> Interchange - Outward
                     </div>
                 </td>
                 <td width="20%" align="right" style="vertical-align: bottom;">
@@ -226,8 +226,8 @@ if ($settings->site_logo) {
             <tr>
                 <td width="33%">
                     <div class="box">
-                        <div class="label">Container No.</div>
-                        <div class="value" style="font-size: 16px;"><?= Html::encode($visit->container_number) ?></div>
+                        <div class="label"><?= $visit->is_truck_only ? 'Unit ID' : 'Container No.' ?></div>
+                        <div class="value" style="font-size: 16px;"><?= $visit->is_truck_only ? '<span style="color:#777; font-size: 12px;">(TRUCK ONLY)</span>' : Html::encode($visit->container_number) ?></div>
                     </div>
                 </td>
                 <td width="33%">
@@ -240,7 +240,7 @@ if ($settings->site_logo) {
                     <div class="box">
                         <div class="label">Type / Size</div>
                         <div class="value">
-                            <?= $visit->truck_type_out ? Html::encode($visit->truck_type_out) : 'HC' ?> / 40'
+                            <?= $visit->is_truck_only ? 'N/A' : ($visit->truck_type_out ? Html::encode($visit->truck_type_out) : "HC / 40'") ?>
                         </div>
                     </div>
                 </td>
@@ -310,13 +310,21 @@ if ($settings->site_logo) {
         </table>
 
         <!-- CONDITIONS -->
-        <div style="margin-top: 15px; padding: 15px; border: 2px solid #000; background: #f9f9f9;">
-            <div style="font-weight: bold; font-size: 11px; line-height: 1.6;">
-                [ X ] THIS CONTAINER WAS DELIVERED IN GOOD CONDITION.<br>
-                [ X ] CHECKED BY SHIPPER'S AGENT, FOUND CLEAN AND NO DAMAGE.<br>
-                [ X ] SEAL NUMBER CHECKED: <u><?= Html::encode($visit->seal_number_out) ?></u>
+        <?php if (!$visit->is_truck_only): ?>
+            <div style="margin-top: 15px; padding: 15px; border: 2px solid #000; background: #f9f9f9;">
+                <div style="font-weight: bold; font-size: 11px; line-height: 1.6;">
+                    [ X ] THIS CONTAINER WAS DELIVERED IN GOOD CONDITION.<br>
+                    [ X ] CHECKED BY SHIPPER'S AGENT, FOUND CLEAN AND NO DAMAGE.<br>
+                    [ X ] SEAL NUMBER CHECKED: <u><?= Html::encode($visit->seal_number_out) ?></u>
+                </div>
             </div>
-        </div>
+        <?php else: ?>
+            <div style="margin-top: 15px; padding: 15px; border: 2px dashed #999; text-align: center;">
+                <div style="font-weight: bold; font-size: 11px; color: #555;">
+                    TRUCK ONLY - NO CONTAINER CONDITIONS TO REPORT
+                </div>
+            </div>
+        <?php endif; ?>
 
         <!-- SIGNATURES -->
         <table style="margin-top: 40px;">

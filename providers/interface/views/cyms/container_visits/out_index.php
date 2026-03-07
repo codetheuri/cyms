@@ -39,6 +39,9 @@ $this->params['breadcrumbs'][] = $this->title;
                             'format' => 'raw',
                             'contentOptions' => ['class' => 'fs-5'],
                             'value' => function ($model) {
+                                if ($model->is_truck_only) {
+                                    return Html::tag('span', 'Truck Only', ['class' => 'badge bg-secondary px-2 py-1 fs-sm']);
+                                }
                                 return Html::tag('span', $model->container_number, ['class' => 'fw-bold text-primary']) .
                                     '<br><small class="text-muted">' . ($model->containerType->iso_code ?? '-') . '</small>';
                             }
@@ -88,7 +91,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         //     }
                         // ],
 
-                         
+
                         [
                             'label' => 'Duration',
                             'format' => 'raw',
@@ -150,7 +153,7 @@ $this->params['breadcrumbs'][] = $this->title;
                                 'gate-out' => function ($url, $model, $key) {
                                     // Using standard Html::a for full control over the button look
                                     return Html::a(
-                                        '<i class="fa fa-truck-moving me-2"></i> Release Container',
+                                        '<i class="fa fa-truck-moving me-2"></i> Release Unit',
                                         ['gate-out', 'id' => $model->visit_id],
                                         [
                                             'class' => 'btn btn-sm btn-alt-danger fw-bold w-100', // Wide button

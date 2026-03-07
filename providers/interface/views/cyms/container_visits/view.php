@@ -7,12 +7,12 @@ use yii\helpers\Url;
 /* @var $this yii\web\View */
 /* @var $model dashboard\models\ContainerVisits */
 
-$this->title = $model->container_number;
+$this->title = $model->is_truck_only ? 'Truck Only' : $model->container_number;
 $this->params['breadcrumbs'][] = ['label' => 'Gate Records', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 
 // --- 1. STATUS LOGIC ---
-$statusClass = match($model->status) {
+$statusClass = match ($model->status) {
     'IN_YARD' => 'bg-warning',
     'SURVEYED' => 'bg-info',
     'GATE_OUT' => 'bg-secondary',
@@ -29,7 +29,7 @@ if ($model->status !== 'GATE_OUT' && $model->date_in) {
 }
 
 // --- 3. DATE FORMATTER HELPER ---
-$formatDateTime = function($date, $time) {
+$formatDateTime = function ($date, $time) {
     if (!$date) return '<span class="text-muted">-</span>';
     $d = Yii::$app->formatter->asDate($date, 'php:d M Y');
     $t = $time ? date('H:i', strtotime($time)) : '00:00';
@@ -39,18 +39,18 @@ $formatDateTime = function($date, $time) {
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="content-heading d-flex align-items-center mt-0 pt-0 border-0">
-        <span class="text-muted fw-light me-2">Container:</span> 
-        <span class="fw-bold"><?= Html::encode($model->container_number) ?></span>
+        <span class="text-muted fw-light me-2"><?= $model->is_truck_only ? 'Truck Unit:' : 'Container:' ?></span>
+        <span class="fw-bold"><?= $model->is_truck_only ? '<span class="badge bg-secondary">Truck Only</span>' : Html::encode($model->container_number) ?></span>
     </h2>
     <div>
         <?= Html::a('<i class="fa fa-arrow-left me-1"></i> Back', ['index'], ['class' => 'btn btn-sm btn-alt-secondary']) ?>
-        
+
         <?php if ($model->status === 'SURVEYED' || $model->status === 'GATE_OUT'): ?>
             <a href="<?= Url::to(['/dashboard/reports/inward', 'id' => $model->visit_id]) ?>" target="_blank" class="btn btn-sm btn-alt-primary ms-1">
                 <i class="fa fa-print me-1"></i> Inward
             </a>
         <?php endif; ?>
-        
+
         <?php if ($model->status === 'GATE_OUT'): ?>
             <a href="<?= Url::to(['/dashboard/reports/outward', 'id' => $model->visit_id]) ?>" target="_blank" class="btn btn-sm btn-alt-danger ms-1">
                 <i class="fa fa-print me-1"></i> Outward
@@ -69,7 +69,7 @@ $formatDateTime = function($date, $time) {
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-4">
         <div class="block block-rounded block-link-shadow h-100 text-center d-flex align-items-center justify-content-center p-3">
             <div>
@@ -81,57 +81,73 @@ $formatDateTime = function($date, $time) {
     </div>
 
     <div class="col-md-4">
-        <?php 
-            // Quick check on bill status
-            $bill = \dashboard\models\BillingRecords::findOne(['visit_id' => $model->visit_id]); 
-            $billStatus = $bill ? $bill->status : 'UNBILLED';
-            $billColor = match($billStatus) { 'PAID' => 'text-success', 'CREDIT' => 'text-info', default => 'text-danger' };
+        <?php
+        // Quick check on bill status
+        $bill = \dashboard\models\BillingRecords::findOne(['visit_id' => $model->visit_id]);
+        $billStatus = $bill ? $bill->status : 'UNBILLED';
+        $billColor = match ($billStatus) {
+            'PAID' => 'text-success',
+            'CREDIT' => 'text-info',
+            default => 'text-danger'
+        };
         ?>
-        <a href="<?= $bill ? Url::to(['/dashboard/billing/view', 'id' => $bill->bill_id]) : '#' ?>" class="block block-rounded block-link-shadow h-100 text-center d-flex align-items-center justify-content-center p-3">
-            <div>
-                <div class="fs-xs fw-bold text-uppercase text-muted mb-1">Billing Status</div>
-                <div class="fs-3 fw-bold <?= $billColor ?>"><i class="fa fa-file-invoice-dollar"></i></div>
-                <div class="fs-sm fw-bold <?= $billColor ?> mt-1"><?= $billStatus ?></div>
+        <?php if ($model->is_truck_only): ?>
+            <div class="block block-rounded block-link-shadow h-100 text-center d-flex align-items-center justify-content-center p-3">
+                <div>
+                    <div class="fs-xs fw-bold text-uppercase text-muted mb-1">Billing Status</div>
+                    <div class="fs-3 fw-bold text-muted"><i class="fa fa-ban"></i></div>
+                    <div class="fs-sm fw-bold text-muted mt-1">N/A</div>
+                </div>
             </div>
-        </a>
+        <?php else: ?>
+            <a href="<?= $bill ? Url::to(['/dashboard/billing/view', 'id' => $bill->bill_id]) : '#' ?>" class="block block-rounded block-link-shadow h-100 text-center d-flex align-items-center justify-content-center p-3">
+                <div>
+                    <div class="fs-xs fw-bold text-uppercase text-muted mb-1">Billing Status</div>
+                    <div class="fs-3 fw-bold <?= $billColor ?>"><i class="fa fa-file-invoice-dollar"></i></div>
+                    <div class="fs-sm fw-bold <?= $billColor ?> mt-1"><?= $billStatus ?></div>
+                </div>
+            </a>
+        <?php endif; ?>
     </div>
 </div>
 
-<div class="block block-rounded content-card mb-4">
-    <div class="block-header block-header-default">
-        <h3 class="block-title fs-sm text-uppercase fw-bold"><i class="fa fa-info-circle me-1"></i> Specifications</h3>
-    </div>
-    <div class="block-content">
-        <div class="row g-4 pb-4">
-            <div class="col-md-3 col-6 border-end">
-                <div class="fs-xs text-muted text-uppercase">Type / Size</div>
-                <div class="fw-bold fs-5">
-                    <?= $model->containerType ? $model->containerType->size . "' " . $model->containerType->type_group : '-' ?>
+<?php if (!$model->is_truck_only): ?>
+    <div class="block block-rounded content-card mb-4">
+        <div class="block-header block-header-default">
+            <h3 class="block-title fs-sm text-uppercase fw-bold"><i class="fa fa-info-circle me-1"></i> Specifications</h3>
+        </div>
+        <div class="block-content">
+            <div class="row g-4 pb-4">
+                <div class="col-md-3 col-6 border-end">
+                    <div class="fs-xs text-muted text-uppercase">Type / Size</div>
+                    <div class="fw-bold fs-5">
+                        <?= $model->containerType ? $model->containerType->size . "' " . $model->containerType->type_group : '-' ?>
+                    </div>
+                    <div class="fs-xs text-primary"><?= $model->containerType->iso_code ?? '' ?></div>
                 </div>
-                <div class="fs-xs text-primary"><?= $model->containerType->iso_code ?? '' ?></div>
-            </div>
-            <div class="col-md-3 col-6 border-end">
-                <div class="fs-xs text-muted text-uppercase">Shipping Line</div>
-                <div class="fw-bold fs-5">
-                    <?= $model->shippingLine->line_code ?? 'Unknown' ?>
+                <div class="col-md-3 col-6 border-end">
+                    <div class="fs-xs text-muted text-uppercase">Shipping Line</div>
+                    <div class="fw-bold fs-5">
+                        <?= $model->shippingLine->line_code ?? 'Unknown' ?>
+                    </div>
+                    <div class="fs-xs"><?= $model->shipping_agent_name ?></div>
                 </div>
-                <div class="fs-xs"><?= $model->shipping_agent_name ?></div>
-            </div>
-            <div class="col-md-2 col-4">
-                <div class="fs-xs text-muted text-uppercase">Max Gross</div>
-                <div class="fw-bold"><?= number_format((float)$model->gross_weight) ?> <small>kg</small></div>
-            </div>
-            <div class="col-md-2 col-4">
-                <div class="fs-xs text-muted text-uppercase">Tare</div>
-                <div class="fw-bold"><?= number_format((float)$model->tare_weight) ?> <small>kg</small></div>
-            </div>
-            <div class="col-md-2 col-4">
-                <div class="fs-xs text-muted text-uppercase">Payload</div>
-                <div class="fw-bold"><?= number_format((float)$model->payload) ?> <small>kg</small></div>
+                <div class="col-md-2 col-4">
+                    <div class="fs-xs text-muted text-uppercase">Max Gross</div>
+                    <div class="fw-bold"><?= number_format((float)$model->gross_weight) ?> <small>kg</small></div>
+                </div>
+                <div class="col-md-2 col-4">
+                    <div class="fs-xs text-muted text-uppercase">Tare</div>
+                    <div class="fw-bold"><?= number_format((float)$model->tare_weight) ?> <small>kg</small></div>
+                </div>
+                <div class="col-md-2 col-4">
+                    <div class="fs-xs text-muted text-uppercase">Payload</div>
+                    <div class="fw-bold"><?= number_format((float)$model->payload) ?> <small>kg</small></div>
+                </div>
             </div>
         </div>
     </div>
-</div>
+<?php endif; ?>
 
 <div class="row">
     <div class="col-md-6">
@@ -152,8 +168,8 @@ $formatDateTime = function($date, $time) {
                         <tr>
                             <td class="text-muted">Truck / Trailer</td>
                             <td class="fw-bold">
-                                <?= $model->vehicle_reg_no_in ?> 
-                                <?php if($model->trailer_reg_no_in): ?> / <?= $model->trailer_reg_no_in ?> <?php endif; ?>
+                                <?= $model->vehicle_reg_no_in ?>
+                                <?php if ($model->trailer_reg_no_in): ?> / <?= $model->trailer_reg_no_in ?> <?php endif; ?>
                             </td>
                         </tr>
                         <tr>
@@ -164,13 +180,13 @@ $formatDateTime = function($date, $time) {
                             <td class="text-muted">Seal No</td>
                             <td class="fw-bold text-primary"><?= $model->seal_number_in ?></td>
                         </tr>
-                        <?php if(!empty($model->comments_in)): ?>
-                        <tr>
-                            <td class="text-muted">Notes</td>
-                            <td class="text-danger fw-bold bg-danger-light p-2 rounded">
-                                <i class="fa fa-flag me-1"></i> <?= $model->comments_in ?>
-                            </td>
-                        </tr>
+                        <?php if (!empty($model->comments_in)): ?>
+                            <tr>
+                                <td class="text-muted">Notes</td>
+                                <td class="text-danger fw-bold bg-danger-light p-2 rounded">
+                                    <i class="fa fa-flag me-1"></i> <?= $model->comments_in ?>
+                                </td>
+                            </tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -201,8 +217,8 @@ $formatDateTime = function($date, $time) {
                             <tr>
                                 <td class="text-muted">Truck / Trailer</td>
                                 <td class="fw-bold">
-                                    <?= $model->vehicle_reg_no_out ?> 
-                                    <?php if($model->trailer_reg_no_out): ?> / <?= $model->trailer_reg_no_out ?> <?php endif; ?>
+                                    <?= $model->vehicle_reg_no_out ?>
+                                    <?php if ($model->trailer_reg_no_out): ?> / <?= $model->trailer_reg_no_out ?> <?php endif; ?>
                                 </td>
                             </tr>
                             <tr>
@@ -235,26 +251,26 @@ $formatDateTime = function($date, $time) {
         <div class="block block-rounded h-100">
             <div class="block-content">
                 <div class="row g-3">
-                    <?php 
-                        $photos = [
-                            ['title' => 'Gate In', 'path' => $model->arrival_photo_path],
-                            ['title' => 'Survey',  'path' => $model->containerSurvey->survey_photo_path ?? null],
-                            ['title' => 'Gate Out', 'path' => $model->departure_photo_path]
-                        ];
+                    <?php
+                    $photos = [
+                        ['title' => 'Gate In', 'path' => $model->arrival_photo_path],
+                        ['title' => 'Survey',  'path' => $model->containerSurvey->survey_photo_path ?? null],
+                        ['title' => 'Gate Out', 'path' => $model->departure_photo_path]
+                    ];
                     ?>
-                    <?php foreach($photos as $photo): ?>
-                    <div class="col-md-4 text-center">
-                        <div class="mb-2 fw-bold text-xs text-uppercase text-muted border-bottom pb-1"><?= $photo['title'] ?></div>
-                        <?php if ($photo['path']): ?>
-                            <a href="<?= Yii::getAlias('@web') . '/' . $photo['path'] ?>" target="_blank" class="d-block img-link img-link-zoom-in">
-                                <img src="<?= Yii::getAlias('@web') . '/' . $photo['path'] ?>" class="img-fluid rounded shadow-sm border" style="height: 160px; width: 100%; object-fit: cover;">
-                            </a>
-                        <?php else: ?>
-                            <div class="bg-body-light rounded d-flex align-items-center justify-content-center text-muted" style="height: 160px; border: 2px dashed #e1e6e9;">
-                                <div><i class="fa fa-camera-retro fa-2x mb-2 opacity-50"></i><br><span class="fs-xs">No Image</span></div>
-                            </div>
-                        <?php endif; ?>
-                    </div>
+                    <?php foreach ($photos as $photo): ?>
+                        <div class="col-md-4 text-center">
+                            <div class="mb-2 fw-bold text-xs text-uppercase text-muted border-bottom pb-1"><?= $photo['title'] ?></div>
+                            <?php if ($photo['path']): ?>
+                                <a href="<?= Yii::getAlias('@web') . '/' . $photo['path'] ?>" target="_blank" class="d-block img-link img-link-zoom-in">
+                                    <img src="<?= Yii::getAlias('@web') . '/' . $photo['path'] ?>" class="img-fluid rounded shadow-sm border" style="height: 160px; width: 100%; object-fit: cover;">
+                                </a>
+                            <?php else: ?>
+                                <div class="bg-body-light rounded d-flex align-items-center justify-content-center text-muted" style="height: 160px; border: 2px dashed #e1e6e9;">
+                                    <div><i class="fa fa-camera-retro fa-2x mb-2 opacity-50"></i><br><span class="fs-xs">No Image</span></div>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     <?php endforeach; ?>
                 </div>
             </div>
@@ -270,15 +286,15 @@ $formatDateTime = function($date, $time) {
                 <?php if ($model->getVisitDocuments()->exists()): ?>
                     <ul class="nav-items my-2">
                         <?php foreach ($model->visitDocuments as $doc): ?>
-                        <li>
-                            <a class="d-flex py-2 px-3 align-items-center justify-content-between hover-bg-light" href="<?= Yii::getAlias('@web') . '/' . $doc->file_path ?>" target="_blank">
-                                <span class="d-flex align-items-center">
-                                    <i class="fa fa-file-pdf text-danger me-2 fa-lg"></i>
-                                    <span class="fw-semibold text-dark"><?= ucfirst($doc->doc_type ?? 'Doc') ?></span>
-                                </span>
-                                <span class="fs-xs text-muted"><?= Yii::$app->formatter->asDate($doc->uploaded_at) ?></span>
-                            </a>
-                        </li>
+                            <li>
+                                <a class="d-flex py-2 px-3 align-items-center justify-content-between hover-bg-light" href="<?= Yii::getAlias('@web') . '/' . $doc->file_path ?>" target="_blank">
+                                    <span class="d-flex align-items-center">
+                                        <i class="fa fa-file-pdf text-danger me-2 fa-lg"></i>
+                                        <span class="fw-semibold text-dark"><?= ucfirst($doc->doc_type ?? 'Doc') ?></span>
+                                    </span>
+                                    <span class="fs-xs text-muted"><?= Yii::$app->formatter->asDate($doc->uploaded_at) ?></span>
+                                </a>
+                            </li>
                         <?php endforeach; ?>
                     </ul>
                 <?php else: ?>

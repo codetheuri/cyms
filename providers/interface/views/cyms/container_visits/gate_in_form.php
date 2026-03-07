@@ -55,6 +55,19 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
         <div class="p-3 bg-body-extra-light rounded border mb-4">
             <h5 class="text-primary fw-bold border-bottom pb-2 mb-3"><i class="fa fa-clock me-2"></i> Arrival Timing & Container</h5>
             <div class="row g-3">
+                <div class="col-md-12 mb-3">
+                    <div class="alert alert-info">
+                        <?= $form->field($model, 'is_truck_only')->checkbox([
+                            'class' => 'form-check-input',
+                            'id' => 'containervisits-is_truck_only',
+                            'label' => '<strong class="ms-2">Record Truck Only (No Container)</strong>',
+                            'uncheck' => '0',
+                            'value' => '1'
+                        ]) ?>
+                        <small class="d-block text-muted ms-4">Check this box if the truck has no container. Container fields will be hidden.</small>
+                    </div>
+                </div>
+
                 <div class="col-md-3">
                     <?= $form->field($model, 'ticket_no_in')->textInput([
                         'readonly' => true,
@@ -78,7 +91,7 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
                     ])->label('Time IN <span class="text-danger">*</span>') ?>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-4 container-only-field">
                     <?= $form->field($model, 'container_number')->textInput(array_merge(
                         [
                             'class' => 'form-control text-uppercase fw-bold fs-lg text-primary border-primary',
@@ -92,7 +105,7 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
             </div>
         </div>
 
-        <div class="p-3 bg-body-extra-light rounded border mb-4">
+        <div class="p-3 bg-body-extra-light rounded border mb-4 container-only-block border-primary">
             <h5 class="text-primary fw-bold border-bottom pb-2 mb-3"><i class="fa fa-boxes me-2"></i> Container Specs & Shipping</h5>
             <div class="row g-3">
 
@@ -145,7 +158,7 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
             <h5 class="text-primary fw-bold border-bottom pb-2 mb-3"><i class="fa fa-truck me-2"></i> Transport Logistics</h5>
             <div class="row g-3">
 
-                <div class="col-md-6">
+                <div class="col-md-6 container-only-field">
                     <label class="form-label fw-bold">Container Owner / Transporter <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <?= $form->field($model, 'container_owner_id', ['options' => ['tag' => false]])->dropDownList(
@@ -158,7 +171,7 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
                     </div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6 container-only-field">
                     <?= $form->field($model, 'party_delivering_container')->textInput([
                         'placeholder' => 'Company delivering unit (e.g. REGAL FREIGHT LTD)',
                         'class' => 'form-control text-uppercase'
@@ -344,6 +357,22 @@ $script = <<< JS
     setupQuickAdd('#form-owner', '$urlOwner', '#owner-dropdown', '#addOwnerModal');
     setupQuickAdd('#form-line',  '$urlLine',  '#line-dropdown',  '#addLineModal');
     setupQuickAdd('#form-type',  '$urlType',  '#type-dropdown',  '#addTypeModal');
+
+    // 3. TRUCK ONLY LOGIC
+    function toggleContainerFields() {
+        if ($('#containervisits-is_truck_only').is(':checked')) {
+            $('.container-only-block').slideUp();
+            $('.container-only-field').slideUp();
+            // Optional: reset required fields when hidden so HTML5 validation passes
+            $('#containervisits-container_number').removeAttr('required');
+        } else {
+            $('.container-only-block').slideDown();
+            $('.container-only-field').slideDown();
+            $('#containervisits-container_number').attr('required', true);
+        }
+    }
+    $('#containervisits-is_truck_only').on('change', toggleContainerFields);
+    toggleContainerFields(); // init
 JS;
 $this->registerJs($script);
 ?>

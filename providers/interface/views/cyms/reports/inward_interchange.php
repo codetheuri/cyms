@@ -18,54 +18,130 @@ if ($settings->site_logo) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>Inward Interchange - <?= Html::encode($visit->container_number) ?></title>
+    <title>Inward Interchange - <?= Html::encode($visit->is_truck_only ? 'TRUCK ONLY' : $visit->container_number) ?></title>
     <style>
         /* RESET & BASICS */
-        body { 
-            font-family: 'Helvetica', 'Arial', sans-serif; 
-            font-size: 12px; 
-            margin: 0; 
-            padding: 20px; 
-            background: #525659; 
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 12px;
+            margin: 0;
+            padding: 20px;
+            background: #525659;
         }
-        .page-container { 
-            background: #fff; 
-            width: 210mm; 
-            min-height: 297mm; 
-            margin: 0 auto; 
-            padding: 15mm; 
-            box-shadow: 0 0 10px rgba(0,0,0,0.5); 
-            position: relative; 
+
+        .page-container {
+            background: #fff;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 15mm;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            position: relative;
         }
-        
+
         /* TABLE STYLING */
-        table { width: 100%; border-collapse: collapse; margin-bottom: 0; }
-        td, th { padding: 4px 6px; vertical-align: top; }
-        .bordered-table td, .bordered-table th { border: 1px solid #000; }
-        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0;
+        }
+
+        td,
+        th {
+            padding: 4px 6px;
+            vertical-align: top;
+        }
+
+        .bordered-table td,
+        .bordered-table th {
+            border: 1px solid #000;
+        }
+
         /* TYPOGRAPHY */
-        h1 { font-size: 22px; margin: 0 0 5px 0; text-transform: uppercase; color: #004085; }
-        h3 { font-size: 16px; margin: 0 0 5px 0; text-decoration: underline; font-weight: bold; }
-        .label { font-weight: bold; font-size: 9px; color: #333; text-transform: uppercase; }
-        .value { font-weight: bold; font-size: 11px; color: #000; }
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        
+        h1 {
+            font-size: 22px;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+            color: #004085;
+        }
+
+        h3 {
+            font-size: 16px;
+            margin: 0 0 5px 0;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+
+        .label {
+            font-weight: bold;
+            font-size: 9px;
+            color: #333;
+            text-transform: uppercase;
+        }
+
+        .value {
+            font-weight: bold;
+            font-size: 11px;
+            color: #000;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
         /* UTILS */
-        .logo { max-height: 80px; max-width: 150px; object-fit: contain; }
-        .section-header { background: #eee; font-weight: bold; padding: 5px; border: 1px solid #000; text-align: center; margin-top: 10px; margin-bottom: 5px; -webkit-print-color-adjust: exact; }
+        .logo {
+            max-height: 80px;
+            max-width: 150px;
+            object-fit: contain;
+        }
+
+        .section-header {
+            background: #eee;
+            font-weight: bold;
+            padding: 5px;
+            border: 1px solid #000;
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            -webkit-print-color-adjust: exact;
+        }
 
         /* PRINT MEDIA QUERY */
         @media print {
-            body { background: #fff; padding: 0; margin: 0; }
-            .page-container { width: 100%; margin: 0; padding: 10mm; box-shadow: none; border: none; }
-            .no-print { display: none !important; }
-            @page { margin: 0; size: A4; }
+            body {
+                background: #fff;
+                padding: 0;
+                margin: 0;
+            }
+
+            .page-container {
+                width: 100%;
+                margin: 0;
+                padding: 10mm;
+                box-shadow: none;
+                border: none;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            @page {
+                margin: 0;
+                size: A4;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div class="no-print" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
@@ -75,7 +151,7 @@ if ($settings->site_logo) {
     </div>
 
     <div class="page-container">
-        
+
         <table style="margin-bottom: 10px;">
             <tr>
                 <td width="20%">
@@ -95,7 +171,7 @@ if ($settings->site_logo) {
                     </div>
                 </td>
                 <td width="30%" class="text-right">
-                    <h3>INWARD INTERCHANGE</h3>
+                    <h3><?= $visit->is_truck_only ? 'TRUCK LOGISTICS INWARD' : 'INWARD INTERCHANGE' ?></h3>
                     <table style="width: 100%; font-size: 9pt; margin-top: 5px;">
                         <tr>
                             <td style="text-align: right; font-weight: bold;">TICKET NO:</td>
@@ -132,16 +208,16 @@ if ($settings->site_logo) {
         <table class="bordered-table" style="margin-top: -1px;">
             <tr>
                 <td width="30%">
-                    <div class="label">Container No.</div>
-                    <div class="value" style="font-size: 14px;"><?= Html::encode($visit->container_number) ?></div>
+                    <div class="label"><?= $visit->is_truck_only ? 'Unit ID' : 'Container No.' ?></div>
+                    <div class="value" style="font-size: 14px;"><?= $visit->is_truck_only ? '<span style="color:#777; font-size: 11px;">(TRUCK ONLY)</span>' : Html::encode($visit->container_number) ?></div>
                 </td>
                 <td width="10%">
                     <div class="label">Size</div>
-                    <div class="value"><?= $visit->containerType ? Html::encode($visit->containerType->size) . "'" : 'N/A' ?></div>
+                    <div class="value"><?= $visit->is_truck_only ? 'N/A' : ($visit->containerType ? Html::encode($visit->containerType->size) . "'" : 'N/A') ?></div>
                 </td>
                 <td width="10%">
                     <div class="label">Type</div>
-                    <div class="value"><?= $visit->containerType ? Html::encode($visit->containerType->type_group) : 'N/A' ?></div>
+                    <div class="value"><?= $visit->is_truck_only ? 'N/A' : ($visit->containerType ? Html::encode($visit->containerType->type_group) : 'N/A') ?></div>
                 </td>
                 <td width="25%">
                     <div class="label">Vessel</div>
@@ -197,64 +273,72 @@ if ($settings->site_logo) {
                     <div class="label">Payload</div>
                     <div class="value"><?= $visit->payload ? number_format($visit->payload) . ' KG' : '' ?></div>
                 </td>
-               
+
             </tr>
         </table>
 
-        <div class="section-header">
-            CONDITION REPORT / DAMAGES
-        </div>
-        
-        <table class="bordered-table" style="margin-top: -1px;">
-            <thead>
-                <tr style="background: #f0f0f0;">
-                    <th width="15%" class="text-left">Code</th>
-                    <th width="45%" class="text-left">Description</th>
-                    <th width="10%" class="text-center">Qty</th>
-                    <th width="15%" class="text-right">Labour</th>
-                    <th width="15%" class="text-right">Material</th>
-                    <th width="15%" class="text-right">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php 
-                $grandTotal = 0;
-                if ($survey && !empty($survey->surveyDamages)): 
-                    foreach ($survey->surveyDamages as $damage): 
-                        $grandTotal += $damage->total_cost;
-                ?>
-                    <tr>
-                        <td><?= Html::encode($damage->repair_code) ?></td>
-                        <td><?= Html::encode($damage->description) ?></td>
-                        <td class="text-center"><?= $damage->quantity ?></td>
-                        <td class="text-right"><?= number_format($damage->labor_cost, 2) ?></td>
-                        <td class="text-right"><?= number_format($damage->material_cost, 2) ?></td>
-                        <td class="text-right"><?= number_format($damage->total_cost, 2) ?></td>
-                    </tr>
-                <?php 
-                    endforeach; 
-                else: 
-                ?>
-                    <tr>
-                        <td colspan="6" class="text-center" style="padding: 15px; color: #666;">
-                            <i>CONTAINER RECEIVED IN SOUND CONDITION</i>
-                        </td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
-            <?php if ($grandTotal > 0): ?>
-            <tfoot>
-                <tr>
-                    <td colspan="5" class="text-right bold">TOTAL REPAIR COST:</td>
-                    <td class="text-right bold"><?= number_format($grandTotal, 2) ?></td>
-                </tr>
-            </tfoot>
-            <?php endif; ?>
-        </table>
+        <?php if (!$visit->is_truck_only): ?>
+            <div class="section-header">
+                CONDITION REPORT / DAMAGES
+            </div>
 
-        <div style="text-align: center; font-weight: bold; margin: 5px 0; font-size: 11px;">
-            THIS CONTAINER WAS RECEIVED IN GOOD CONDITION EXCEPT AS NOTED ABOVE.
-        </div>
+            <table class="bordered-table" style="margin-top: -1px;">
+                <thead>
+                    <tr style="background: #f0f0f0;">
+                        <th width="15%" class="text-left">Code</th>
+                        <th width="45%" class="text-left">Description</th>
+                        <th width="10%" class="text-center">Qty</th>
+                        <th width="15%" class="text-right">Labour</th>
+                        <th width="15%" class="text-right">Material</th>
+                        <th width="15%" class="text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    $grandTotal = 0;
+                    if ($survey && !empty($survey->surveyDamages)):
+                        foreach ($survey->surveyDamages as $damage):
+                            $grandTotal += $damage->total_cost;
+                    ?>
+                            <tr>
+                                <td><?= Html::encode($damage->repair_code) ?></td>
+                                <td><?= Html::encode($damage->description) ?></td>
+                                <td class="text-center"><?= $damage->quantity ?></td>
+                                <td class="text-right"><?= number_format($damage->labor_cost, 2) ?></td>
+                                <td class="text-right"><?= number_format($damage->material_cost, 2) ?></td>
+                                <td class="text-right"><?= number_format($damage->total_cost, 2) ?></td>
+                            </tr>
+                        <?php
+                        endforeach;
+                    else:
+                        ?>
+                        <tr>
+                            <td colspan="6" class="text-center" style="padding: 15px; color: #666;">
+                                <i>CONTAINER RECEIVED IN SOUND CONDITION</i>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+                <?php if ($grandTotal > 0): ?>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5" class="text-right bold">TOTAL REPAIR COST:</td>
+                            <td class="text-right bold"><?= number_format($grandTotal, 2) ?></td>
+                        </tr>
+                    </tfoot>
+                <?php endif; ?>
+            </table>
+
+            <div style="text-align: center; font-weight: bold; margin: 5px 0; font-size: 11px;">
+                THIS CONTAINER WAS RECEIVED IN GOOD CONDITION EXCEPT AS NOTED ABOVE.
+            </div>
+        <?php else: ?>
+            <div style="margin-top: 20px; padding: 20px; border: 2px dashed #999; text-align: center;">
+                <div style="font-weight: bold; font-size: 12px; color: #555;">
+                    TRUCK LOGISTICS - NO CONTAINER CONDITIONS COLLECTED
+                </div>
+            </div>
+        <?php endif; ?>
 
         <table class="bordered-table" style="margin-top: 10px; width: 100%;">
             <tr>
@@ -286,7 +370,7 @@ if ($settings->site_logo) {
                 </td>
             </tr>
         </table>
-        
+
         <div style="margin-top: 20px; font-size: 10px; text-align: center; color: #777;">
             Container surveyed and repaired as per IICL Standards.
         </div>
@@ -298,4 +382,5 @@ if ($settings->site_logo) {
         }
     </script>
 </body>
+
 </html>
