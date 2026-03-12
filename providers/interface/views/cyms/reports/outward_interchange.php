@@ -326,6 +326,16 @@ if ($settings->site_logo) {
             </div>
         <?php endif; ?>
 
+        <!-- REMARKS -->
+        <?php if ($visit->comments_out): ?>
+            <div style="margin-top: 15px; padding: 10px; border: 1px solid #000;">
+                <div class="label">Releasing Remarks / Notes:</div>
+                <div class="value" style="font-family: monospace; white-space: pre-wrap; font-size: 11px;">
+                    <?= Html::encode($visit->comments_out) ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <!-- SIGNATURES -->
         <table style="margin-top: 40px;">
             <tr>

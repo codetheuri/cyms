@@ -260,6 +260,7 @@ class ReportsController extends DashboardController
                         }
                     ],
                     'destination',
+                    'comments_out:text:Remarks',
                 ];
             } else {
                 $title = "Gate Activity (In & Out) - ($strFrom to $strTo)";
@@ -283,6 +284,7 @@ class ReportsController extends DashboardController
                             return $formatDateTime($m->date_out, $m->time_out);
                         }
                     ],
+                    'comments_out:text:Remarks (Out)',
                     ['label' => 'Transporter', 'value' => function ($m) {
                         return $m->containerOwner->owner_name ?? $m->truck_owner_name_in;
                     }]

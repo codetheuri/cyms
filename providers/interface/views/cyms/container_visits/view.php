@@ -229,6 +229,14 @@ $formatDateTime = function ($date, $time) {
                                 <td class="text-muted">Seal No</td>
                                 <td class="fw-bold"><?= $model->seal_number_out ?></td>
                             </tr>
+                            <?php if (!empty($model->comments_out)): ?>
+                                <tr>
+                                    <td class="text-muted">Notes</td>
+                                    <td class="text-info fw-bold bg-info-light p-2 rounded">
+                                        <i class="fa fa-info-circle me-1"></i> <?= $model->comments_out ?>
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 <?php else: ?>

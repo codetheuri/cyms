@@ -86,7 +86,7 @@ class ContainerVisits extends  BaseModel
             [['date_out', 'time_out'], 'validateFutureDate', 'on' => self::SCENARIO_GATE_OUT],
             [['shipping_line_id'], 'integer'],
             [['storage_days'], 'number'],
-            [['comments_in'], 'string'],
+            [['comments_in', 'comments_out'], 'string'],
             [
                 ['container_number'],
                 'match',

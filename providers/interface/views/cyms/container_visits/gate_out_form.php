@@ -221,6 +221,14 @@ $hasComments = !empty($model->comments_in);
                         </div>
 
                         <div class="mb-3">
+                            <?= $form->field($model, 'comments_out')->textarea([
+                                'class' => 'form-control',
+                                'rows' => 3,
+                                'placeholder' => 'Add notes about this exit (e.g. Truck leaving with empty container MSCU1234567)...'
+                            ])->label('Gate Out Remarks / Notes') ?>
+                        </div>
+
+                        <div class="mb-3">
                             <?= $form->field($model, 'ticket_no_out')->textInput(['readonly' => true, 'class' => 'form-control bg-body-light fw-bold']) ?>
                         </div>
 
