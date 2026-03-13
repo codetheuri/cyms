@@ -42,7 +42,7 @@ class ContainerVisits extends  BaseModel
             }"],
 
             // --- GATE IN SCENARIO ---
-            [['date_in', 'time_in', 'vehicle_reg_no_in', 'driver_name_in'], 'required', 'on' => self::SCENARIO_GATE_IN],
+            [['date_in', 'time_in', 'vehicle_reg_no_in', 'driver_name_in', 'party_delivering_container'], 'required', 'on' => self::SCENARIO_GATE_IN],
             [['shipping_line_id', 'container_owner_id', 'container_type_id'], 'required', 'on' => self::SCENARIO_GATE_IN, 'when' => function ($model) {
                 return !$model->is_truck_only;
             }, 'whenClient' => "function (attribute, value) {

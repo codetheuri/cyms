@@ -172,10 +172,11 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
                 </div>
 
                 <div class="col-md-6 container-only-field">
+                    <label class="form-label fw-bold">Party Delivering Container <span class="text-danger">*</span></label>
                     <?= $form->field($model, 'party_delivering_container')->textInput([
                         'placeholder' => 'Company delivering unit (e.g. REGAL FREIGHT LTD)',
                         'class' => 'form-control text-uppercase'
-                    ]) ?>
+                    ])->label(false) ?>
                 </div>
 
                 <div class="col-md-3">
