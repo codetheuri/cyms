@@ -361,15 +361,20 @@ $script = <<< JS
 
     // 3. TRUCK ONLY LOGIC
     function toggleContainerFields() {
-        if ($('#containervisits-is_truck_only').is(':checked')) {
+        var isTruckOnly = $('#containervisits-is_truck_only').is(':checked');
+        if (isTruckOnly) {
             $('.container-only-block').slideUp();
             $('.container-only-field').slideUp();
-            // Optional: reset required fields when hidden so HTML5 validation passes
-            $('#containervisits-container_number').removeAttr('required');
+            
+            // Remove 'required' from all inner inputs to prevent browser validation blocking
+            $('.container-only-block, .container-only-field').find('input, select, textarea').prop('required', false);
+            $('#containervisits-container_number').prop('required', false);
         } else {
             $('.container-only-block').slideDown();
             $('.container-only-field').slideDown();
-            $('#containervisits-container_number').attr('required', true);
+            
+            // Restore required to container number specifically
+            $('#containervisits-container_number').prop('required', true);
         }
     }
     $('#containervisits-is_truck_only').on('change', toggleContainerFields);

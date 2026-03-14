@@ -42,8 +42,8 @@ class ContainerVisits extends  BaseModel
             }"],
 
             // --- GATE IN SCENARIO ---
-            [['date_in', 'time_in', 'vehicle_reg_no_in', 'driver_name_in', 'party_delivering_container'], 'required', 'on' => self::SCENARIO_GATE_IN],
-            [['shipping_line_id', 'container_owner_id', 'container_type_id'], 'required', 'on' => self::SCENARIO_GATE_IN, 'when' => function ($model) {
+            [['date_in', 'time_in', 'vehicle_reg_no_in', 'driver_name_in'], 'required', 'on' => self::SCENARIO_GATE_IN],
+            [['shipping_line_id', 'container_owner_id', 'container_type_id', 'party_delivering_container'], 'required', 'on' => self::SCENARIO_GATE_IN, 'when' => function ($model) {
                 return !$model->is_truck_only;
             }, 'whenClient' => "function (attribute, value) {
                 return $('#containervisits-is_truck_only').length === 0 || !$('#containervisits-is_truck_only').is(':checked');
@@ -99,6 +99,13 @@ class ContainerVisits extends  BaseModel
                 'unique',
                 'on' => self::SCENARIO_GATE_IN,
                 'targetAttribute' => ['container_number'],
+                'skipOnEmpty' => true,
+                'when' => function ($model) {
+                    return !$model->is_truck_only;
+                },
+                'whenClient' => "function (attribute, value) {
+                    return $('#containervisits-is_truck_only').length === 0 || !$('#containervisits-is_truck_only').is(':checked');
+                }",
                 'filter' => function ($query) {
                     // Only block if the container exists AND hasn't left yet.
                     // We check for status NOT IN ['GATE_OUT']
