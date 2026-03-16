@@ -53,6 +53,10 @@ if (!$isExcel && $settings->site_logo) {
         'columns' => $columns,
         'tableOptions' => $isExcel ? ['border' => '1'] : ['class' => 'report-table'],
         'emptyText' => 'No records found for this period.',
+        'formatter' => [
+            'class' => 'yii\i18n\Formatter',
+            'nullDisplay' => '<span class="text-muted">-</span>',
+        ],
     ]); ?>
 
 </body>

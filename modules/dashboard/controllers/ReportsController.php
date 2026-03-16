@@ -259,6 +259,7 @@ class ReportsController extends DashboardController
                             return $formatDateTime($m->date_in, $m->time_in);
                         }
                     ],
+                    'storage_days:text:Days',
                     'destination',
                     'comments_out:text:Remarks',
                 ];
@@ -284,6 +285,7 @@ class ReportsController extends DashboardController
                             return $formatDateTime($m->date_out, $m->time_out);
                         }
                     ],
+                    'storage_days:text:Days',
                     'comments_out:text:Remarks (Out)',
                     ['label' => 'Transporter', 'value' => function ($m) {
                         return $m->containerOwner->owner_name ?? $m->truck_owner_name_in;

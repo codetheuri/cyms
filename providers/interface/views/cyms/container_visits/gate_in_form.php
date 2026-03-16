@@ -37,19 +37,33 @@ $this->registerJsFile("https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/s
     <div class="block-content block-content-full p-4">
 
         <?php if ($model->hasErrors()): ?>
-            <div class="alert alert-danger d-flex align-items-center mb-4">
-                <i class="fa fa-exclamation-circle fa-2x me-3"></i>
-                <div>
-                    <h5 class="alert-heading mb-1 fw-bold">Please fix the following errors:</h5>
-                    <?= Html::errorSummary($model, ['class' => 'mb-0 fs-sm ps-3']) ?>
-                </div>
-            </div>
+            <?php
+            $errorList = [];
+            foreach ($model->getErrors() as $errors) {
+                foreach ($errors as $error) {
+                    $errorList[] = Html::encode($error);
+                }
+            }
+            $errorHtml = '<ul class="text-start fs-sm"><li>' . implode('</li><li>', $errorList) . '</li></ul>';
+            $this->registerJs("
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Failed',
+                    html: '$errorHtml',
+                    confirmButtonColor: '#d26a5c',
+                    confirmButtonText: 'Fix Errors'
+                });
+            ");
+            ?>
         <?php endif; ?>
 
         <?php $form = ActiveForm::begin([
             'options' => ['enctype' => 'multipart/form-data'],
             'errorCssClass' => 'is-invalid',
             'successCssClass' => 'is-valid',
+            'fieldConfig' => [
+                'errorOptions' => ['style' => 'display:none'], // Hide the message under the field
+            ],
         ]); ?>
 
         <div class="p-3 bg-body-extra-light rounded border mb-4">
@@ -379,6 +393,27 @@ $script = <<< JS
     }
     $('#containervisits-is_truck_only').on('change', toggleContainerFields);
     toggleContainerFields(); // init
+    // 4. CLIENT SIDE POPUP ERRORS
+    $('#{$form->id}').on('afterValidate', function (event, messages, errorAttributes) {
+        if (errorAttributes.length > 0) {
+            var errors = [];
+            $.each(messages, function(index, value) {
+                if (value.length > 0) {
+                    errors.push(value[0]);
+                }
+            });
+            
+            if (errors.length > 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Check Form Fields',
+                    html: '<div class="text-start"><ul class="mb-0 fs-sm">' + errors.map(e => '<li>' + e + '</li>').join('') + '</ul></div>',
+                    confirmButtonColor: '#d26a5c',
+                    confirmButtonText: 'Fix Errors'
+                });
+            }
+        }
+    });
 JS;
 $this->registerJs($script);
 ?>
