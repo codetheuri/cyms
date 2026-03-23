@@ -59,6 +59,7 @@ class DefaultController extends DashboardController
             if (PermissionHelper::can('dashboard-yard-list')) {
                 $data['totalInYard'] = ContainerVisits::find()
                     ->where(['status' => ['IN_YARD', 'SURVEYED']])
+                    ->joinWith(['shippingLine', 'containerType'])
                     ->count();
             }
             
