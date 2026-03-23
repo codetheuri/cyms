@@ -188,6 +188,7 @@ class ReportsController extends DashboardController
         $title = "Report";
         $columns = [];
         $query = null;
+        $extraData = []; // To store report-specific display options (like rowOptions)
 
         // --- HELPER 1: Format Date + Time ---
         $formatDateTime = function ($date, $time) {
@@ -299,6 +300,7 @@ class ReportsController extends DashboardController
             $title = "Current Yard Stock List";
             $query = ContainerVisits::find()
                 ->where(['status' => ['IN_YARD', 'SURVEYED']])
+                // ->andWhere(['is_deleted' => 0])
                 ->orderBy(['date_in' => SORT_ASC])
                 ->joinWith(['shippingLine', 'containerType']);
 
@@ -311,16 +313,43 @@ class ReportsController extends DashboardController
 
             $columns = [
                 ['class' => 'yii\grid\SerialColumn'],
-                'container_number',
-                'shippingLine.line_code:text:Line',
-                'containerType.iso_code:text:Type',
+                [
+                    'attribute' => 'container_number',
+                    'label' => 'Container / Truck ID',
+                    'format' => 'raw',
+                    'value' => function ($m) {
+                        if ($m->is_truck_only) {
+                            return '<strong>(TRUCK)</strong> ' . strtoupper($m->vehicle_reg_no_in);
+                        }
+                        return $m->container_number;
+                    }
+                ],
+                [
+                    'label' => 'Transporter',
+                    'value' => function ($m) {
+                        return $m->containerOwner->owner_name ?? $m->truck_owner_name_in ?? $m->party_delivering_container ?? '-';
+                    }
+                ],
+                [
+                    'label' => 'Line',
+                    'value' => function($m) {
+                         if ($m->is_truck_only) return 'N/A';
+                         return $m->shippingLine ? $m->shippingLine->line_code : '-';
+                    }
+                ],
+                [
+                    'label' => 'Size/Type',
+                    'value' => function($m) {
+                         if ($m->is_truck_only) return 'TRUCK';
+                         return $m->containerType ? $m->containerType->iso_code : '-';
+                    }
+                ],
                 [
                     'label' => 'Date In',
                     'value' => function ($m) use ($formatDateTime) {
                         return $formatDateTime($m->date_in, $m->time_in);
                     }
                 ],
-                'party_delivering_container:text:Delivered By',
                 [
                     'label' => 'Days',
                     'contentOptions' => ['style' => 'font-weight:bold; text-align:center;'],
@@ -332,9 +361,18 @@ class ReportsController extends DashboardController
                 [
                     'label' => 'Condition',
                     'value' => function ($m) {
-                        return $m->getContainerSurvey()->exists() ? $m->containerSurvey->approval_status : 'Pending';
+                        if ($m->is_truck_only) return 'N/A';
+                        return $m->getIsSurveyComplete() ? 'APPROVED' : 'Pending';
                     }
                 ]
+            ];
+            
+            // Add custom row styling for trucks
+            $extraData = [
+                'rowOptions' => function($model) {
+                     if ($model->is_truck_only) return ['style' => 'background-color: #f9f9f9; font-style: italic; color: #555;'];
+                     return [];
+                }
             ];
         }
 
@@ -480,13 +518,13 @@ class ReportsController extends DashboardController
             'sort' => false,
         ]);
 
-        return [
+        return array_merge([
             'dataProvider' => $dataProvider,
             'title' => $title,
             'settings' => new General(),
             'columns' => $columns,
             'type' => $type
-        ];
+        ], $extraData ?? []); // Ensure $extraData is always defined or defaults to empty array
     }
     protected function findVisitModel($id)
     {

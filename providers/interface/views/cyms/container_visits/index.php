@@ -102,6 +102,14 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                             }
                         ],
                         [
+                            'attribute' => 'vehicle_reg_no_in',
+                            'label' => 'Vehicle',
+                            'contentOptions' => ['class' => 'fw-bold text-dark'],
+                            'value' => function ($model) {
+                                return strtoupper($model->vehicle_reg_no_in);
+                            }
+                        ],
+                        [
                             'label' => 'Date In',
                             'format' => 'raw',
                             'value' => function ($model) {
@@ -233,6 +241,14 @@ $flaggedCount = ContainerVisits::getFlaggedCount();
                             'value' => function ($model) {
                                 $cnum = $model->is_truck_only ? '<span class="badge bg-secondary">Truck Only</span>' : Html::encode($model->container_number);
                                 return $cnum . "<br><span class='fs-xs font-monospace text-muted'>{$model->ticket_no_in}</span>";
+                            }
+                        ],
+                        [
+                            'attribute' => 'vehicle_reg_no_in',
+                            'label' => 'Vehicle',
+                            'contentOptions' => ['class' => 'fw-bold text-dark'],
+                            'value' => function ($model) {
+                                return strtoupper($model->vehicle_reg_no_in);
                             }
                         ],
                         [

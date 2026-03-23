@@ -51,6 +51,7 @@ if (!$isExcel && $settings->site_logo) {
         'dataProvider' => $dataProvider,
         'summary' => '',
         'columns' => $columns,
+        'rowOptions' => $rowOptions ?? [],
         'tableOptions' => $isExcel ? ['border' => '1'] : ['class' => 'report-table'],
         'emptyText' => 'No records found for this period.',
         'formatter' => [
