@@ -52,6 +52,14 @@ $this->params['breadcrumbs'][] = $this->title;
                             'attribute' => 'ticket_no_in',
                             'contentOptions' => ['class' => 'fs-xs font-monospace text-muted']
                         ],
+                          [
+                            'attribute' => 'vehicle_reg_no_in',
+                            'label' => 'Vehicle',
+                            'contentOptions' => ['class' => 'fw-bold text-dark'],
+                            'value' => function ($model) {
+                                return strtoupper($model->vehicle_reg_no_in);
+                            }
+                        ],
 
                         // 3. DATE & TIME (Merged)
                         [
