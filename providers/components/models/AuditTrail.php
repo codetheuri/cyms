@@ -53,9 +53,10 @@ class AuditTrail extends ActiveRecord
             [['old_value', 'new_value', 'headers', 'query_params', 'body_params', 'raw_body', 'url', 'user_agent'], 'string'],
             [['duration'], 'number'],
             [['model_name'], 'string', 'max' => 100],
-            [['operation', 'field_name'], 'string', 'max' => 32],
+            [['operation'], 'string', 'max' => 64],
+            [['field_name'], 'string', 'max' => 255],
             [['request_method'], 'string', 'max' => 16],
-            [['user_id', 'ip_address'], 'string', 'max' => 20],
+            [['user_id', 'ip_address'], 'string', 'max' => 64],
         ];
     }
 

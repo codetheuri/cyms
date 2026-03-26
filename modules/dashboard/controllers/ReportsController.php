@@ -103,6 +103,7 @@ class ReportsController extends DashboardController
         $sent = $mailer->sendReportAttachment($emailTo, $data['title'], $bodyText, $attachmentContent, $fileName);
 
         if ($sent) {
+            AuditTrail::logAction('EMAIL', 'System Report', $data['title'] ?? 'Generic Report', null, $emailTo);
             Yii::$app->session->setFlash('success', 'Report successfully emailed to ' . $emailTo);
         } else {
             Yii::$app->session->setFlash('error', 'Failed to send email. Check SMTP settings.');

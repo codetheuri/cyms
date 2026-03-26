@@ -53,14 +53,14 @@ class AuditController extends DashboardController
         Yii::$app->user->can('admin-audit-manage');
         $searchModel = new AuditTrailSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $dataProvider->pagination = false; 
+        $dataProvider->pagination = false;
 
         $models = $dataProvider->getModels();
-        
+
         ob_clean();
         header("Content-type: application/vnd.ms-excel; charset=UTF-8");
         header("Content-Disposition: attachment; filename=System_Audit_Trail_" . date('Ymd_His') . ".xls");
-        
+
         echo "<table border='1'>";
         echo "<thead style='background-color: #f1f1f1;'><tr>
                 <th>ID</th>
