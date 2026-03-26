@@ -18,9 +18,9 @@ class BillingRecords extends BaseModel
 
     public function behaviors()
     {
-        return [
+        return array_merge(parent::behaviors(), [
             TimestampBehavior::class,
-        ];
+        ]);
     }
 
     public function rules()
@@ -132,7 +132,7 @@ class BillingRecords extends BaseModel
         }
     }
 
-    public function recalculateBalance()
+    public function recalculateBalance($persist = true)
     {
         $visit = $this->visit;
         if (!$visit) return false;
@@ -146,10 +146,16 @@ class BillingRecords extends BaseModel
         if (in_array($this->status, ['PAID', 'CREDIT', 'GATE_OUT']) && $this->exchange_rate > 1) {
             // Keep locked rate
         } else {
-            $this->exchange_rate = class_exists('\dashboard\hooks\Currency')
+            $currentRate = class_exists('\dashboard\hooks\Currency')
                 ? \dashboard\hooks\Currency::getUsdToKesRate()
                 : (float) Yii::$app->config->get('fallback_exchange_rate', 130.00);
-            if ($this->exchange_rate <= 0) $this->exchange_rate = 130.00;
+            
+            if ($currentRate <= 0) $currentRate = 130.00;
+
+            // Only update if rate changed significantly (> 0.001) to avoid jitter logs
+            if (abs($this->exchange_rate - $currentRate) > 0.001) {
+                $this->exchange_rate = $currentRate;
+            }
         }
 
         // =========================================================
@@ -236,6 +242,9 @@ class BillingRecords extends BaseModel
             }
         }
 
-        return $this->save(false);
+        if ($persist) {
+            return $this->save(false);
+        }
+        return true;
     }
 }

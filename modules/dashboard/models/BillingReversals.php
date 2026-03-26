@@ -21,9 +21,9 @@ class BillingReversals extends BaseModel // Change to \yii\db\ActiveRecord if Ba
      */
     public function behaviors()
     {
-        return [
+        return array_merge(parent::behaviors(), [
             TimestampBehavior::class,
-        ];
+        ]);
     }
 
     /**

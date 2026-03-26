@@ -85,4 +85,37 @@ class Html extends \yii\helpers\BaseHtml
         } while ($x <= 7);
         return $ret;
     }
+    public static function timeAgo($timestamp)
+    {
+        $currentTime = time();
+        $diff = $currentTime - $timestamp;
+        $isFuture = $diff < 0;
+        $diff = abs($diff);
+
+        $seconds = $diff;
+        $minutes = round($diff / 60);
+        $hours = round($diff / 3600);
+        $days = round($diff / 86400);
+        $weeks = round($diff / 604800);
+        $months = round($diff / 2592000);
+        $years = round($diff / 31536000);
+
+        $suffix = $isFuture ? ' from now' : ' ago';
+
+        if ($seconds < 60) {
+            return $seconds . ' second' . ($seconds == 1 ? '' : 's') . $suffix;
+        } elseif ($minutes < 60) {
+            return $minutes . ' minute' . ($minutes == 1 ? '' : 's') . $suffix;
+        } elseif ($hours < 24) {
+            return $hours . ' hour' . ($hours == 1 ? '' : 's') . $suffix;
+        } elseif ($days < 7) {
+            return $days . ' day' . ($days == 1 ? '' : 's') . $suffix;
+        } elseif ($weeks < 4) {
+            return $weeks . ' week' . ($weeks == 1 ? '' : 's') . $suffix;
+        } elseif ($months < 12) {
+            return $months . ' month' . ($months == 1 ? '' : 's') . $suffix;
+        } else {
+            return $years . ' year' . ($years == 1 ? '' : 's') . $suffix;
+        }
+    }
 }

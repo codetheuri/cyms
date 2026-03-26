@@ -7,14 +7,13 @@ use auth\models\static\Login;
 use yii\base\DynamicModel;
 use auth\models\User;
 use auth\models\static\ChangePassword;
+use helpers\models\AuditTrail;
 
 class IamController extends \helpers\DashboardController
 {
-    // public function getViewPath()
-    // {
-    //     return Yii::getAlias('@ui/views/iam');
-    // }
-
+    /**
+     * @inheritdoc
+     */
     public function actionLogin()
     {
         $this->layout = 'auth';
@@ -23,6 +22,7 @@ class IamController extends \helpers\DashboardController
             return $this->goHome();
         }
         if ($model->load(Yii::$app->request->post()) && $model->login()) {
+            AuditTrail::logAction('LOGIN', 'User Session', 'Success', null, Yii::$app->user->identity->username);
             return $this->goBack();
         }
 
@@ -34,39 +34,18 @@ class IamController extends \helpers\DashboardController
 
     public function actionLogout()
     {
+        $username = Yii::$app->user->identity->username ?? 'Unknown';
+        $userId = Yii::$app->user->id;
+        
+        // Log action BEFORE logout while we still have identity session
+        AuditTrail::logAction('LOGOUT', 'User Session', 'Success', $username, null, $userId);
+        
         Yii::$app->user->logout();
 
         return $this->goHome();
     }
 
-    // public function actionChangePassword()
-    // {
-    //      Yii::$app->user->can('dashboard-profile-update');
-    //     $user = Yii::$app->user->identity; 
-    //     $model = new ChangePassword($user);
-
-    //     if ($model->load(Yii::$app->request->post())) {
-
-    //         if ($model->validate() && $model->changePassword()) {
-    //             Yii::$app->session->setFlash('success', 'Password changed successfully. Please login again.');
-
-    //             Yii::$app->user->logout();
-    //             return $this->redirect(['login']);
-    //         }
-    //         if (Yii::$app->request->isAjax) {
-    //             Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-    //             return ['success' => false, 'errors' => $model->getErrors()];
-    //         }
-    //     }
-    //     if (Yii::$app->request->isAjax) {
-    //         return $this->renderAjax('change-password', [
-    //             'model' => $model,
-    //         ]);
-    //     } else {
-    //         return $this->redirect(['/dashboard']);
-    //     }
-    // }
-  public function actionResetPassword($id)
+    public function actionResetPassword($id)
     {
         // Enforce Admin Permission
         Yii::$app->user->can('dashboard-profile-update');
@@ -86,13 +65,13 @@ class IamController extends \helpers\DashboardController
             $user->generateAuthKey(); // Logs out active sessions for this user
 
             if ($user->save(false)) {
+                AuditTrail::logAction('RESET_PASSWORD', 'User Security', $user->username, 'Password Reset by Admin', 'Success');
                 Yii::$app->session->setFlash('success', "Password for {$user->username} has been successfully reset.");
                 return $this->redirect(Yii::$app->request->referrer ?: ['/dashboard']);
             }
         }
 
         if (Yii::$app->request->isAjax) {
-            // NOTE: Renders a different view file to avoid conflicts
             return $this->renderAjax('reset-password', [
                 'model' => $model,
                 'user' => $user,
@@ -100,7 +79,8 @@ class IamController extends \helpers\DashboardController
         }
         return $this->redirect(['/dashboard']);
     }
-   public function actionChangePassword()
+
+    public function actionChangePassword()
     {
         if (!Yii::$app->user->can('dashboard-profile-update')) {
             if (Yii::$app->request->isAjax) {
@@ -115,6 +95,7 @@ class IamController extends \helpers\DashboardController
 
         if ($model->load(Yii::$app->request->post())) {
             if ($model->validate() && $model->changePassword()) {
+                AuditTrail::logAction('CHANGE_PASSWORD', 'User Security', $user->username, 'Self Password Change', 'Success');
                 Yii::$app->session->setFlash('success', 'Your password was changed successfully. Please login again.');
                 Yii::$app->user->logout();
                 return $this->redirect(['login']);

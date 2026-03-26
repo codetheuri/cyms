@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Audit Trail | Secure Event Log Dashboard</title>
+    <!-- Google Fonts & Simple Icons (Font Awesome via CDN) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f0f2f8;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
+            color: #1e293b;
+            padding: 2rem 1.5rem;
+        }
+
+        /* main container */
+        .audit-container {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        /* header section */
+        .audit-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            gap: 1rem;
+        }
+
+        .title-section h1 {
+            font-size: 1.85rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #1e2b3c, #0f3b4c);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .title-section h1 i {
+            background: none;
+            color: #2c6e9e;
+            font-size: 1.8rem;
+            background-clip: unset;
+            -webkit-background-clip: unset;
+        }
+
+        .badge-total {
+            background: #eef2ff;
+            padding: 0.3rem 0.9rem;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1e40af;
+            margin-top: 8px;
+            display: inline-block;
+            border: 1px solid #cddcff;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.6rem 1.2rem;
+            border-radius: 60px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            background: white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+
+        .btn-primary {
+            background: #1e4a76;
+            color: white;
+            border-color: #1e4a76;
+        }
+
+        .btn-primary:hover {
+            background: #0f3a5c;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px -6px rgba(0,32,64,0.2);
+        }
+
+        .btn-outline {
+            border-color: #cbd5e1;
+            background: white;
+            color: #1e293b;
+        }
+
+        .btn-outline:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+
+        /* filter bar */
+        .filter-bar {
+            background: white;
+            border-radius: 1.2rem;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.8rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.03);
+            border: 1px solid #e9edf2;
+        }
+
+        .search-group {
+            display: flex;
+            align-items: center;
+            background: #f9fafb;
+            border-radius: 48px;
+            padding: 0.2rem 0.2rem 0.2rem 1rem;
+            border: 1px solid #e2e8f0;
+            flex: 2;
+            min-width: 200px;
+        }
+
+        .search-group i {
+            color: #7c8ba0;
+            font-size: 0.9rem;
+        }
+
+        .search-group input {
+            border: none;
+            background: transparent;
+            padding: 0.65rem 0.8rem;
+            font-size: 0.9rem;
+            width: 100%;
+            outline: none;
+            font-family: 'Inter', monospace;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-select {
+            background: #f9fafb;
+            border: 1px solid #e2e8f0;
+            padding: 0.55rem 2rem 0.55rem 1rem;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1f2a44;
+            cursor: pointer;
+            font-family: 'Inter';
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%23475569" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            appearance: none;
+        }
+
+        .reset-link {
+            background: none;
+            border: none;
+            color: #4b6b8f;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* table wrapper (responsive) */
+        .table-wrapper {
+            background: white;
+            border-radius: 1.2rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.02), 0 2px 4px rgba(0,0,0,0.03);
+            border: 1px solid #edf2f7;
+            overflow-x: auto;
+            transition: all 0.2s;
+        }
+
+        .audit-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 720px;
+        }
+
+        .audit-table th {
+            text-align: left;
+            padding: 1rem 1.2rem;
+            background-color: #fafcff;
+            font-weight: 600;
+            color: #1e3a5f;
+            border-bottom: 1px solid #e6edf4;
+            font-size: 0.8rem;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        .audit-table td {
+            padding: 1rem 1.2rem;
+            border-bottom: 1px solid #f0f4f9;
+            vertical-align: middle;
+            color: #1f2a44;
+        }
+
+        .audit-table tr:hover td {
+            background-color: #fafdff;
+        }
+
+        /* severity badges */
+        .severity {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.2rem 0.7rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: capitalize;
+            width: fit-content;
+        }
+
+        .severity-high {
+            background: #fee9e6;
+            color: #b91c1c;
+        }
+        .severity-medium {
+            background: #fff0db;
+            color: #b45309;
+        }
+        .severity-low {
+            background: #e6f7ec;
+            color: #1e7b48;
+        }
+        .severity-info {
+            background: #e6f0ff;
+            color: #1e5a9c;
+        }
+
+        .action-tag {
+            background: #f1f5f9;
+            padding: 0.2rem 0.6rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            font-family: monospace;
+        }
+
+        .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .avatar-icon {
+            width: 28px;
+            height: 28px;
+            background: #eef2ff;
+            border-radius: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #2c5f8a;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .timestamp {
+            font-family: 'SF Mono', monospace;
+            font-size: 0.75rem;
+            color: #5b6e8c;
+        }
+
+        .empty-row td {
+            text-align: center;
+            padding: 2.5rem;
+            color: #5e6f8d;
+            font-style: italic;
+        }
+
+        /* footer */
+        .audit-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .pagination {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .page-btn {
+            background: white;
+            border: 1px solid #dddde5;
+            padding: 0.35rem 0.85rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.1s;
+            font-weight: 500;
+        }
+
+        .page-btn.active {
+            background: #1e4a76;
+            border-color: #1e4a76;
+            color: white;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .info-stats {
+            font-size: 0.8rem;
+            color: #475569;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem;
+            }
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="audit-container">
+    <div class="audit-header">
+        <div class="title-section">
+            <h1><i class="fas fa-history"></i> Audit Trail · Integrity Logs</h1>
+            <div class="badge-total" id="totalEventsBadge">0 events recorded</div>
+        </div>
+        <div class="action-buttons">
+            <button class="btn btn-outline" id="exportBtn"><i class="fas fa-download"></i> Export CSV</button>
+            <button class="btn btn-primary" id="simulateEventBtn"><i class="fas fa-plus-circle"></i> Simulate Event</button>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <div class="search-group">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Search by user, action, resource or details..." autocomplete="off">
+        </div>
+        <div class="filter-group">
+            <select id="severityFilter" class="filter-select">
+                <option value="all">All Severities</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+                <option value="info">Info</option>
+            </select>
+            <select id="actionTypeFilter" class="filter-select">
+                <option value="all">All Actions</option>
+                <option value="LOGIN">LOGIN</option>
+                <option value="LOGOUT">LOGOUT</option>
+                <option value="CREATE">CREATE</option>
+                <option value="UPDATE">UPDATE</option>
+                <option value="DELETE">DELETE</option>
+                <option value="PERMISSION">PERMISSION</option>
+                <option value="EXPORT">EXPORT</option>
+            </select>
+            <button id="resetFiltersBtn" class="reset-link"><i class="fas fa-undo-alt"></i> Reset filters</button>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table class="audit-table" id="auditTable">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Resource</th>
+                    <th>Severity</th>
+                    <th>Details / IP</th>
+                </tr>
+            </thead>
+            <tbody id="auditTableBody">
+                <!-- dynamic rows injected -->
+                <tr class="empty-row"><td colspan="6">Loading audit events...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="audit-footer">
+        <div class="info-stats" id="paginationInfo">Showing 0 of 0 entries</div>
+        <div class="pagination" id="paginationControls"></div>
+    </div>
+</div>
+
+<script>
+    // ---------- MOCK AUDIT TRAIL DATA (Rich demo dataset) ----------
+    const mockEvents = [
+        { id: 1, timestamp: "2025-03-18T08:23:10Z", user: "emily.chen@example.com", userName: "Emily Chen", action: "LOGIN", resource: "Authentication", severity: "info", details: "Successful login from 203.0.113.42", ip: "203.0.113.42" },
+        { id: 2, timestamp: "2025-03-18T09:45:22Z", user: "michael.r@example.com", userName: "Michael R.", action: "CREATE", resource: "User Account", severity: "medium", details: "Created new user 'jane_doe' with admin role", ip: "198.51.100.7" },
+        { id: 3, timestamp: "2025-03-18T10:12:05Z", user: "sarah.connor@example.com", userName: "Sarah Connor", action: "DELETE", resource: "API Key", severity: "high", details: "Deleted production API key: 'api_prod_23'", ip: "192.0.2.88" },
+        { id: 4, timestamp: "2025-03-18T11:30:17Z", user: "javier.l@example.com", userName: "Javier Lopez", action: "UPDATE", resource: "Project Settings", severity: "low", details: "Changed project visibility from private to internal", ip: "203.0.113.99" },
+        { id: 5, timestamp: "2025-03-18T12:47:42Z", user: "emily.chen@example.com", userName: "Emily Chen", action: "LOGOUT", resource: "Session", severity: "info", details: "User initiated logout, session duration 4h", ip: "203.0.113.42" },
+        { id: 6, timestamp: "2025-03-18T13:20:03Z", user: "system-bot", userName: "System Bot", action: "PERMISSION", resource: "Role Assignment", severity: "medium", details: "Role 'auditor' assigned to user 'anna.k'", ip: "10.0.0.12" },
+        { id: 7, timestamp: "2025-03-18T14:55:33Z", user: "olivia.w@example.com", userName: "Olivia Wright", action: "EXPORT", resource: "Financial Report", severity: "high", details: "Exported sensitive Q2 financial data (CSV)", ip: "172.31.99.2" },
+        { id: 8, timestamp: "2025-03-18T15:40:21Z", user: "peter.n@example.com", userName: "Peter N.", action: "UPDATE", resource: "Firewall Rule", severity: "high", details: "Modified inbound rule: allow port 22 from 0.0.0.0/0", ip: "203.0.113.77" },
+        { id: 9, timestamp: "2025-03-18T16:18:09Z", user: "linda.zhang@example.com", userName: "Linda Zhang", action: "CREATE", resource: "Access Policy", severity: "medium", details: "Created new MFA enforcement policy", ip: "198.51.100.34" },
+        { id: 10, timestamp: "2025-03-18T17:05:44Z", user: "michael.r@example.com", userName: "Michael R.", action: "LOGIN", resource: "SSO", severity: "info", details: "SSO login via Azure AD, MFA verified", ip: "198.51.100.7" },
+        { id: 11, timestamp: "2025-03-19T07:22:30Z", user: "audit-agent", userName: "Audit Agent", action: "PERMISSION", resource: "Log Retention", severity: "low", details: "Archived logs older than 90 days", ip: "10.10.1.99" },
+        { id: 12, timestamp: "2025-03-19T09:13:55Z", user: "sarah.connor@example.com", userName: "Sarah Connor", action: "DELETE", resource: "Backup Snapshot", severity: "high", details: "Deleted critical database snapshot 'db_snap_0319'", ip: "192.0.2.88" }
+    ];
+
+    // ----- global state -----
+    let events = [...mockEvents];
+    let filteredEvents = [...events];
+    let currentPage = 1;
+    const rowsPerPage = 6;
+
+    // DOM elements
+    const tbody = document.getElementById('auditTableBody');
+    const searchInput = document.getElementById('searchInput');
+    const severityFilter = document.getElementById('severityFilter');
+    const actionFilter = document.getElementById('actionTypeFilter');
+    const resetBtn = document.getElementById('resetFiltersBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const simulateBtn = document.getElementById('simulateEventBtn');
+    const totalBadge = document.getElementById('totalEventsBadge');
+    const paginationInfo = document.getElementById('paginationInfo');
+    const paginationControls = document.getElementById('paginationControls');
+
+    // Helper: format timestamp to local readable
+    function formatTimestamp(isoString) {
+        const date = new Date(isoString);
+        return date.toLocaleString('en-US', { year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false });
+    }
+
+    // Severity class mapping
+    function getSeverityBadge(sev) {
+        const sevLower = sev.toLowerCase();
+        let cssClass = "severity-info";
+        let icon = "fa-info-circle";
+        if (sevLower === "high") { cssClass = "severity-high"; icon = "fa-exclamation-triangle"; }
+        else if (sevLower === "medium") { cssClass = "severity-medium"; icon = "fa-chart-line"; }
+        else if (sevLower === "low") { cssClass = "severity-low"; icon = "fa-arrow-down"; }
+        else { icon = "fa-bell"; }
+        return `<span class="severity ${cssClass}"><i class="fas ${icon} fa-xs"></i> ${sev.toUpperCase()}</span>`;
+    }
+
+    // render table based on filteredEvents + pagination
+    function renderTable() {
+        if (!filteredEvents.length) {
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="6"><i class="fas fa-clipboard-list"></i> No audit events match the current filters</td></tr>`;
+            updatePaginationAndStats();
+            return;
+        }
+
+        const startIdx = (currentPage - 1) * rowsPerPage;
+        const paginatedRows = filteredEvents.slice(startIdx, startIdx + rowsPerPage);
+        
+        let html = '';
+        for (const ev of paginatedRows) {
+            const displayUser = ev.userName || ev.user.split('@')[0];
+            const userInitial = displayUser.charAt(0).toUpperCase();
+            const ipOrDetail = ev.ip || (ev.details.includes('IP') ? ev.details.match(/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/)?.toString() || ev.details.slice(0, 45) : ev.details.slice(0, 45));
+            const shortDetail = ev.details.length > 55 ? ev.details.substring(0, 52) + '...' : ev.details;
+            html += `
+                <tr>
+                    <td class="timestamp"><i class="far fa-calendar-alt" style="margin-right: 6px; opacity:0.7;"></i>${formatTimestamp(ev.timestamp)}</td>
+                    <td><div class="user-cell"><span class="avatar-icon">${userInitial}</span> <span style="font-weight:500;">${displayUser}</span><br><span style="font-size:0.7rem; color:#6c7a91;">${ev.user}</span></div></td>
+                    <td><span class="action-tag"><i class="fas fa-code-branch"></i> ${ev.action}</span></td>
+                    <td><span style="font-family: monospace; background:#f3f6fc; padding:0.2rem 0.5rem; border-radius:16px;">${ev.resource}</span></td>
+                    <td>${getSeverityBadge(ev.severity)}</td>
+                    <td><i class="fas fa-info-circle" style="opacity:0.6; margin-right:5px;"></i>${shortDetail}<br><span style="font-size:0.7rem; font-family: monospace;">${ev.ip ? 'IP: '+ev.ip : ''}</span></td>
+                </tr>
+            `;
+        }
+        tbody.innerHTML = html;
+        updatePaginationAndStats();
+    }
+
+    function updatePaginationAndStats() {
+        const totalFiltered = filteredEvents.length;
+        totalBadge.innerText = `${events.length} total events · ${totalFiltered} filtered`;
+        const startItem = filteredEvents.length === 0 ? 0 : (currentPage-1)*rowsPerPage + 1;
+        const endItem = Math.min(currentPage * rowsPerPage, totalFiltered);
+        paginationInfo.innerText = `Showing ${startItem} to ${endItem} of ${totalFiltered} entries`;
+
+        // pagination buttons
+        const totalPages = Math.ceil(totalFiltered / rowsPerPage);
+        if (totalPages <= 1) {
+            paginationControls.innerHTML = '';
+            return;
+        }
+        let pagesHtml = '';
+        // previous
+        pagesHtml += `<button class="page-btn" data-page="prev" ${currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage-1 && i <= currentPage+1)) {
+                pagesHtml += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            } else if (i === currentPage-2 || i === currentPage+2) {
+                pagesHtml += `<span style="margin:0 4px;">...</span>`;
+            }
+        }
+        pagesHtml += `<button class="page-btn" data-page="next" ${currentPage === totalPages ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+        paginationControls.innerHTML = pagesHtml;
+        document.querySelectorAll('.page-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const pageVal = btn.getAttribute('data-page');
+                if (pageVal === 'prev' && currentPage > 1) setPage(currentPage-1);
+                else if (pageVal === 'next' && currentPage < totalPages) setPage(currentPage+1);
+                else if (!isNaN(parseInt(pageVal))) setPage(parseInt(pageVal));
+            });
+        });
+    }
+
+    function setPage(page) {
+        currentPage = page;
+        renderTable();
+    }
+
+    // apply filters: search + severity + action
+    function applyFilters() {
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        const severity = severityFilter.value;
+        const action = actionFilter.value;
+
+        filteredEvents = events.filter(ev => {
+            // search in user, action, resource, details
+            let matchesSearch = true;
+            if (searchTerm) {
+                const haystack = `${ev.user} ${ev.userName || ''} ${ev.action} ${ev.resource} ${ev.details} ${ev.ip || ''}`.toLowerCase();
+                matchesSearch = haystack.includes(searchTerm);
+            }
+            let matchesSeverity = (severity === 'all' || ev.severity === severity);
+            let matchesAction = (action === 'all' || ev.action === action);
+            return matchesSearch && matchesSeverity && matchesAction;
+        });
+        currentPage = 1;
+        renderTable();
+    }
+
+    function resetFilters() {
+        searchInput.value = '';
+        severityFilter.value = 'all';
+        actionFilter.value = 'all';
+        applyFilters();
+    }
+
+    // export to CSV (audit trail)
+    function exportToCSV() {
+        const dataToExport = filteredEvents.length ? filteredEvents : events;
+        const headers = ['Timestamp', 'User', 'Action', 'Resource', 'Severity', 'Details', 'IP Address'];
+        const rows = dataToExport.map(ev => [
+            ev.timestamp,
+            ev.user,
+            ev.action,
+            ev.resource,
+            ev.severity,
+            ev.details,
+            ev.ip || ''
+        ]);
+        let csvContent = headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',') + '\n';
+        rows.forEach(row => {
+            const escapedRow = row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',');
+            csvContent += escapedRow + '\n';
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.setAttribute('download', `audit_trail_${new Date().toISOString().slice(0,19)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    // simulate random audit event (dynamic)
+    function simulateRandomEvent() {
+        const actions = ['LOGIN', 'CREATE', 'UPDATE', 'DELETE', 'PERMISSION', 'EXPORT'];
+        const resources = ['API Gateway', 'Database Cluster', 'User Profile', 'Encryption Key', 'SSH Config', 'Cloud Storage'];
+        const users = ['alex.g@example.com', 'maria.f@example.com', 'oscar.t@example.com', 'julie.c@example.com', 'sysadmin'];
+        const severities = ['high', 'medium', 'low', 'info'];
+        const randomAction = actions[Math.floor(Math.random() * actions.length)];
+        const randomResource = resources[Math.floor(Math.random() * resources.length)];
+        const randomUser = users[Math.floor(Math.random() * users.length)];
+        const randomSeverity = severities[Math.floor(Math.random() * severities.length)];
+        const randomIP = `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+        const detailsMsg = `${randomAction} operation on ${randomResource} by ${randomUser.split('@')[0]} triggered from IP ${randomIP}`;
+        const newId = Date.now() + Math.floor(Math.random() * 10000);
+        const newEvent = {
+            id: newId,
+            timestamp: new Date().toISOString(),
+            user: randomUser,
+            userName: randomUser.split('@')[0].replace('.', ' '),
+            action: randomAction,
+            resource: randomResource,
+            severity: randomSeverity,
+            details: detailsMsg,
+            ip: randomIP
+        };
+        events.unshift(newEvent);   // newest on top
+        applyFilters();  // re-filter preserves current filters, but shows new event if fits
+        // optional toast feeling
+        const simulateBtnSpan = simulateBtn.querySelector('i');
+        simulateBtn.style.transform = 'scale(0.97)';
+        setTimeout(() => { simulateBtn.style.transform = ''; }, 150);
+    }
+
+    // Event listeners
+    searchInput.addEventListener('input', () => applyFilters());
+    severityFilter.addEventListener('change', () => applyFilters());
+    actionFilter.addEventListener('change', () => applyFilters());
+    resetBtn.addEventListener('click', () => resetFilters());
+    exportBtn.addEventListener('click', () => exportToCSV());
+    simulateBtn.addEventListener('click', () => simulateRandomEvent());
+
+    // initial render
+    applyFilters();
+</script>
+</body>
+</html>

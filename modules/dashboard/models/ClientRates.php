@@ -5,7 +5,7 @@ namespace dashboard\models;
 use Yii;
 use yii\behaviors\TimestampBehavior;
 
-class ClientRates extends \yii\db\ActiveRecord
+class ClientRates extends BaseModel
 {
     public static function tableName()
     {
@@ -14,7 +14,9 @@ class ClientRates extends \yii\db\ActiveRecord
 
     public function behaviors()
     {
-        return [TimestampBehavior::class];
+        return array_merge(parent::behaviors(), [
+            TimestampBehavior::class,
+        ]);
     }
 
     public function rules()

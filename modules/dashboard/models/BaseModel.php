@@ -6,5 +6,15 @@ namespace dashboard\models;
  */
 class BaseModel extends \helpers\ActiveRecord
 {
-    
+    /**
+     * @inheritdoc
+     */
+    public function behaviors()
+    {
+        return array_merge(parent::behaviors(), [
+            'audit' => [
+                'class' => \helpers\behaviors\AuditTrailBehavior::class,
+            ],
+        ]);
+    }
 }

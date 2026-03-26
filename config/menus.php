@@ -27,14 +27,14 @@ $userMenu = [
     // ['title' => 'Shipping Lines', 'icon' => 'ship', 'url' => '/dashboard/shipping-line/index'],
     ['title' => 'Help & Support', 'icon' => 'life-ring', 'url' => '/dashboard/support/index', 'permission'=>'dashboard-default-view'],
     ['title'=>'Shipping Lines', 'icon'=>'ship', 'url'=>'/dashboard/shipping-line/index', 'permission'=>'dashboard-shipping-line-list'],
-    ['title' => 'IAM & Admin', 'icon' => 'shield', 'permission'=>'dashboard-profile-list', 'submenus' => [
-        ['title' => 'User Management', 'url' => 'profile/index'],
-        ['title' => 'Manage Roles', 'url' => 'role/index'],
-        ['title' => 'Manage Permissions', 'url' => 'permission/index'],
+    ['title' => 'IAM & Admin', 'icon' => 'shield-halved', 'permission'=>'dashboard-profile-list', 'submenus' => [
+        ['title' => 'User Management', 'url' => '/dashboard/profile/index'],
+        ['title' => 'Manage Roles', 'url' => '/dashboard/role/index'],
+        ['title' => 'Manage Permissions', 'url' => '/dashboard/permission/index'],
+        ['title' => 'Security Audit Log', 'url' => '/admin/audit/index'],
     ]],
-    ['title' => 'Settings', 'icon' => 'cog fa-spin','permission'=>'dashboard-settings-list', 'url' => '/admin/settings/general-setting']
-
-
-
+    ['title' => 'Settings', 'icon' => 'gear','permission'=>'dashboard-settings-list', 'url' => '/admin/settings/general-setting'],
 ];
+
+
 return array_merge($userMenu);

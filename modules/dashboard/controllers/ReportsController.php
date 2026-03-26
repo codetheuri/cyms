@@ -14,6 +14,7 @@ use yii\data\ActiveDataProvider;
 use yii\web\NotFoundHttpException;
 use yii\helpers\ArrayHelper;
 use yii\db\Expression;
+use helpers\models\AuditTrail;
 
 class ReportsController extends DashboardController
 {
@@ -48,6 +49,8 @@ class ReportsController extends DashboardController
             return $this->renderPartial('print_custom', array_merge($data, ['isExcel' => true]));
         }
 
+        AuditTrail::logAction('PRINT', 'System Report', $data['title'] ?? 'Generic Report');
+
         return $this->renderPartial('print_custom', array_merge($data, ['isExcel' => false]));
     }
 
@@ -59,6 +62,9 @@ class ReportsController extends DashboardController
         $visit = $this->findVisitModel($id);
         $survey = ContainerSurveys::findOne(['visit_id' => $id]);
         $settings = new General();
+        
+        AuditTrail::logAction('PRINT', 'Inward Interchange', $visit->container_number ?? $visit->truck_registration);
+
         return $this->render('inward_interchange', ['visit' => $visit, 'survey' => $survey, 'settings' => $settings]);
     }
 

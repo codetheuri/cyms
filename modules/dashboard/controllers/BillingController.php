@@ -10,6 +10,7 @@ use yii\web\NotFoundHttpException;
 use dashboard\models\BillingPayments;
 use dashboard\models\ContainerVisits;
 use kartik\mpdf\Pdf;
+use helpers\models\AuditTrail;
 
 class BillingController extends DashboardController
 {
@@ -34,9 +35,9 @@ class BillingController extends DashboardController
         $searchModel = new BillingRecordsSearch();
         $dataProvider = $searchModel->search($this->request->queryParams);
 
-        // Recalculate balances for all displayed records
+        // Recalculate balances for all displayed records (memory only, no DB save)
         foreach ($dataProvider->getModels() as $model) {
-            $model->recalculateBalance();
+            $model->recalculateBalance(false);
         }
 
         return $this->render('index', [
@@ -101,7 +102,7 @@ class BillingController extends DashboardController
         }
 
         if ($visit->status !== 'GATE_OUT') {
-            $model->recalculateBalance();
+            $model->recalculateBalance(false);
         }
 
         $paymentModel = new BillingPayments();
@@ -147,7 +148,8 @@ class BillingController extends DashboardController
             $model->requested_by = Yii::$app->user->id;
             $model->requested_at = time();
 
-            if ($model->save()) {
+            // We use save(false) to ensure it is audited and skip validation for these specific fields
+            if ($model->save(false)) {
                 Yii::$app->session->setFlash('success', 'Credit request sent to Admin for approval.');
                 return $this->redirect(['view', 'id' => $model->bill_id]);
             } else {
@@ -315,11 +317,9 @@ class BillingController extends DashboardController
         $model = $this->findModel($id);
 
         if ($model->load(Yii::$app->request->post())) {
-            $model->updateAttributes([
-                'atl_number' => $model->atl_number,
-                'authorized_by' => $model->authorized_by
-            ]);
-            Yii::$app->session->setFlash('success', 'Credit Authorization details updated.');
+            if ($model->save(false)) {
+                Yii::$app->session->setFlash('success', 'Credit Authorization details updated.');
+            }
         }
 
         return $this->redirect(['view', 'id' => $id]);
@@ -329,6 +329,8 @@ class BillingController extends DashboardController
     {
         $model = $this->findModel($id);
         $model->recalculateBalance();
+
+        AuditTrail::logAction('PRINT', 'Billing', $model->invoice_number, 'Invoice Generation', 'PDF Export');
 
         $header = $this->renderPartial('_invoice_header', ['model' => $model]);
         $footer = $this->renderPartial('_invoice_footer');

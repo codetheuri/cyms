@@ -1,4 +1,5 @@
 <?php
+
 namespace admin;
 
 /**
@@ -18,7 +19,7 @@ namespace admin;
  *         url="http://www.apache.org/licenses/LICENSE-2.0.html"
  *     )
  * )
- */ 
+ */
 
 class Module extends \helpers\ApiModule
 {
@@ -27,6 +28,7 @@ class Module extends \helpers\ApiModule
      */
     public $controllerNamespace = 'admin\controllers';
     public $name = 'Administration';
+    public $layout = '@ui/views/layouts/dashboard';
 
     /**
      * {@inheritdoc}
@@ -34,7 +36,7 @@ class Module extends \helpers\ApiModule
     public function init()
     {
         parent::init();
-
+        $this->layoutPath = '@ui/views/layouts';
     }
 }
 

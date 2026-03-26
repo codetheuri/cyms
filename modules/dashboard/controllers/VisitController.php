@@ -17,6 +17,7 @@ use dashboard\models\BillingRecords;
 use dashboard\models\MasterContainerOwners;
 use dashboard\models\MasterContainerTypes;
 use dashboard\models\YardSlots;
+use helpers\models\AuditTrail;
 
 class VisitController extends DashboardController
 {
@@ -520,8 +521,8 @@ class VisitController extends DashboardController
         // If form submitted
         if ($model->load(Yii::$app->request->post())) {
             // Save only the comments field (skip other validations for speed)
-            // We use updateAttributes to be precise and safe
-            $model->updateAttributes(['comments_in' => $model->comments_in]);
+            // Use save(false) to ensure it triggers AuditTrailBehavior
+            $model->save(false);
 
             Yii::$app->session->setFlash('success', 'Flags/Comments updated.');
             return $this->redirect(['index']);
