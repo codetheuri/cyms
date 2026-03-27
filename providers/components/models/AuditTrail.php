@@ -101,6 +101,35 @@ class AuditTrail extends ActiveRecord
     }
 
     /**
+     * Helper to get the real user IP address, even behind proxies/load balancers
+     */
+    public static function getClientIp()
+    {
+        $request = Yii::$app->request;
+        $ip = $request->getUserIP();
+        
+        // Check X-Forwarded-For header (common for proxies)
+        if ($request->headers->has('X-Forwarded-For')) {
+            $fwd = $request->headers->get('X-Forwarded-For');
+            $ips = explode(',', $fwd);
+            $clientIp = trim($ips[0]);
+            if (filter_var($clientIp, FILTER_VALIDATE_IP)) {
+                return $clientIp;
+            }
+        }
+        
+        // Check X-Real-IP header (common for Nginx)
+        if ($request->headers->has('X-Real-IP')) {
+            $realIp = $request->headers->get('X-Real-IP');
+            if (filter_var($realIp, FILTER_VALIDATE_IP)) {
+                return $realIp;
+            }
+        }
+        
+        return $ip ?? '0.0.0.0';
+    }
+
+    /**
      * Manual logging helper for actions that don't involve ActiveRecord saves (e.g. printing reports)
      * 
      * @param string $operation e.g. 'PRINT', 'ACCESS', 'SEARCH'
@@ -134,7 +163,7 @@ class AuditTrail extends ActiveRecord
         $log->memory_max = (int)memory_get_peak_usage();
         $log->request_route = $app->requestedAction ? $app->requestedAction->uniqueId : 'N/A';
         $log->url = \yii\helpers\Url::base(true) . $request->url;
-        $log->ip_address = $request->getUserIP() ?? '0.0.0.0';
+        $log->ip_address = self::getClientIp();
         $log->user_agent = $request->userAgent;
         $log->headers = json_encode($request->headers->toArray(), JSON_UNESCAPED_SLASHES);
         $log->query_params = json_encode($request->queryParams, JSON_UNESCAPED_SLASHES);

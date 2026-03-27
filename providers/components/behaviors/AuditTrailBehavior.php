@@ -83,7 +83,7 @@ class AuditTrailBehavior extends Behavior
             'audit_time' => time(),
             'model_name' => $modelName,
             'user_id' => (string) $userId,
-            'ip_address' => $request->getUserIP() ?? '0.0.0.0',
+            'ip_address' => AuditTrail::getClientIp(),
             'request_method' => $request->method,
             'duration' => (float) (microtime(true) - YII_BEGIN_TIME),
             'memory_max' => (int) memory_get_peak_usage(),

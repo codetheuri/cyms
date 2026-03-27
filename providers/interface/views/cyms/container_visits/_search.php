@@ -24,7 +24,7 @@ use Yii;
 
     <div class="col-md-6">
         <?php $form = ActiveForm::begin([
-            'action' => ['index'],
+            'action' => [Yii::$app->controller->action->id],
             'method' => 'get',
             'options' => ['class' => 'w-100 position-relative'],
             'fieldConfig' => ['options' => ['tag' => false], 'template' => "{input}"],
