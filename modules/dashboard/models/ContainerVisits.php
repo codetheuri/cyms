@@ -116,17 +116,17 @@ class ContainerVisits extends  BaseModel
                 },
                 'message' => 'This container number is currently active in the yard. You must Gate Out the previous visit first.'
             ],
-            [
-                ['vehicle_reg_no_in'],
-                'unique',
-                'on' => self::SCENARIO_GATE_IN,
-                'targetAttribute' => ['vehicle_reg_no_in'],
-                'skipOnEmpty' => true,
-                'filter' => function ($query) {
-                    return $query->andWhere(['not in', 'status', ['GATE_OUT']]);
-                },
-                'message' => 'This truck (Reg No.) is currently active in the yard. You must Gate Out the previous visit first.'
-            ],
+            // [
+            //     ['vehicle_reg_no_in'],
+            //     'unique',
+            //     'on' => self::SCENARIO_GATE_IN,
+            //     'targetAttribute' => ['vehicle_reg_no_in'],
+            //     'skipOnEmpty' => true,
+            //     'filter' => function ($query) {
+            //         return $query->andWhere(['not in', 'status', ['GATE_OUT']]);
+            //     },
+            //     'message' => 'This truck (Reg No.) is currently active in the yard. You must Gate Out the previous visit first.'
+            // ],
             [['arrival_photo_file'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg', 'maxSize' => 5 * 1024 * 1024],
             [['document_files'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg, pdf', 'maxFiles' => 5],
         ];
