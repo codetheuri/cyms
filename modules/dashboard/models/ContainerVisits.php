@@ -116,17 +116,22 @@ class ContainerVisits extends  BaseModel
                 },
                 'message' => 'This container number is currently active in the yard. You must Gate Out the previous visit first.'
             ],
-            // [
-            //     ['vehicle_reg_no_in'],
-            //     'unique',
-            //     'on' => self::SCENARIO_GATE_IN,
-            //     'targetAttribute' => ['vehicle_reg_no_in'],
-            //     'skipOnEmpty' => true,
-            //     'filter' => function ($query) {
-            //         return $query->andWhere(['not in', 'status', ['GATE_OUT']]);
-            //     },
-            //     'message' => 'This truck (Reg No.) is currently active in the yard. You must Gate Out the previous visit first.'
-            // ],
+            [
+                ['vehicle_reg_no_in'],
+                'unique',
+                'on' => self::SCENARIO_GATE_IN,
+                'targetAttribute' => ['vehicle_reg_no_in'],
+                'skipOnEmpty' => true,
+                'filter' => function ($query) {
+                    // BEST PRACTICE: Only block if the truck is specifically in the yard 
+                    // as a "Truck Only" entry (no container attached). 
+                    // If it brought a container previously, the truck itself is assumed to have left,
+                    // even if the container is still in the yard.
+                    return $query->andWhere(['not in', 'status', ['GATE_OUT']])
+                                 ->andWhere(['is_truck_only' => 1]);
+                },
+                'message' => 'This truck is currently active in the yard (waiting). Please Gate Out the previous truck entry first.'
+            ],
             [['arrival_photo_file'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg', 'maxSize' => 5 * 1024 * 1024],
             [['document_files'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg, pdf', 'maxFiles' => 5],
         ];

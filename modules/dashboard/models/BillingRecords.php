@@ -140,6 +140,12 @@ class BillingRecords extends BaseModel
         $clientCurrency = $visit->containerOwner ? $visit->containerOwner->billing_currency : 'KES';
         $this->currency = $clientCurrency;
 
+        // Ensure all numeric inputs are actually numbers (prevents PHP 8 TypeError on empty strings)
+        $this->tariff_rate = (float) $this->tariff_rate;
+        $this->lift_charges = (float) $this->lift_charges;
+        $this->discount_amount = (float) $this->discount_amount;
+        $this->exchange_rate = (float) $this->exchange_rate;
+
         // =========================================================
         // 1. EXCHANGE RATE
         // =========================================================

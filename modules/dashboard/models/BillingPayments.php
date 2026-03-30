@@ -24,12 +24,15 @@ class BillingPayments extends BaseModel
         ];
     }
 
-   public function validateOverpayment($attribute, $params)
+    public function validateOverpayment($attribute, $params)
     {
         if (!$this->hasErrors()) {
-            $invoice = $this->getBill()->one(); // Get the invoice
+            $invoice = BillingRecords::findOne($this->bill_id);
             if ($invoice) {
-                // Allow a small buffer (0.01) for float precision
+                // IMPORTANT: Recalculate based on current date before validating,
+                // otherwise we validate against a 'stale' balance from the DB
+                $invoice->recalculateBalance(false); 
+                
                 if ($this->amount > ($invoice->balance + 0.01)) {
                     $this->addError($attribute, 'Payment cannot exceed the outstanding balance (' . number_format($invoice->balance, 2) . ').');
                 }

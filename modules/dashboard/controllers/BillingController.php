@@ -128,6 +128,7 @@ class BillingController extends DashboardController
 
                 Yii::$app->session->setFlash('success', 'Payment Recorded Successfully.');
             } else {
+                Yii::error($payment->getErrors());
                 Yii::$app->session->setFlash('error', 'Failed to record payment.');
             }
         }
@@ -153,8 +154,7 @@ class BillingController extends DashboardController
                 Yii::$app->session->setFlash('success', 'Credit request sent to Admin for approval.');
                 return $this->redirect(['view', 'id' => $model->bill_id]);
             } else {
-                $errors = json_encode($model->getErrors());
-                Yii::$app->session->setFlash('error', 'Validation Error: ' . $errors);
+                Yii::$app->session->setFlash('error', 'Validation Error');
             }
         }
 
@@ -242,7 +242,7 @@ class BillingController extends DashboardController
             // If the user typed a USD amount in the form, convert it BACK to KES before saving!
             if ($model->currency === 'USD') {
                 $exRate = class_exists('\dashboard\hooks\Currency') ? \dashboard\hooks\Currency::getUsdToKesRate() : 130.00;
-                $model->discount_amount = $model->discount_amount * $exRate;
+                $model->discount_amount = (float) $model->discount_amount * $exRate;
             }
             if ($model->recalculateBalance()) {
                 Yii::$app->session->setFlash('success', 'Discount updated successfully.');
