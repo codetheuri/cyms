@@ -39,7 +39,7 @@ services:
       - CRON_TIME=0 2 * * *   # Runs at 2:00 AM daily
       - GZIP_LEVEL=9
     volumes:
-      - /var/www/html/sites/cyms/backups:/backup
+      - ./backups:/backup
 
 networks:
   tigerforge-db:
