@@ -241,6 +241,7 @@ $adminEmail = Yii::$app->config->get('admin_email');
                     <div class="col-md-4 text-end">
                         <?= Html::a('<i class="fa fa-database me-2"></i> Backup Now', ['backup-database'], [
                             'class' => 'btn btn-warning w-100 shadow-sm',
+                            'onclick' => 'showBackupLoader()',
                             'data' => [
                                 'confirm' => 'This process may take a few seconds. Continue?',
                                 'method' => 'post',
@@ -277,38 +278,54 @@ $adminEmail = Yii::$app->config->get('admin_email');
     }
 </style>
 
-<script>
-function selectReport(type, element) {
-    // 1. Update Hidden Input
-    document.getElementById('report_type_input').value = type;
+<?php
+$script = <<< JS
+    // 1. Report Selection Logic
+    window.selectReport = function(type, element) {
+        document.getElementById('report_type_input').value = type;
+        $('#report-menu a').removeClass('active-report');
+        $(element).addClass('active-report');
+        
+        var reportName = $(element).find('.fw-bold').text();
+        $('#config-title').html('<i class="fa fa-sliders-h me-2 text-muted"></i> Configure: ' + reportName);
 
-    // 2. Visual: Highlight Active Menu
-    document.querySelectorAll('#report-menu a').forEach(el => el.classList.remove('active-report'));
-    element.classList.add('active-report');
+        var requiredFilters = $(element).attr('data-filters') || '';
+        $('#filter-dates, #filter-lines, #filter-moves').hide();
 
-    // 3. Update Title
-    var reportName = element.querySelector('.fw-bold').innerText;
-    document.getElementById('config-title').innerHTML = '<i class="fa fa-sliders-h me-2 text-muted"></i> Configure: ' + reportName;
+        if (requiredFilters.includes('dates')) $('#filter-dates').show();
+        if (requiredFilters.includes('lines')) $('#filter-lines').show();
+        if (requiredFilters.includes('moves')) $('#filter-moves').show();
+    };
 
-    // 4. Show/Hide Filters based on Data Attribute
-    var requiredFilters = element.getAttribute('data-filters') || '';
-    
-    // Reset all (hide)
-    ['filter-dates', 'filter-lines', 'filter-moves'].forEach(id => {
-        document.getElementById(id).style.display = 'none';
+    // 2. Initialize Default View
+    var defaultItem = $('.active-report');
+    if(defaultItem.length) {
+        selectReport('gate_moves', defaultItem[0]);
+    }
+
+    // 3. Form Submit Spinner (Email Report)
+    $('#report-form').on('submit', function() {
+        if ($(this).attr('target') !== '_blank') {
+            Swal.fire({
+                title: 'Please Wait...',
+                html: '<div class="py-3"><div class="spinner-border text-primary me-2" role="status"></div><br><br><strong>Generating report and sending email...</strong></div>',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+        }
     });
 
-    // Show required
-    if (requiredFilters.includes('dates')) document.getElementById('filter-dates').style.display = 'block';
-    if (requiredFilters.includes('lines')) document.getElementById('filter-lines').style.display = 'block';
-    if (requiredFilters.includes('moves')) document.getElementById('filter-moves').style.display = 'block';
-}
-
-// Initialize on Load (Highlight first item)
-document.addEventListener("DOMContentLoaded", function() {
-    var defaultItem = document.querySelector('.active-report');
-    if(defaultItem) {
-        selectReport('gate_moves', defaultItem);
-    }
-});
-</script>
+    // 4. Backup Click Spinner
+    window.showBackupLoader = function() {
+        Swal.fire({
+            title: 'Securing Database...',
+            html: '<div class="py-3"><div class="spinner-grow text-warning me-2" role="status"></div><br><br><strong>Creating SQL Dump...</strong></div>',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+    };
+JS;
+$this->registerJs($script);
+?>

@@ -16,9 +16,13 @@ $userMenu = [
     // ['title' => 'Billing', 'icon' => 'receipt', 'url' => '/dashboard/billing/index','permission'=>'dashboard-billing-list'],
     ['title' => 'Billing & Finance', 'icon' => 'receipt', 'permission'=>'dashboard-billing-list', 'submenus' => [
         ['title' => 'All Invoices', 'url' => '/dashboard/billing/index'],
-        // This links to the new Admin Approval Page we created
-       ['title' => 'Credit Approvals' . $creditLabel, 'url' => '/dashboard/billing/credit-requests'],
-       ['title' => 'Invoice Reversals', 'url' => '/dashboard/billing-reversal/index'],
+        ['title' => 'Credit Approvals' . $creditLabel, 'url' => '/dashboard/billing/credit-requests'],
+        ['title' => 'Invoice Reversals', 'url' => '/dashboard/billing-reversal/index'],
+    ]],
+    ['title' => 'Yard Economics', 'icon' => 'money-bill-trend-up', 'permission'=>'dashboard-expense-manage', 'submenus' => [
+        ['title' => 'Daily Expenses', 'url' => '/dashboard/expense/index'],
+        ['title' => 'Expense Categories', 'url' => '/dashboard/expense/categories'],
+        ['title' => 'P&L Summary', 'url' => '/dashboard/expense/summary'],
     ]],
     ['title' => 'Clients / Owners', 'icon' => 'users', 'url' => '/dashboard/container-owner/index', 'permission'=>'dashboard-container-owner-list'],
     ['title'=> 'Reports', 'icon'=>'book', 'url'=>'/dashboard/reports/index', 'permission'=>'dashboard-reports-view'],

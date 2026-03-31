@@ -21,6 +21,26 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  db_backup:
+    image: fradelg/mysql-cron-backup
+    container_name: cyms_db_backup
+    restart: always
+    networks:
+      - tigerforge-db
+    environment:
+      - MYSQL_HOST=172.20.0.7
+      - MYSQL_PORT=3306
+      - MYSQL_USER=legendroot
+      - MYSQL_PASS=l3g3ndaryHub
+      - MYSQL_DB=cyms_prod
+      - MYSQLDUMP_OPTS=--single-transaction --no-tablespaces --quick
+      - MAX_BACKUPS=30
+      - INIT_BACKUP=0        
+      - CRON_TIME=0 2 * * *   # Runs at 2:00 AM daily
+      - GZIP_LEVEL=9
+    volumes:
+      - /var/www/html/sites/cyms/backups:/backup
+
 networks:
   tigerforge-db:
     external: true

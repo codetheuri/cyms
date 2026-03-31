@@ -1,16 +1,19 @@
 <?php
 
-use yii\helpers\Html;
-use yii\widgets\ActiveForm;
+use helpers\Html;
+use helpers\widgets\ActiveForm;
+use yii\widgets\Pjax;
 
 /* @var $this yii\web\View */
 /* @var $model dashboard\models\MasterContainerOwners */
 /* @var $form yii\widgets\ActiveForm */
 ?>
-
+<?php Pjax::begin(['id' => 'pjax-expense-form', 'enablePushState' => false, 'timeout' => 5000]); ?>
 <div class="master-container-owners-form">
 
-    <?php $form = ActiveForm::begin(); ?>
+    <?php $form = ActiveForm::begin(
+        ['options' => ['data-pjax' => true]]
+    ); ?>
 
     <div class="row">
         <div class="col-md-6 mb-3">
@@ -41,3 +44,4 @@ use yii\widgets\ActiveForm;
     <?php ActiveForm::end(); ?>
 
 </div>
+<?php Pjax::end(); ?>

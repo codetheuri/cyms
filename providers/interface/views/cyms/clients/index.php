@@ -1,6 +1,7 @@
 <?php
 use helpers\Html;
 use helpers\grid\GridView;
+use yii\helpers\Url;
 
 $this->title = 'Clients & Transporters';
 ?>
@@ -12,7 +13,7 @@ $this->title = 'Clients & Transporters';
             <?=html::customButton(
                 [
                     'type' => 'modal',
-                    'url' => ['create'],
+                    'url' => Url::to(["create"]),
                     'appearence' => [
                         'icon'=>'fa plus', 
                         'type' => 'text',

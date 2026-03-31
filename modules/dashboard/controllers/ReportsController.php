@@ -114,30 +114,54 @@ class ReportsController extends DashboardController
 
     public function actionBackupDatabase()
     {
-        // 1. Define File Paths
-        $dbName = Yii::$app->db->username; // Or parse dsn
-        // Note: Better to parse DSN, but for simplicity assuming config is standard
+        // 1. Get DB Config from Yii
         $dsn = Yii::$app->db->dsn;
-        preg_match('/dbname=([^;]*)/', $dsn, $matches);
-        $dbName = $matches[1];
-
-        $filename = 'backup_' . $dbName . '_' . date('Y-m-d_H-i-s') . '.sql';
-        $zipFilename = $filename . '.zip';
-        $savePath = Yii::getAlias('@runtime/') . $filename;
-        $zipPath = Yii::getAlias('@runtime/') . $zipFilename;
-
-        // 2. Get DB Credentials
         $username = Yii::$app->db->username;
         $password = Yii::$app->db->password;
-        $host = 'localhost'; // Usually localhost
 
-        // 3. Run mysqldump command
-        // NOTE: This requires mysqldump to be installed and accessible via shell
-        $command = "mysqldump --user={$username} --password={$password} --host={$host} {$dbName} > {$savePath}";
-        system($command, $output);
+        // Parse DSN to get host and dbname
+        preg_match('/dbname=([^;]*)/', $dsn, $dbMatches);
+        preg_match('/host=([^;]*)/', $dsn, $hostMatches);
+        
+        $dbName = $dbMatches[1] ?? null;
+        $host = $hostMatches[1] ?? 'localhost'; 
 
-        if (!file_exists($savePath) || filesize($savePath) == 0) {
-            Yii::$app->session->setFlash('error', 'Backup failed: Could not generate SQL dump.');
+        if (!$dbName) {
+            Yii::$app->session->setFlash('error', 'Critical: Could not determine database name from DSN.');
+            return $this->redirect(['index']);
+        }
+
+        $filename = 'backup_' . $dbName . '_' . date('Y-m-d_His') . '.sql';
+        $zipFilename = $filename . '.zip';
+        $runtime = Yii::getAlias('@runtime/');
+        $savePath = $runtime . $filename;
+        $zipPath = $runtime . $zipFilename;
+
+        // 2. Check if mysqldump is installed (common container issue)
+        $dumpPath = exec('which mysqldump');
+        if (!$dumpPath) {
+            Yii::$app->session->setFlash('error', 'Backup failed: "mysqldump" utility was not found in the container. Please install mysql-client.');
+            return $this->redirect(['index']);
+        }
+
+        // 3. Run mysqldump command with proper escaping
+        // We use --single-transaction to avoid locking tables in production
+        $command = sprintf(
+            '%s --user=%s --password=%s --host=%s --single-transaction --quick %s > %s 2>&1',
+            $dumpPath,
+            escapeshellarg($username),
+            escapeshellarg($password),
+            escapeshellarg($host),
+            escapeshellarg($dbName),
+            escapeshellarg($savePath)
+        );
+
+        exec($command, $output, $returnVar);
+
+        if ($returnVar !== 0 || !file_exists($savePath) || filesize($savePath) == 0) {
+            $errorMsg = !empty($output) ? implode(' ', $output) : 'Unknown shell error.';
+            Yii::$app->session->setFlash('error', 'Backup failed: ' . $errorMsg);
+            @unlink($savePath);
             return $this->redirect(['index']);
         }
 

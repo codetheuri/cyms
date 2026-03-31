@@ -10,9 +10,7 @@ $this->params['breadcrumbs'][] = ['label' => 'Clients', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="block block-rounded content-card">
-    <div class="block-header block-header-default">
-        <h3 class="block-title"><?= Html::encode($this->title) ?></h3>
-    </div>
+    
     <div class="block-content">
         <?= $this->render('_form', [
             'model' => $model,

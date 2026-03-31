@@ -102,7 +102,7 @@ class ContainerOwnerController extends DashboardController
             Yii::$app->session->setFlash('success', 'Client added successfully');
             return $this->redirect(['view', 'id' => $model->owner_id]);
         }
-        return $this->render('create', ['model' => $model]);
+        return $this->renderAjax('create', ['model' => $model]);
     }
 
     public function actionUpdate($id)
