@@ -37,5 +37,10 @@ tests/_support/_generated
 #vagrant folder
 /.vagrant
 
+
 /uploads/*
 !/uploads/index.html
+
+/backups/*
+!/backups/index.html
+!/backups/README.md
