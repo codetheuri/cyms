@@ -8,7 +8,7 @@ use yii\helpers\Url;
     <div class="content py-3">
         <div class="row fs-sm">
             <div class="col-sm-6 order-sm-2 py-1 text-center text-sm-end">
-                Design by <a class="fw-semibold" href="<?=Url::base(true)?>" target="_blank"><?=$_SERVER['APP_DEVELOPER']?></a>
+                Design &amp; Development by <a class="fw-semibold" href="<?= $_SERVER['APP_DEVELOPER_URL'] ?? '#' ?>" target="_blank" rel="author noopener"><?= $_SERVER['APP_DEVELOPER'] ?? 'Developer' ?></a>
             </div>
             <div class="col-sm-6 order-sm-1 py-1 text-center text-sm-start">
                 <a class="fw-semibold" href="<?=Url::base(true)?>" target="_blank"> &copy; <span data-toggle="year-copy"></span> <?=Yii::$app->name?> </a> 
