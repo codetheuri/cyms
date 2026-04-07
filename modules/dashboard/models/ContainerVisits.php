@@ -250,11 +250,16 @@ class ContainerVisits extends  BaseModel
                     }
                 }
 
-                // B. Generate Incremental Sequence
-                // We count how many visits exist and add 1. 
-                // (Padded to 5 digits: 1 -> 00001)
-                $count = self::find()->count() + 1;
-                $sequence = str_pad($count, 5, '0', STR_PAD_LEFT);
+                // B. Generate Incremental Sequence (MAX + 1 logic with Floor)
+                $minStart = (int)($_ENV['TICKET_MIN_START'] ?? 0);
+                
+                // Get the current max sequence number from ticket_no_in
+                $maxSuffix = (int)self::find()
+                    ->select(["MAX(CAST(SUBSTRING_INDEX(ticket_no_in, '-', -1) AS UNSIGNED))"])
+                    ->scalar();
+
+                $nextNumber = max($maxSuffix + 1, $minStart);
+                $sequence = str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
 
                 // C. Set the Ticket Number
                 $this->ticket_no_in = "TK-IN-{$code}-{$sequence}";
@@ -275,9 +280,15 @@ class ContainerVisits extends  BaseModel
                     }
                 }
 
-                // Generate sequence based on how many have gated out
-                $countOut = self::find()->where(['status' => 'GATE_OUT'])->count() + 1;
-                $sequence = str_pad($countOut, 5, '0', STR_PAD_LEFT);
+                // Generate sequence based on MAX + 1 logic for Outbound tickets
+                $minStart = (int)($_ENV['TICKET_MIN_START'] ?? 0);
+                
+                $maxSuffixOut = (int)self::find()
+                    ->select(["MAX(CAST(SUBSTRING_INDEX(ticket_no_out, '-', -1) AS UNSIGNED))"])
+                    ->scalar();
+
+                $nextNumberOut = max($maxSuffixOut + 1, $minStart);
+                $sequence = str_pad($nextNumberOut, 5, '0', STR_PAD_LEFT);
 
                 $this->ticket_no_out = "TK-OUT-{$code}-{$sequence}";
             }
