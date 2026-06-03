@@ -40,19 +40,19 @@ services:
     volumes:
       - ./backups:/backup
 
-  # mega_sync:
-  #   image: j3ko/mega-sync
-  #   container_name: mega_sync
-  #   restart: always
-  #   volumes:
-  #     - ./backups:/data # This is the folder the container scans
-  #   environment:
-  #     - USERNAME=theurij113@gmail.com
-  #     - PASSWORD=2004#theuri
-  #     - MEGA_CMD=sync /data /backups/cyms_yard
-  #     - PUID=1000
-  #     - PGID=1000
-  #     - SYNC_INTERVAL=60
+  mega_sync:
+    image: j3ko/mega-sync
+    container_name: mega_sync
+    restart: always
+    volumes:
+      - ./backups:/data # This is the folder the container scans
+    environment:
+      - USERNAME=nexifysolutionsltd2025@gmail.com
+      - PASSWORD=Nexify@2025
+      - MEGA_CMD=sync /data /backups/cyms_yard
+      - PUID=1000
+      - PGID=1000
+      - SYNC_INTERVAL=60
 
 networks:
   tigerforge-db:
