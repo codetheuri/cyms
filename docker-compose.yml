@@ -49,7 +49,7 @@ services:
     environment:
       - USERNAME=nexifysolutionsltd2025@gmail.com
       - PASSWORD=Nexify@2025
-      - MEGA_CMD=sync /data /backups/cyms_yard
+      - MEGA_CMD=sync /data /backups/cyms
       - PUID=1000
       - PGID=1000
       - SYNC_INTERVAL=60
