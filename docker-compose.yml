@@ -50,10 +50,10 @@ services:
     environment:
       - USERNAME=nexifysolutionsltd2025@gmail.com
       - PASSWORD=Nexify@2025
-      - MEGA_CMD=sync /data /backups/cyms, sync /uploads /backups/cyms/uploads
+      - MEGA_CMD=sync /data /backups/cyms/db, sync /uploads /backups/cyms/files
       - PUID=1000
       - PGID=1000
-      - SYNC_INTERVAL=60
+      - SYNC_INTERVAL=60  
 
 networks:
   tigerforge-db:
