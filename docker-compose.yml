@@ -46,10 +46,11 @@ services:
     restart: always
     volumes:
       - ./backups:/data # This is the folder the container scans
+      - ./uploads:/uploads
     environment:
       - USERNAME=nexifysolutionsltd2025@gmail.com
       - PASSWORD=Nexify@2025
-      - MEGA_CMD=sync /data /backups/cyms
+      - MEGA_CMD=sync /data /backups/cyms, sync /uploads /backups/cyms/uploads
       - PUID=1000
       - PGID=1000
       - SYNC_INTERVAL=60
