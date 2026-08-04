@@ -10,7 +10,7 @@ class DashboardAsset extends AssetBundle
     public $baseUrl = '@web/providers/interface/assets';
     public $css = [
         [
-            'href' => 'oneui/favicon.png',
+            'href' => 'oneui/favicon.ico',
             'rel' => 'icon',
             'sizes' => '64x64',
         ],
